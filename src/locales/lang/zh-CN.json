@@ -1,0 +1,20 @@
+{
+  "app": {
+    "title": "Vue 3.6 Vapor",
+    "subtitle": "实验性配置",
+    "langZh": "中文",
+    "langEn": "英文"
+  },
+  "vapor": {
+    "title": "Vapor 模式示例",
+    "countLabel": "计数：",
+    "increment": "增加",
+    "consoleHint": "请在控制台查看 \"✅ Running in Vapor Mode!\" 提示。",
+    "statusActive": "状态：激活（Vapor）",
+    "statusInactive": "状态：未激活（VDOM）"
+  },
+  "vdom": {
+    "title": "Simple VDOM 组件",
+    "countLabel": "VDOM 计数："
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "app": {
+    "title": "Vue 3.6 Vapor",
+    "subtitle": "Experimental Setup",
+    "langZh": "Chinese",
+    "langEn": "English"
+  },
+  "vapor": {
+    "title": "Vapor Mode Example",
+    "countLabel": "Count:",
+    "increment": "Increment",
+    "consoleHint": "Check console for \"✅ Running in Vapor Mode!\" message.",
+    "statusActive": "Status: Active (Vapor)",
+    "statusInactive": "Status: Inactive (VDOM)"
+  },
+  "vdom": {
+    "title": "Simple VDOM Component",
+    "countLabel": "VDOM Count:"
+  }
+}

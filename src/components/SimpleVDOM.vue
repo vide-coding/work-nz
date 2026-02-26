@@ -15,9 +15,9 @@ onMounted(() => {
 
 <template>
   <div class="p-4 border rounded bg-gray-50 dark:bg-gray-800">
-    <h3 class="font-bold">Simple VDOM Component</h3>
+    <h3 class="font-bold">{{ $t("vdom.title") }}</h3>
     <button @click="count++" class="bg-green-500 text-white px-2 py-1 rounded">
-      VDOM Count: {{ count }}
+      {{ $t("vdom.countLabel") }} {{ count }}
     </button>
   </div>
 </template>
