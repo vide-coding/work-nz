@@ -1,8 +1,72 @@
 use crate::db::get_db;
 use crate::types::*;
-use rusqlite::params;
-use std::path::Path;
 use chrono::Utc;
+use rusqlite::params;
+use std::fs;
+use std::path::Path;
+
+fn get_app_config_dir() -> Option<std::path::PathBuf> {
+    dirs::config_dir().map(|p| p.join("pm-app"))
+}
+
+fn get_recent_workspaces_file() -> Option<std::path::PathBuf> {
+    get_app_config_dir().map(|p| p.join("recent_workspaces.json"))
+}
+
+fn load_recent_workspaces() -> Vec<WorkspaceInfo> {
+    let file_path = match get_recent_workspaces_file() {
+        Some(p) => p,
+        None => return Vec::new(),
+    };
+
+    if !file_path.exists() {
+        return Vec::new();
+    }
+
+    match fs::read_to_string(&file_path) {
+        Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
+        Err(_) => Vec::new(),
+    }
+}
+
+fn save_recent_workspaces(workspaces: &[WorkspaceInfo]) {
+    let file_path = match get_recent_workspaces_file() {
+        Some(p) => p,
+        None => return,
+    };
+
+    if let Some(parent) = file_path.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+
+    if let Ok(content) = serde_json::to_string(workspaces) {
+        let _ = fs::write(&file_path, content);
+    }
+}
+
+fn add_to_recent_workspaces(path: String, last_opened_at: String) {
+    let mut workspaces = load_recent_workspaces();
+
+    workspaces.retain(|w| w.path != path);
+
+    let new_workspace = WorkspaceInfo {
+        path: path.clone(),
+        db_path: Path::new(&path)
+            .join(".app/app.db")
+            .to_string_lossy()
+            .to_string(),
+        last_opened_at,
+        settings: None,
+    };
+
+    workspaces.insert(0, new_workspace);
+
+    if workspaces.len() > 10 {
+        workspaces.truncate(10);
+    }
+
+    save_recent_workspaces(&workspaces);
+}
 
 /// 工作区状态管理
 static WORKSPACE_PATH: once_cell::sync::Lazy<std::sync::Mutex<Option<String>>> =
@@ -33,6 +97,10 @@ pub fn workspace_init_or_open(path: String) -> Result<WorkspaceInfo, String> {
 
     // 更新最近工作区
     let now = Utc::now().to_rfc3339();
+
+    // 保存到全局配置
+    add_to_recent_workspaces(path.clone(), now.clone());
+
     let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
     let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
 
@@ -50,7 +118,10 @@ pub fn workspace_init_or_open(path: String) -> Result<WorkspaceInfo, String> {
 
     Ok(WorkspaceInfo {
         path: path.clone(),
-        db_path: Path::new(&path).join(".app/app.db").to_string_lossy().to_string(),
+        db_path: Path::new(&path)
+            .join(".app/app.db")
+            .to_string_lossy()
+            .to_string(),
         last_opened_at: now,
         settings,
     })
@@ -59,12 +130,8 @@ pub fn workspace_init_or_open(path: String) -> Result<WorkspaceInfo, String> {
 /// 列出最近工作区
 #[tauri::command]
 pub fn workspace_list_recent() -> Result<Vec<WorkspaceInfo>, String> {
-    // 从系统目录获取最近工作区列表
-    let recent_workspaces = Vec::new();
-
-    // 这里简化实现，实际可以从配置文件中读取
-    // 返回空列表，用户需要重新选择
-    Ok(recent_workspaces)
+    let workspaces = load_recent_workspaces();
+    Ok(workspaces)
 }
 
 /// 获取工作区设置
