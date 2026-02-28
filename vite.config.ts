@@ -9,15 +9,7 @@ const host = process.env.TAURI_DEV_HOST;
 // https://vite.dev/config/
 export default defineConfig(async () => ({
   plugins: [
-    vue({
-      // Enable Vapor mode explicitly
-      vapor: true,
-      template: {
-        compilerOptions: {
-          isCustomElement: (tag) => tag.includes("-"),
-        },
-      },
-    }),
+    vue({}),
     AutoImport({
       imports: ["vue", "vue-router"],
       dts: "src/auto-imports.d.ts",
