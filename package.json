@@ -6,7 +6,6 @@
   "packageManager": "pnpm@9.15.2",
   "scripts": {
     "i": "pnpm install",
-    "clean": "pnpm clean",
     "kanban": "cross-env PORT=3000 HOST=0.0.0.0 npx vibe-kanban@latest",
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
