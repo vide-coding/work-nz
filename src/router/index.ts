@@ -1,7 +1,4 @@
 import { createRouter, createWebHistory } from "vue-router";
-import WorkspaceView from "../views/WorkspaceView.vue";
-import ProjectsView from "../views/ProjectsView.vue";
-import ProjectWorkspaceView from "../views/ProjectWorkspaceView.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -13,17 +10,17 @@ const router = createRouter({
     {
       path: "/workspace",
       name: "workspace",
-      component: WorkspaceView,
+      component: () => import("../views/WorkspaceView.vue"),
     },
     {
       path: "/projects",
       name: "projects",
-      component: ProjectsView,
+      component: () => import("../views/ProjectsView.vue"),
     },
     {
       path: "/projects/:id",
       name: "project-workspace",
-      component: ProjectWorkspaceView,
+      component: () => import("../views/ProjectWorkspaceView.vue"),
       props: true,
     },
   ],
