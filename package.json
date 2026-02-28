@@ -5,27 +5,34 @@
   "type": "module",
   "packageManager": "pnpm@9.15.2",
   "scripts": {
+    "i": "pnpm install",
+    "clean": "pnpm clean",
+    "kanban": "cross-env PORT=3000 HOST=0.0.0.0 npx vibe-kanban@latest",
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.2.1",
     "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-dialog": "^2",
     "@tauri-apps/plugin-opener": "^2",
     "autoprefixer": "^10.4.27",
     "lucide-vue-next": "^0.575.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.2.1",
     "vue": "^3.6.0-beta.6",
-    "vue-i18n": "^9.14.5"
+    "vue-i18n": "^9.14.5",
+    "vue-router": "^4.5.0"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",
     "@vitejs/plugin-vue": "^6.0.4",
     "typescript": "~5.6.2",
     "vite": "^6.0.3",
-    "vue-tsc": "^3.2.5"
+    "vue-tsc": "^3.2.5",
+    "cross-env": "^10.1.0"
   }
 }

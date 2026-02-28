@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm install)",
+      "Bash(pnpm run build)",
+      "Bash(pnpm tauri build)",
+      "Bash(timeout 10 pnpm dev)",
+      "Bash(curl -s http://localhost:1420)",
+      "Bash(netstat -ano)",
+      "Bash(findstr :1420)",
+      "Bash(taskkill //F //PID 307328)",
+      "Bash(timeout 15 pnpm dev)",
+      "Skill(skill)",
+      "Skill(skill:*)",
+      "Bash(playwright-cli open http://localhost:1420)",
+      "Bash(playwright-cli screenshot --filename=page2.png)",
+      "Bash(playwright-cli close)"
+    ]
+  }
+}
