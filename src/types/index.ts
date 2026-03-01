@@ -37,6 +37,8 @@ export type GitRepository = {
   path: string
   remoteUrl?: string
   branch?: string
+  customName?: string
+  description?: string
   lastSyncAt?: string
   lastStatusCheckedAt?: string
 }

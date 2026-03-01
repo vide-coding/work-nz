@@ -42,6 +42,8 @@ import {
   File,
   Image as ImageIcon,
   FileCode,
+  X,
+  GitPullRequest,
 } from 'lucide-vue-next'
 
 const props = defineProps<{
@@ -71,6 +73,18 @@ const showCloneDialog = ref(false)
 const isCloning = ref(false)
 const cloneUrl = ref('')
 const cloneTargetDir = ref('')
+
+// Repo edit dialog
+const showEditRepoDialog = ref(false)
+const editingRepo = ref<GitRepository | null>(null)
+const editCustomName = ref('')
+const editRepoDescription = ref('')
+const isUpdatingRepo = ref(false)
+
+// Repo README preview
+const selectedRepo = ref<GitRepository | null>(null)
+const readmeContent = ref('')
+const isLoadingReadme = ref(false)
 
 // Directory types
 const dirTypes = ref<DirectoryType[]>([])
@@ -127,6 +141,14 @@ const boundDirs = computed(() => {
     return dt && (dt.kind === currentNav.value || dt.id === currentNav.value)
   })
 })
+
+// Get display name for repo (customName + name)
+function getRepoDisplayName(repo: GitRepository): string {
+  if (repo.customName) {
+    return `${repo.customName}（${repo.name}）`
+  }
+  return repo.name
+}
 
 // Methods
 async function loadProject() {
@@ -186,6 +208,20 @@ async function loadRepos() {
   }
 }
 
+// Auto extract repo name from URL when clone URL changes
+watch(cloneUrl, async (newUrl) => {
+  if (newUrl && !cloneTargetDir.value) {
+    try {
+      const name = await gitApi.extractRepoName(newUrl)
+      if (name) {
+        cloneTargetDir.value = name
+      }
+    } catch (e) {
+      console.error('Failed to extract repo name:', e)
+    }
+  }
+})
+
 async function cloneRepo() {
   if (!cloneUrl.value.trim() || !cloneTargetDir.value.trim()) return
 
@@ -199,11 +235,82 @@ async function cloneRepo() {
     repos.value.push(repo)
     cloneUrl.value = ''
     cloneTargetDir.value = ''
+    showCloneDialog.value = false
   } catch (e: any) {
     error.value = e.message || String(e)
   } finally {
     isCloning.value = false
   }
+}
+
+// Open edit repo dialog
+function openEditRepoDialog(repo: GitRepository) {
+  editingRepo.value = repo
+  editCustomName.value = repo.customName || ''
+  editRepoDescription.value = repo.description || ''
+  showEditRepoDialog.value = true
+}
+
+// Update repo info
+async function updateRepo() {
+  if (!editingRepo.value) return
+
+  try {
+    isUpdatingRepo.value = true
+    error.value = ''
+    const updated = await gitApi.repoUpdate(
+      editingRepo.value.id,
+      editCustomName.value.trim() || undefined,
+      editRepoDescription.value.trim() || undefined
+    )
+
+    // Update in local list
+    const index = repos.value.findIndex((r) => r.id === updated.id)
+    if (index !== -1) {
+      repos.value[index] = updated
+    }
+
+    showEditRepoDialog.value = false
+    editingRepo.value = null
+  } catch (e: any) {
+    error.value = e.message || String(e)
+  } finally {
+    isUpdatingRepo.value = false
+  }
+}
+
+// Load README for selected repo
+async function loadRepoReadme(repo: GitRepository) {
+  selectedRepo.value = repo
+  readmeContent.value = ''
+  isLoadingReadme.value = true
+
+  try {
+    // Try to read README.md from repo path
+    const readmePath = repo.path + '/README.md'
+    const result = await fsApi.readText(readmePath)
+    readmeContent.value = result.content
+    previewKind.value = 'markdown'
+  } catch (e) {
+    // Try lowercase readme.md
+    try {
+      const readmePath = repo.path + '/readme.md'
+      const result = await fsApi.readText(readmePath)
+      readmeContent.value = result.content
+      previewKind.value = 'markdown'
+    } catch {
+      readmeContent.value = ''
+      previewKind.value = null
+    }
+  } finally {
+    isLoadingReadme.value = false
+  }
+}
+
+function closeReadmePreview() {
+  selectedRepo.value = null
+  readmeContent.value = ''
+  previewKind.value = null
 }
 
 async function pullRepo(repo: GitRepository) {
@@ -512,6 +619,15 @@ onMounted(async () => {
             <option value="zh-CN">中文</option>
             <option value="en-US">EN</option>
           </select>
+
+          <!-- Open in IDE -->
+          <button
+            class="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300"
+            @click="() => {}"
+          >
+            <ExternalLink class="w-4 h-4" />
+            {{ $t('workspace.openInIde') }}
+          </button>
         </div>
       </div>
     </header>
@@ -714,8 +830,14 @@ onMounted(async () => {
                     </div>
                     <div>
                       <h3 class="font-medium text-gray-900 dark:text-white">
-                        {{ repo.name }}
+                        {{ getRepoDisplayName(repo) }}
                       </h3>
+                      <p
+                        v-if="repo.description"
+                        class="text-sm text-gray-500 dark:text-gray-400 mt-1"
+                      >
+                        {{ repo.description }}
+                      </p>
                       <p class="text-sm text-gray-500 dark:text-gray-400">
                         {{ repo.path }}
                       </p>
@@ -749,10 +871,17 @@ onMounted(async () => {
                   <div class="flex items-center gap-2">
                     <button
                       class="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                      @click="loadRepoReadme(repo)"
+                      :title="$t('workspace.readme')"
+                    >
+                      <FileText class="w-4 h-4" />
+                    </button>
+                    <button
+                      class="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                       @click="pullRepo(repo)"
                       :title="$t('workspace.pull')"
                     >
-                      <GitPull class="w-4 h-4" />
+                      <GitPullRequest class="w-4 h-4" />
                     </button>
                     <button
                       class="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
@@ -760,6 +889,13 @@ onMounted(async () => {
                       :title="$t('workspace.openInIde')"
                     >
                       <ExternalLink class="w-4 h-4" />
+                    </button>
+                    <button
+                      class="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                      @click="openEditRepoDialog(repo)"
+                      :title="$t('common.edit')"
+                    >
+                      <Edit3 class="w-4 h-4" />
                     </button>
                     <button
                       class="p-2 text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
@@ -1006,6 +1142,46 @@ onMounted(async () => {
           </div>
         </div>
       </main>
+
+      <!-- README Preview Sidebar -->
+      <aside
+        v-if="selectedRepo"
+        class="w-96 border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-auto"
+      >
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <FileText class="w-5 h-5 text-gray-500" />
+              <span class="font-medium text-gray-900 dark:text-white"> README </span>
+            </div>
+            <button
+              class="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              @click="closeReadmePreview"
+            >
+              <X class="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
+          <p class="text-sm text-gray-500 mt-1">
+            {{ selectedRepo.name }}
+          </p>
+        </div>
+
+        <div class="p-4">
+          <div v-if="isLoadingReadme" class="flex items-center justify-center py-8">
+            <Loader2 class="w-6 h-6 text-indigo-600 animate-spin" />
+          </div>
+          <div v-else-if="readmeContent" class="prose dark:prose-invert max-w-none">
+            <pre
+              class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-mono bg-gray-50 dark:bg-gray-900 p-4 rounded-lg overflow-auto"
+              >{{ readmeContent }}</pre
+            >
+          </div>
+          <div v-else class="text-center py-8 text-gray-500 dark:text-gray-400">
+            <FileText class="w-12 h-12 mx-auto mb-4 opacity-50" />
+            <p>No README found</p>
+          </div>
+        </div>
+      </aside>
     </div>
 
     <!-- Create Folder Dialog -->
@@ -1040,6 +1216,72 @@ onMounted(async () => {
             :disabled="!newFolderName.trim()"
           >
             {{ $t('common.create') }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Repo Dialog -->
+    <div
+      v-if="showEditRepoDialog"
+      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      @click.self="showEditRepoDialog = false"
+    >
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md mx-4">
+        <div class="p-6">
+          <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
+            {{ $t('workspace.editRepo') }}
+          </h3>
+
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {{ $t('workspace.customName') }}
+              </label>
+              <input
+                v-model="editCustomName"
+                type="text"
+                class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                :placeholder="$t('workspace.customNamePlaceholder')"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {{ $t('workspace.description') }}
+              </label>
+              <textarea
+                v-model="editRepoDescription"
+                rows="3"
+                class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 resize-none"
+                :placeholder="$t('workspace.descriptionPlaceholder')"
+              ></textarea>
+            </div>
+
+            <div
+              v-if="error"
+              class="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
+            >
+              <p class="text-sm text-red-600 dark:text-red-400">
+                {{ error }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 flex justify-end gap-3 rounded-b-xl">
+          <button
+            class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+            @click="showEditRepoDialog = false"
+          >
+            {{ $t('common.cancel') }}
+          </button>
+          <button
+            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors disabled:opacity-50"
+            @click="updateRepo"
+            :disabled="isUpdatingRepo"
+          >
+            {{ $t('common.save') }}
           </button>
         </div>
       </div>

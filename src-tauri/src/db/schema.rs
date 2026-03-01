@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS git_repositories (
   path TEXT NOT NULL,
   remote_url TEXT,
   branch TEXT,
+  custom_name TEXT,
+  description TEXT,
   last_sync_at TEXT,
   last_status_checked_at TEXT,
   last_status_json TEXT,

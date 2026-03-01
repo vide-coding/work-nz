@@ -14,7 +14,7 @@ pub fn git_repo_list(project_id: String) -> Result<Vec<GitRepository>, String> {
 
     let mut stmt = conn
         .prepare(
-            "SELECT id, project_id, name, path, remote_url, branch, last_sync_at, last_status_checked_at
+            "SELECT id, project_id, name, path, remote_url, branch, custom_name, description, last_sync_at, last_status_checked_at
              FROM git_repositories WHERE project_id = ?1",
         )
         .map_err(|e| format!("查询失败: {}", e))?;
@@ -28,8 +28,10 @@ pub fn git_repo_list(project_id: String) -> Result<Vec<GitRepository>, String> {
                 path: row.get(3)?,
                 remote_url: row.get(4)?,
                 branch: row.get(5)?,
-                last_sync_at: row.get(6)?,
-                last_status_checked_at: row.get(7)?,
+                custom_name: row.get(6)?,
+                description: row.get(7)?,
+                last_sync_at: row.get(8)?,
+                last_status_checked_at: row.get(9)?,
             })
         })
         .map_err(|e| format!("查询失败: {}", e))?
@@ -85,6 +87,8 @@ pub fn git_repo_create(project_id: String, name: String) -> Result<GitRepository
         path: repo_path.to_string_lossy().to_string(),
         remote_url: None,
         branch: Some("main".to_string()),
+        custom_name: None,
+        description: None,
         last_sync_at: None,
         last_status_checked_at: None,
     })
@@ -111,9 +115,7 @@ pub fn git_repo_clone(project_id: String, input: GitCloneInput) -> Result<GitRep
 
     // 克隆仓库 - 使用简化方式
     let mut callbacks = git2::RemoteCallbacks::new();
-    callbacks.credentials(|_url, _username_from_url, _allowed_types| {
-        git2::Cred::default()
-    });
+    callbacks.credentials(|_url, _username_from_url, _allowed_types| git2::Cred::default());
 
     let mut fetch_opts = git2::FetchOptions::new();
     fetch_opts.remote_callbacks(callbacks);
@@ -173,9 +175,87 @@ pub fn git_repo_clone(project_id: String, input: GitCloneInput) -> Result<GitRep
         path: repo_path.to_string_lossy().to_string(),
         remote_url,
         branch: branch_name,
+        custom_name: None,
+        description: None,
         last_sync_at: Some(now),
         last_status_checked_at: None,
     })
+}
+
+/// 更新 Git 仓库信息（自定义名称和描述）
+#[tauri::command]
+pub fn git_repo_update(
+    repo_id: String,
+    custom_name: Option<String>,
+    description: Option<String>,
+) -> Result<GitRepository, String> {
+    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
+    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
+
+    let now = Utc::now().to_rfc3339();
+
+    conn.execute(
+        "UPDATE git_repositories SET custom_name = ?1, description = ?2, updated_at = ?3 WHERE id = ?4",
+        params![custom_name, description, now, repo_id],
+    )
+    .map_err(|e| format!("更新仓库失败: {}", e))?;
+
+    // 查询更新后的仓库信息
+    let mut stmt = conn
+        .prepare(
+            "SELECT id, project_id, name, path, remote_url, branch, custom_name, description, last_sync_at, last_status_checked_at
+             FROM git_repositories WHERE id = ?1",
+        )
+        .map_err(|e| format!("查询失败: {}", e))?;
+
+    let repo = stmt
+        .query_row(params![repo_id], |row| {
+            Ok(GitRepository {
+                id: row.get(0)?,
+                project_id: row.get(1)?,
+                name: row.get(2)?,
+                path: row.get(3)?,
+                remote_url: row.get(4)?,
+                branch: row.get(5)?,
+                custom_name: row.get(6)?,
+                description: row.get(7)?,
+                last_sync_at: row.get(8)?,
+                last_status_checked_at: row.get(9)?,
+            })
+        })
+        .map_err(|e| format!("读取仓库失败: {}", e))?;
+
+    Ok(repo)
+}
+
+/// 从 URL 提取仓库名称
+#[tauri::command]
+pub fn git_extract_repo_name(remote_url: String) -> Result<String, String> {
+    // 处理各种 Git URL 格式
+    // 1. https://github.com/user/repo.git
+    // 2. git@github.com:user/repo.git
+    // 3. /path/to/repo
+
+    let url = remote_url.trim();
+
+    // 移除 .git 后缀
+    let name = if url.ends_with(".git") {
+        &url[..url.len() - 4]
+    } else {
+        url
+    };
+
+    // 从 URL 路径中提取最后一部分
+    let repo_name = if name.contains('/') {
+        name.rsplit('/').next().unwrap_or(name)
+    } else if name.contains(':') {
+        // git@github.com:user/repo 格式
+        name.rsplit(':').next().unwrap_or(name)
+    } else {
+        name
+    };
+
+    Ok(repo_name.to_string())
 }
 
 /// 拉取仓库
@@ -201,9 +281,7 @@ pub fn git_repo_pull(repo_id: String) -> Result<GitPullResult, String> {
 
     // 尝试连接并拉取
     let mut callbacks = git2::RemoteCallbacks::new();
-    callbacks.credentials(|_url, _username_from_url, _allowed_types| {
-        git2::Cred::default()
-    });
+    callbacks.credentials(|_url, _username_from_url, _allowed_types| git2::Cred::default());
 
     remote
         .fetch(
@@ -246,7 +324,10 @@ pub fn git_repo_status_get(repo_id: String) -> Result<GitRepoStatus, String> {
     let repo = Repository::open(&path).map_err(|e| format!("打开仓库失败: {}", e))?;
 
     // 获取分支
-    let branch = repo.head().ok().and_then(|h| h.shorthand().map(String::from));
+    let branch = repo
+        .head()
+        .ok()
+        .and_then(|h| h.shorthand().map(String::from));
 
     // 检查状态
     let statuses = repo
@@ -294,7 +375,10 @@ pub fn git_repo_status_check(repo_id: String) -> Result<GitRepoStatus, String> {
     let repo = Repository::open(&path).map_err(|e| format!("打开仓库失败: {}", e))?;
 
     // 获取分支
-    let branch = repo.head().ok().and_then(|h| h.shorthand().map(String::from));
+    let branch = repo
+        .head()
+        .ok()
+        .and_then(|h| h.shorthand().map(String::from));
 
     // 检查状态
     let statuses = repo
@@ -322,7 +406,8 @@ pub fn git_repo_status_check(repo_id: String) -> Result<GitRepoStatus, String> {
         "ahead": ahead,
         "behind": behind,
         "last_checked_at": now
-    }).to_string();
+    })
+    .to_string();
 
     conn.execute(
         "UPDATE git_repositories SET last_status_checked_at = ?1, last_status_json = ?2 WHERE id = ?3",

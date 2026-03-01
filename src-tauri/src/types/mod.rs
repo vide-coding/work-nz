@@ -89,6 +89,10 @@ pub struct GitRepository {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub branch: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub custom_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub last_sync_at: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub last_status_checked_at: Option<String>,
@@ -249,7 +253,8 @@ mod tests {
         let ide = IdeConfig {
             kind: SupportedIdeKind::Vscode,
             name: "VS Code".to_string(),
-            exe_path: "C:\\Users\\Test\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe".to_string(),
+            exe_path: "C:\\Users\\Test\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+                .to_string(),
             args: Some(vec!["--reuse-window".to_string()]),
         };
 
