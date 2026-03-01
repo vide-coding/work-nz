@@ -37,6 +37,14 @@ export const workspaceApi = {
   async updateSettings(patch: Partial<WorkspaceSettings>): Promise<WorkspaceSettings> {
     return invoke('workspace_settings_update', { patch })
   },
+
+  async updateAlias(path: string, alias?: string): Promise<WorkspaceInfo> {
+    return invoke('workspace_update_alias', { path, alias })
+  },
+
+  async removeFromRecent(path: string): Promise<void> {
+    return invoke('workspace_remove_from_recent', { path })
+  },
 }
 
 // Project API

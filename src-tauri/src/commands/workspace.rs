@@ -44,10 +44,19 @@ fn save_recent_workspaces(workspaces: &[WorkspaceInfo]) {
     }
 }
 
-fn add_to_recent_workspaces(path: String, last_opened_at: String) {
+fn add_to_recent_workspaces(path: String, last_opened_at: String, alias: Option<String>) {
     let mut workspaces = load_recent_workspaces();
 
+    // 如果存在现有工作区，保留其别名
+    let existing_alias = workspaces
+        .iter()
+        .find(|w| w.path == path)
+        .and_then(|w| w.alias.clone());
+
     workspaces.retain(|w| w.path != path);
+
+    // 使用传入的别名，如果没有则保留现有的
+    let final_alias = alias.or(existing_alias);
 
     let new_workspace = WorkspaceInfo {
         path: path.clone(),
@@ -57,6 +66,7 @@ fn add_to_recent_workspaces(path: String, last_opened_at: String) {
             .to_string(),
         last_opened_at,
         settings: None,
+        alias: final_alias,
     };
 
     workspaces.insert(0, new_workspace);
@@ -99,7 +109,7 @@ pub fn workspace_init_or_open(path: String) -> Result<WorkspaceInfo, String> {
     let now = Utc::now().to_rfc3339();
 
     // 保存到全局配置
-    add_to_recent_workspaces(path.clone(), now.clone());
+    add_to_recent_workspaces(path.clone(), now.clone(), None);
 
     // 首先：获取数据库连接并执行数据库操作
     let settings = {
@@ -129,6 +139,7 @@ pub fn workspace_init_or_open(path: String) -> Result<WorkspaceInfo, String> {
             .to_string(),
         last_opened_at: now,
         settings,
+        alias: None,
     })
 }
 
@@ -213,4 +224,33 @@ pub fn workspace_settings_update(patch: serde_json::Value) -> Result<WorkspaceSe
 /// 获取当前工作区路径
 pub fn get_workspace_path() -> Option<String> {
     WORKSPACE_PATH.lock().unwrap().clone()
+}
+
+/// 更新工作区别名
+#[tauri::command]
+pub fn workspace_update_alias(path: String, alias: Option<String>) -> Result<WorkspaceInfo, String> {
+    let mut workspaces = load_recent_workspaces();
+
+    // 查找并更新指定工作区的别名
+    let updated_workspace = {
+        let workspace = workspaces.iter_mut().find(|w| w.path == path)
+            .ok_or_else(|| "工作区不存在".to_string())?;
+        workspace.alias = alias;
+        workspace.clone()
+    };
+
+    save_recent_workspaces(&workspaces);
+    Ok(updated_workspace)
+}
+
+/// 从最近工作区列表中移除
+#[tauri::command]
+pub fn workspace_remove_from_recent(path: String) -> Result<(), String> {
+    let mut workspaces = load_recent_workspaces();
+
+    // 移除指定路径的工作区
+    workspaces.retain(|w| w.path != path);
+
+    save_recent_workspaces(&workspaces);
+    Ok(())
 }

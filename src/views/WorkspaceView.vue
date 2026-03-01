@@ -19,6 +19,12 @@ const settings = ref<WorkspaceSettings>({
   themeMode: 'system',
 })
 
+// Menu state
+const activeMenuPath = ref<string | null>(null)
+const editingWorkspace = ref<WorkspaceInfo | null>(null)
+const editAlias = ref('')
+const showAliasDialog = ref(false)
+
 // Computed
 const canEnter = computed(() => currentWorkspace.value !== null)
 
@@ -55,6 +61,8 @@ async function selectFolder() {
 
     if (selected) {
       currentWorkspace.value = await workspaceApi.initOrOpen(selected as string)
+      // 刷新最近工作区列表
+      await loadRecentWorkspaces()
     }
   } catch (error: any) {
     error.value = error.message || String(error)
@@ -63,32 +71,15 @@ async function selectFolder() {
   }
 }
 
-async function createWorkspace() {
-  try {
-    loading.value = true
-    error.value = ''
-    const selected = await open({
-      directory: true,
-      multiple: false,
-      title:
-        locale.value === 'zh-CN' ? '选择空目录创建工作区' : 'Select Empty Directory for Workspace',
-    })
-
-    if (selected) {
-      currentWorkspace.value = await workspaceApi.initOrOpen(selected as string)
-    }
-  } catch (error: any) {
-    error.value = error.message || String(error)
-  } finally {
-    loading.value = false
-  }
-}
+// 合并后的按钮功能（原 createWorkspace 功能已合并到 selectFolder）
 
 async function openRecentWorkspace(workspace: WorkspaceInfo) {
   try {
     loading.value = true
     error.value = ''
     currentWorkspace.value = await workspaceApi.initOrOpen(workspace.path)
+    // 刷新列表以获取最新状态
+    await loadRecentWorkspaces()
   } catch (error: any) {
     error.value = error.message || String(error)
   } finally {
@@ -139,11 +130,77 @@ function formatDate(dateStr: string): string {
   })
 }
 
+// Menu and alias management
+function toggleMenu(path: string, event: Event) {
+  event.stopPropagation()
+  activeMenuPath.value = activeMenuPath.value === path ? null : path
+}
+
+function closeMenu() {
+  activeMenuPath.value = null
+}
+
+function startRename(workspace: WorkspaceInfo, event: Event) {
+  event.stopPropagation()
+  editingWorkspace.value = workspace
+  editAlias.value = workspace.alias || ''
+  showAliasDialog.value = true
+  closeMenu()
+}
+
+async function saveAlias() {
+  if (!editingWorkspace.value) return
+
+  try {
+    const alias = editAlias.value.trim() || undefined
+    await workspaceApi.updateAlias(editingWorkspace.value.path, alias)
+    // 刷新列表
+    await loadRecentWorkspaces()
+    // 如果当前选中的工作区被修改，也更新它
+    if (currentWorkspace.value?.path === editingWorkspace.value?.path) {
+      currentWorkspace.value = { ...currentWorkspace.value, alias }
+    }
+  } catch (err: any) {
+    error.value = err.message || String(err)
+  } finally {
+    showAliasDialog.value = false
+    editingWorkspace.value = null
+    editAlias.value = ''
+  }
+}
+
+function cancelAlias() {
+  showAliasDialog.value = false
+  editingWorkspace.value = null
+  editAlias.value = ''
+}
+
+async function deleteWorkspace(workspace: WorkspaceInfo, event: Event) {
+  event.stopPropagation()
+
+  try {
+    await workspaceApi.removeFromRecent(workspace.path)
+    // 刷新列表
+    await loadRecentWorkspaces()
+    // 如果删除的是当前选中的工作区，清空当前选择
+    if (currentWorkspace.value?.path === workspace.path) {
+      currentWorkspace.value = null
+    }
+  } catch (err: any) {
+    error.value = err.message || String(err)
+  } finally {
+    closeMenu()
+  }
+}
+
 // Lifecycle
 onMounted(async () => {
   await loadRecentWorkspaces()
   await loadSettings()
   applyTheme(settings.value.themeMode)
+
+  // Close menu when clicking outside
+  document.addEventListener('click', closeMenu)
 })
 </script>
 
@@ -180,22 +237,76 @@ onMounted(async () => {
             <div
               v-for="ws in recentWorkspaces"
               :key="ws.path"
-              class="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer transition-colors"
+              class="relative flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors"
+              :class="[
+                currentWorkspace?.path === ws.path
+                  ? 'bg-indigo-100 dark:bg-indigo-900/40 border-2 border-indigo-500 dark:border-indigo-400'
+                  : 'bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 border-2 border-transparent',
+              ]"
               @click="openRecentWorkspace(ws)"
             >
-              <div class="min-w-0">
-                <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
-                  {{ ws.path }}
+              <div class="min-w-0 flex-1">
+                <p
+                  class="text-sm font-medium truncate"
+                  :class="
+                    currentWorkspace?.path === ws.path
+                      ? 'text-indigo-900 dark:text-indigo-200'
+                      : 'text-gray-900 dark:text-white'
+                  "
+                >
+                  {{ ws.alias || ws.path }}
                 </p>
                 <p class="text-xs text-gray-500 dark:text-gray-400">
-                  {{ formatDate(ws.lastOpenedAt) }}
+                  {{ ws.alias ? ws.path : formatDate(ws.lastOpenedAt) }}
                 </p>
               </div>
-              <span
-                class="px-3 py-1 text-xs bg-white dark:bg-gray-600 border border-gray-200 dark:border-gray-500 rounded text-gray-600 dark:text-gray-300"
-              >
-                {{ $t('workspace.open') }}
-              </span>
+
+              <!-- Menu Button -->
+              <div class="relative ml-2">
+                <button
+                  class="p-1.5 rounded-md transition-colors"
+                  :class="
+                    currentWorkspace?.path === ws.path
+                      ? 'hover:bg-indigo-200 dark:hover:bg-indigo-800'
+                      : 'hover:bg-gray-200 dark:hover:bg-gray-600'
+                  "
+                  @click="toggleMenu(ws.path, $event)"
+                >
+                  <svg
+                    class="w-4 h-4"
+                    :class="
+                      currentWorkspace?.path === ws.path
+                        ? 'text-indigo-700 dark:text-indigo-300'
+                        : 'text-gray-600 dark:text-gray-400'
+                    "
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"
+                    />
+                  </svg>
+                </button>
+
+                <!-- Dropdown Menu -->
+                <div
+                  v-if="activeMenuPath === ws.path"
+                  class="absolute right-0 mt-1 w-32 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-600 z-10"
+                >
+                  <button
+                    class="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 first:rounded-t-md"
+                    @click="startRename(ws, $event)"
+                  >
+                    {{ $t('workspace.rename') }}
+                  </button>
+                  <button
+                    class="w-full px-3 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 last:rounded-b-md"
+                    @click="deleteWorkspace(ws, $event)"
+                  >
+                    {{ $t('workspace.delete') }}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -203,39 +314,12 @@ onMounted(async () => {
         <!-- Select/Create Workspace -->
         <div class="flex gap-3 mb-6">
           <button
-            class="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-colors font-medium"
+            class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-colors font-medium"
             @click="selectFolder"
             :disabled="loading"
           >
-            {{ $t('workspace.selectFolder') }}
+            {{ $t('workspace.selectOrCreate') }}
           </button>
-          <button
-            class="flex-1 flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md transition-colors font-medium"
-            @click="createWorkspace"
-            :disabled="loading"
-          >
-            {{ $t('workspace.createNew') }}
-          </button>
-        </div>
-
-        <!-- Selected Workspace Info -->
-        <div
-          v-if="currentWorkspace"
-          class="mb-6 p-3 bg-green-50 dark:bg-green-900/20 rounded-md flex items-center gap-2"
-        >
-          <div class="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-            <svg class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="3"
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          </div>
-          <p class="text-sm text-green-800 dark:text-green-200">
-            {{ $t('workspace.validWorkspace') }}
-          </p>
         </div>
 
         <!-- Error -->
@@ -254,6 +338,40 @@ onMounted(async () => {
         >
           {{ $t('workspace.enter') }}
         </button>
+      </div>
+
+      <!-- Alias Dialog -->
+      <div
+        v-if="showAliasDialog"
+        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+        @click="cancelAlias"
+      >
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-96" @click.stop>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            {{ $t('workspace.setAlias') }}
+          </h3>
+          <input
+            v-model="editAlias"
+            type="text"
+            :placeholder="$t('workspace.aliasPlaceholder')"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            @keyup.enter="saveAlias"
+          />
+          <div class="flex justify-end gap-2 mt-4">
+            <button
+              class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+              @click="cancelAlias"
+            >
+              {{ $t('common.cancel') }}
+            </button>
+            <button
+              class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-colors"
+              @click="saveAlias"
+            >
+              {{ $t('common.save') }}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>

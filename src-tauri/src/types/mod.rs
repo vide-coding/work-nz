@@ -63,6 +63,7 @@ pub struct WorkspaceInfo {
     pub db_path: String,
     pub last_opened_at: String,
     pub settings: Option<WorkspaceSettings>,
+    pub alias: Option<String>,
 }
 
 /// 项目显示配置

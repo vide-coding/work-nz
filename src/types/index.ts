@@ -21,6 +21,7 @@ export type WorkspaceInfo = {
   dbPath: string
   lastOpenedAt: string
   settings?: WorkspaceSettings
+  alias?: string
 }
 
 export type ProjectDisplay = {
