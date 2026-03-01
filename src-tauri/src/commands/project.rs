@@ -59,21 +59,41 @@ pub fn projects_list() -> Result<Vec<Project>, String> {
 /// 创建项目
 #[tauri::command]
 pub fn project_create(input: ProjectCreateInput) -> Result<Project, String> {
-    let workspace_path = get_workspace_path().ok_or("未打开工作区")?;
+    // 首先检查工作区是否打开
+    let workspace_path = match get_workspace_path() {
+        Some(p) => p,
+        None => return Err("未打开工作区，请先在工作区页面选择或创建一个工作区".to_string()),
+    };
 
     let id = uuid::Uuid::new_v4().to_string();
     let now = Utc::now().to_rfc3339();
 
+    // 验证项目名称
+    if input.name.trim().is_empty() {
+        return Err("项目名称不能为空".to_string());
+    }
+
     // 创建项目目录
     let project_path = Path::new(&workspace_path).join(&input.name);
+    
+    // 检查目录是否已存在
+    if project_path.exists() {
+        return Err(format!("项目目录已存在: {}", project_path.display()));
+    }
+    
+    // 创建目录
     std::fs::create_dir_all(&project_path)
-        .map_err(|e| format!("创建项目目录失败: {}", e))?;
+        .map_err(|e| format!("创建项目目录失败: {} - {}", project_path.display(), e))?;
 
-    let display_json = input.display.as_ref().map(|d| serde_json::to_string(d).ok()).flatten();
+    // 序列化 display
+    let display_json = input.display.as_ref()
+        .and_then(|d| serde_json::to_string(d).ok());
 
+    // 获取数据库连接
     let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
     let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
 
+    // 插入项目记录
     conn.execute(
         "INSERT INTO projects (id, name, description, project_path, display_json, created_at, updated_at)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
@@ -87,7 +107,7 @@ pub fn project_create(input: ProjectCreateInput) -> Result<Project, String> {
             now
         ],
     )
-    .map_err(|e| format!("创建项目失败: {}", e))?;
+    .map_err(|e| format!("创建项目记录失败: {}", e))?;
 
     Ok(Project {
         id,
@@ -152,8 +172,10 @@ pub fn project_update(id: String, patch: ProjectUpdateInput) -> Result<Project, 
         project.ide_override = Some(ide_override);
     }
 
-    let display_json = project.display.as_ref().map(|d| serde_json::to_string(d).ok()).flatten();
-    let ide_override_json = project.ide_override.as_ref().map(|i| serde_json::to_string(i).ok()).flatten();
+    let display_json = project.display.as_ref()
+        .and_then(|d| serde_json::to_string(d).ok());
+    let ide_override_json = project.ide_override.as_ref()
+        .and_then(|i| serde_json::to_string(i).ok());
 
     conn.execute(
         "UPDATE projects SET name = ?1, description = ?2, display_json = ?3, ide_override_json = ?4, updated_at = ?5 WHERE id = ?6",

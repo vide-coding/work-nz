@@ -101,20 +101,25 @@ pub fn workspace_init_or_open(path: String) -> Result<WorkspaceInfo, String> {
     // 保存到全局配置
     add_to_recent_workspaces(path.clone(), now.clone());
 
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
+    // 首先：获取数据库连接并执行数据库操作
+    let settings = {
+        let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
+        let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
 
-    conn.execute(
-        "INSERT OR REPLACE INTO workspace_meta (key, value, updated_at) VALUES ('last_opened', ?1, ?2)",
-        params![&path, &now],
-    ).map_err(|e| format!("更新最近工作区失败: {}", e))?;
+        conn.execute(
+            "INSERT OR REPLACE INTO workspace_meta (key, value, updated_at) VALUES ('last_opened', ?1, ?2)",
+            params![&path, &now],
+        ).map_err(|e| format!("更新最近工作区失败: {}", e))?;
 
-    // 保存当前工作区路径
-    let mut wp = WORKSPACE_PATH.lock().unwrap();
-    *wp = Some(path.clone());
+        // 获取设置
+        get_workspace_settings_internal(conn)
+    }; // db_guard 在这里被释放
 
-    // 获取或创建设置
-    let settings = get_workspace_settings_internal(conn);
+    // 其次：在数据库锁释放后，获取工作区路径锁
+    {
+        let mut wp = WORKSPACE_PATH.lock().unwrap();
+        *wp = Some(path.clone());
+    } // WORKSPACE_PATH 锁在这里被释放
 
     Ok(WorkspaceInfo {
         path: path.clone(),
@@ -137,10 +142,18 @@ pub fn workspace_list_recent() -> Result<Vec<WorkspaceInfo>, String> {
 /// 获取工作区设置
 #[tauri::command]
 pub fn workspace_settings_get() -> Result<WorkspaceSettings, String> {
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
+    // 如果数据库未初始化，返回默认设置
+    let db_guard = match get_db() {
+        Ok(guard) => guard,
+        Err(_) => return Ok(WorkspaceSettings::default()),
+    };
 
-    get_workspace_settings_internal(conn).ok_or_else(|| "未找到工作区设置".to_string())
+    match db_guard.as_ref() {
+        Some(conn) => {
+            Ok(get_workspace_settings_internal(conn).unwrap_or_else(WorkspaceSettings::default))
+        }
+        None => Ok(WorkspaceSettings::default()),
+    }
 }
 
 fn get_workspace_settings_internal(conn: &rusqlite::Connection) -> Option<WorkspaceSettings> {
