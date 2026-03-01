@@ -1,8 +1,8 @@
-import { defineConfig } from 'vite';
-import vue from '@vitejs/plugin-vue';
-import AutoImport from 'unplugin-auto-import/vite';
-import Components from 'unplugin-vue-components/vite';
-import VueDevTools from 'vite-plugin-vue-devtools';
+import { defineConfig } from "vite";
+import vue from "@vitejs/plugin-vue";
+import AutoImport from "unplugin-auto-import/vite";
+import Components from "unplugin-vue-components/vite";
+import VueDevTools from "vite-plugin-vue-devtools";
 
 // @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST;
@@ -13,11 +13,11 @@ export default defineConfig(async () => ({
     vue({}),
     VueDevTools(),
     AutoImport({
-      imports: ['vue', 'vue-router'],
-      dts: 'src/auto-imports.d.ts',
+      imports: ["vue", "vue-router"],
+      dts: "src/auto-imports.d.ts",
     }),
     Components({
-      dts: 'src/components.d.ts',
+      dts: "src/components.d.ts",
     }),
   ],
 
@@ -32,14 +32,14 @@ export default defineConfig(async () => ({
     host: host || false,
     hmr: host
       ? {
-          protocol: 'ws',
+          protocol: "ws",
           host,
           port: 1421,
         }
       : undefined,
     watch: {
       // 3. tell Vite to ignore watching `src-tauri`
-      ignored: ['**/src-tauri/**'],
+      ignored: ["**/src-tauri/**"],
     },
   },
 }));

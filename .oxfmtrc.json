@@ -3,7 +3,7 @@
   "printWidth": 100,
   "tabWidth": 2,
   "useTabs": false,
-  "semi": true,
+  "semi": false,
   "singleQuote": true,
   "jsxSingleQuote": false,
   "trailingComma": "es5",
@@ -18,5 +18,5 @@
   "htmlWhitespaceSensitivity": "css",
   "vueIndentScriptAndStyle": false,
   "embeddedLanguageFormatting": "auto",
-  "ignorePatterns": ["dist/", "node_modules/", "src-tauri/target/", "*.min.js"]
+  "ignorePatterns": ["dist/", "node_modules/", "src-tauri/target/", "*.min.js", ".vscode/", ".claude/", ".idea/", ".git/"]
 }

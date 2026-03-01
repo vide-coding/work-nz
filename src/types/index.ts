@@ -1,7 +1,11 @@
 // Theme and IDE types
-export type ThemeMode = 'light' | 'dark' | 'system' | 'custom';
+export type ThemeMode = "light" | "dark" | "system" | "custom";
 
-export type SupportedIdeKind = 'vscode' | 'visual_studio' | 'jetbrains' | 'custom';
+export type SupportedIdeKind =
+  | "vscode"
+  | "visual_studio"
+  | "jetbrains"
+  | "custom";
 
 export type IdeConfig = {
   kind: SupportedIdeKind;
@@ -24,7 +28,7 @@ export type WorkspaceInfo = {
 };
 
 export type ProjectDisplay = {
-  themeMode?: Exclude<ThemeMode, 'system'>;
+  themeMode?: Exclude<ThemeMode, "system">;
   themeColor?: string;
 };
 
@@ -40,7 +44,7 @@ export type GitRepository = {
   lastStatusCheckedAt?: string;
 };
 
-export type NetworkState = 'online' | 'offline' | 'unknown';
+export type NetworkState = "online" | "offline" | "unknown";
 
 export type GitRepoStatus = {
   repoId: string;
@@ -66,7 +70,7 @@ export type Project = {
 export type FileNode = {
   path: string;
   name: string;
-  kind: 'file' | 'dir';
+  kind: "file" | "dir";
   children?: FileNode[];
 };
 
@@ -83,7 +87,12 @@ export type GitPullResult = {
 };
 
 // Directory types
-export type DirectoryTypeKind = 'code' | 'docs' | 'ui_design' | 'project_planning' | 'custom';
+export type DirectoryTypeKind =
+  | "code"
+  | "docs"
+  | "ui_design"
+  | "project_planning"
+  | "custom";
 
 export type DirectoryType = {
   id: string;
@@ -104,7 +113,7 @@ export type ProjectDirectory = {
   updatedAt: string;
 };
 
-export type PreviewKind = 'image' | 'markdown' | 'text';
+export type PreviewKind = "image" | "markdown" | "text";
 
 // API input types
 export type ProjectCreateInput = {
@@ -114,7 +123,7 @@ export type ProjectCreateInput = {
 };
 
 export type ProjectUpdateInput = Partial<
-  Pick<Project, 'name' | 'description' | 'display' | 'ideOverride'>
+  Pick<Project, "name" | "description" | "display" | "ideOverride">
 >;
 
 export type DirTypeCreateInput = {
@@ -123,7 +132,9 @@ export type DirTypeCreateInput = {
   sortOrder?: number;
 };
 
-export type DirTypeUpdateInput = Partial<Pick<DirectoryType, 'name' | 'category' | 'sortOrder'>>;
+export type DirTypeUpdateInput = Partial<
+  Pick<DirectoryType, "name" | "category" | "sortOrder">
+>;
 
 export type ProjectDirCreateInput = {
   dirTypeId: string;
