@@ -1,109 +1,98 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
-import { useRouter } from "vue-router";
-import { open } from "@tauri-apps/plugin-dialog";
-import { useLocale } from "../locales/useLocale";
-import { workspaceApi } from "../composables/useApi";
-import type { WorkspaceInfo, WorkspaceSettings } from "../types";
-import SettingsBar from "../components/SettingsBar.vue";
+import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { open } from '@tauri-apps/plugin-dialog'
+import { useLocale } from '../locales/useLocale'
+import { workspaceApi } from '../composables/useApi'
+import type { WorkspaceInfo, WorkspaceSettings } from '../types'
+import SettingsBar from '../components/SettingsBar.vue'
 
-const router = useRouter();
-const { locale } = useLocale();
+const router = useRouter()
+const { locale } = useLocale()
 
 // State
-const recentWorkspaces = ref<WorkspaceInfo[]>([]);
-const currentWorkspace = ref<WorkspaceInfo | null>(null);
-const loading = ref(false);
-const error = ref("");
+const recentWorkspaces = ref<WorkspaceInfo[]>([])
+const currentWorkspace = ref<WorkspaceInfo | null>(null)
+const loading = ref(false)
+const error = ref('')
 const settings = ref<WorkspaceSettings>({
-  themeMode: "system",
-});
+  themeMode: 'system',
+})
 
 // Computed
-const canEnter = computed(() => currentWorkspace.value !== null);
+const canEnter = computed(() => currentWorkspace.value !== null)
 
 // Methods
 async function loadRecentWorkspaces() {
   try {
-    recentWorkspaces.value = await workspaceApi.listRecent();
+    recentWorkspaces.value = await workspaceApi.listRecent()
   } catch (error) {
-    console.error("Failed to load recent workspaces:", error);
+    console.error('Failed to load recent workspaces:', error)
   }
 }
 
 async function loadSettings() {
   try {
-    settings.value = await workspaceApi.getSettings();
+    settings.value = await workspaceApi.getSettings()
   } catch (error) {
-    console.error("Failed to load settings:", error);
+    console.error('Failed to load settings:', error)
   }
 }
 
-async function onUpdateTheme(
-  themeMode: "light" | "dark" | "system" | "custom",
-) {
-  await updateTheme(themeMode);
+async function onUpdateTheme(themeMode: 'light' | 'dark' | 'system' | 'custom') {
+  await updateTheme(themeMode)
 }
 
 async function selectFolder() {
   try {
-    loading.value = true;
-    error.value = "";
+    loading.value = true
+    error.value = ''
     const selected = await open({
       directory: true,
       multiple: false,
-      title:
-        locale.value === "zh-CN"
-          ? "选择工作区文件夹"
-          : "Select Workspace Folder",
-    });
+      title: locale.value === 'zh-CN' ? '选择工作区文件夹' : 'Select Workspace Folder',
+    })
 
     if (selected) {
-      currentWorkspace.value = await workspaceApi.initOrOpen(
-        selected as string,
-      );
+      currentWorkspace.value = await workspaceApi.initOrOpen(selected as string)
     }
   } catch (error: any) {
-    error.value = error.message || String(error);
+    error.value = error.message || String(error)
   } finally {
-    loading.value = false;
+    loading.value = false
   }
 }
 
 async function createWorkspace() {
   try {
-    loading.value = true;
-    error.value = "";
+    loading.value = true
+    error.value = ''
     const selected = await open({
       directory: true,
       multiple: false,
       title:
-        locale.value === "zh-CN"
-          ? "选择空目录创建工作区"
-          : "Select Empty Directory for Workspace",
-    });
+        locale.value === 'zh-CN' ? '选择空目录创建工作区' : 'Select Empty Directory for Workspace',
+    })
 
     if (selected) {
-      currentWorkspace.value = await workspaceApi.initOrOpen(
-        selected as string,
-      );
+      currentWorkspace.value = await workspaceApi.initOrOpen(selected as string)
     }
   } catch (error: any) {
-    error.value = error.message || String(error);
+    error.value = error.message || String(error)
   } finally {
-    loading.value = false;
+    loading.value = false
   }
 }
 
 async function openRecentWorkspace(workspace: WorkspaceInfo) {
   try {
-    loading.value = true;
-    error.value = "";
-    currentWorkspace.value = await workspaceApi.initOrOpen(workspace.path);
+    loading.value = true
+    error.value = ''
+    currentWorkspace.value = await workspaceApi.initOrOpen(workspace.path)
   } catch (error: any) {
-    error.value = error.message || String(error);
+    error.value = error.message || String(error)
   } finally {
-    loading.value = false;
+    loading.value = false
   }
 }
 
@@ -111,51 +100,51 @@ async function updateTheme(themeMode: string) {
   try {
     settings.value = await workspaceApi.updateSettings({
       themeMode: themeMode as any,
-    });
-    applyTheme(settings.value.themeMode);
+    })
+    applyTheme(settings.value.themeMode)
   } catch (error) {
-    console.error("Failed to update theme:", error);
+    console.error('Failed to update theme:', error)
   }
 }
 
 function applyTheme(themeMode: string) {
-  const root = document.documentElement;
-  if (themeMode === "dark") {
-    root.classList.add("dark");
-  } else if (themeMode === "light") {
-    root.classList.remove("dark");
-  } else if (themeMode === "system") {
-    if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      root.classList.add("dark");
+  const root = document.documentElement
+  if (themeMode === 'dark') {
+    root.classList.add('dark')
+  } else if (themeMode === 'light') {
+    root.classList.remove('dark')
+  } else if (themeMode === 'system') {
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      root.classList.add('dark')
     } else {
-      root.classList.remove("dark");
+      root.classList.remove('dark')
     }
   }
 }
 
 async function enter() {
   if (currentWorkspace.value) {
-    router.push("/projects");
+    router.push('/projects')
   }
 }
 
 function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
+  const date = new Date(dateStr)
   return date.toLocaleDateString(locale.value, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
 // Lifecycle
 onMounted(async () => {
-  await loadRecentWorkspaces();
-  await loadSettings();
-  applyTheme(settings.value.themeMode);
-});
+  await loadRecentWorkspaces()
+  await loadSettings()
+  applyTheme(settings.value.themeMode)
+})
 </script>
 
 <template>
@@ -173,10 +162,10 @@ onMounted(async () => {
       <!-- Header -->
       <div class="text-center mb-6">
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          {{ $t("app.title") }}
+          {{ $t('app.title') }}
         </h1>
         <p class="text-gray-500 dark:text-gray-400 text-sm">
-          {{ $t("workspace.description") }}
+          {{ $t('workspace.description') }}
         </p>
       </div>
 
@@ -184,10 +173,8 @@ onMounted(async () => {
       <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8">
         <!-- Recent Workspaces -->
         <div v-if="recentWorkspaces.length > 0" class="mb-6">
-          <h2
-            class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3"
-          >
-            {{ $t("workspace.recentWorkspaces") }}
+          <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+            {{ $t('workspace.recentWorkspaces') }}
           </h2>
           <div class="space-y-2">
             <div
@@ -197,9 +184,7 @@ onMounted(async () => {
               @click="openRecentWorkspace(ws)"
             >
               <div class="min-w-0">
-                <p
-                  class="text-sm font-medium text-gray-900 dark:text-white truncate"
-                >
+                <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
                   {{ ws.path }}
                 </p>
                 <p class="text-xs text-gray-500 dark:text-gray-400">
@@ -209,7 +194,7 @@ onMounted(async () => {
               <span
                 class="px-3 py-1 text-xs bg-white dark:bg-gray-600 border border-gray-200 dark:border-gray-500 rounded text-gray-600 dark:text-gray-300"
               >
-                {{ $t("workspace.open") }}
+                {{ $t('workspace.open') }}
               </span>
             </div>
           </div>
@@ -222,14 +207,14 @@ onMounted(async () => {
             @click="selectFolder"
             :disabled="loading"
           >
-            {{ $t("workspace.selectFolder") }}
+            {{ $t('workspace.selectFolder') }}
           </button>
           <button
             class="flex-1 flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md transition-colors font-medium"
             @click="createWorkspace"
             :disabled="loading"
           >
-            {{ $t("workspace.createNew") }}
+            {{ $t('workspace.createNew') }}
           </button>
         </div>
 
@@ -238,15 +223,8 @@ onMounted(async () => {
           v-if="currentWorkspace"
           class="mb-6 p-3 bg-green-50 dark:bg-green-900/20 rounded-md flex items-center gap-2"
         >
-          <div
-            class="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center"
-          >
-            <svg
-              class="w-3 h-3 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
+          <div class="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+            <svg class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 stroke-linecap="round"
                 stroke-linejoin="round"
@@ -256,7 +234,7 @@ onMounted(async () => {
             </svg>
           </div>
           <p class="text-sm text-green-800 dark:text-green-200">
-            {{ $t("workspace.validWorkspace") }}
+            {{ $t('workspace.validWorkspace') }}
           </p>
         </div>
 
@@ -274,7 +252,7 @@ onMounted(async () => {
           @click="enter"
           :disabled="!canEnter || loading"
         >
-          {{ $t("workspace.enter") }}
+          {{ $t('workspace.enter') }}
         </button>
       </div>
     </div>

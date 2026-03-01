@@ -1,54 +1,54 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { useLocale } from "../locales/useLocale";
-import { Palette, Globe } from "lucide-vue-next";
+import { computed } from 'vue'
+import { useLocale } from '../locales/useLocale'
+import { Palette, Globe } from 'lucide-vue-next'
 
 const props = defineProps<{
-  themeMode: "light" | "dark" | "system" | "custom";
-}>();
+  themeMode: 'light' | 'dark' | 'system' | 'custom'
+}>()
 
 const emit = defineEmits<{
-  (e: "update:theme", theme: "light" | "dark" | "system" | "custom"): void;
-}>();
+  (e: 'update:theme', theme: 'light' | 'dark' | 'system' | 'custom'): void
+}>()
 
-const { locale, changeLocale } = useLocale();
+const { locale, changeLocale } = useLocale()
 
 // Theme display name
 const themeDisplayName = computed(() => {
   switch (props.themeMode) {
-    case "light":
-      return "Light";
-    case "dark":
-      return "Dark";
-    case "system":
-      return "System";
-    case "custom":
-      return "Custom";
+    case 'light':
+      return 'Light'
+    case 'dark':
+      return 'Dark'
+    case 'system':
+      return 'System'
+    case 'custom':
+      return 'Custom'
     default:
-      return "System";
+      return 'System'
   }
-});
+})
 
 // Language display name
 const languageDisplayName = computed(() => {
-  return locale.value === "zh-CN" ? "中文" : "English";
-});
+  return locale.value === 'zh-CN' ? '中文' : 'English'
+})
 
 async function toggleTheme() {
-  const themes: Array<"light" | "dark" | "system" | "custom"> = [
-    "light",
-    "dark",
-    "system",
-    "custom",
-  ];
-  const currentIndex = themes.indexOf(props.themeMode);
-  const nextTheme = themes[(currentIndex + 1) % themes.length];
-  emit("update:theme", nextTheme);
+  const themes: Array<'light' | 'dark' | 'system' | 'custom'> = [
+    'light',
+    'dark',
+    'system',
+    'custom',
+  ]
+  const currentIndex = themes.indexOf(props.themeMode)
+  const nextTheme = themes[(currentIndex + 1) % themes.length]
+  emit('update:theme', nextTheme)
 }
 
 async function toggleLanguage() {
-  const newLocale = locale.value === "zh-CN" ? "en-US" : "zh-CN";
-  await changeLocale(newLocale);
+  const newLocale = locale.value === 'zh-CN' ? 'en-US' : 'zh-CN'
+  await changeLocale(newLocale)
 }
 </script>
 

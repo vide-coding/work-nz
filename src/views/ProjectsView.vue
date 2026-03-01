@@ -1,14 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
-import { useRouter } from "vue-router";
-import { useLocale } from "../locales/useLocale";
-import {
-  projectApi,
-  ideApi,
-  gitApi,
-  workspaceApi,
-} from "../composables/useApi";
-import type { Project, GitRepoStatus, WorkspaceSettings } from "../types";
+import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { useLocale } from '../locales/useLocale'
+import { projectApi, ideApi, gitApi, workspaceApi } from '../composables/useApi'
+import type { Project, GitRepoStatus, WorkspaceSettings } from '../types'
 import {
   FolderPlus,
   Search,
@@ -25,226 +20,216 @@ import {
   Folder,
   ChevronRight,
   Loader2,
-} from "lucide-vue-next";
+} from 'lucide-vue-next'
 
-const router = useRouter();
-const { locale, changeLocale } = useLocale();
+const router = useRouter()
+const { locale, changeLocale } = useLocale()
 
 // State
-const projects = ref<Project[]>([]);
-const loading = ref(false);
-const error = ref("");
-const searchQuery = ref("");
-const sortBy = ref<"updatedAt" | "name">("updatedAt");
-const sortOrder = ref<"asc" | "desc">("desc");
-const selectedProject = ref<Project | null>(null);
-const showPreview = ref(true);
-const settings = ref<WorkspaceSettings>({ themeMode: "system" });
-const projectStatuses = ref<Record<string, GitRepoStatus>>({});
-const showCreateDialog = ref(false);
-const isCreatingProject = ref(false);
-const newProjectName = ref("");
-const newProjectDescription = ref("");
+const projects = ref<Project[]>([])
+const loading = ref(false)
+const error = ref('')
+const searchQuery = ref('')
+const sortBy = ref<'updatedAt' | 'name'>('updatedAt')
+const sortOrder = ref<'asc' | 'desc'>('desc')
+const selectedProject = ref<Project | null>(null)
+const showPreview = ref(true)
+const settings = ref<WorkspaceSettings>({ themeMode: 'system' })
+const projectStatuses = ref<Record<string, GitRepoStatus>>({})
+const showCreateDialog = ref(false)
+const isCreatingProject = ref(false)
+const newProjectName = ref('')
+const newProjectDescription = ref('')
 
 // Computed
 const filteredProjects = computed(() => {
-  let result = [...projects.value];
+  let result = [...projects.value]
 
   // Filter by search
   if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase();
+    const query = searchQuery.value.toLowerCase()
     result = result.filter(
-      (p) =>
-        p.name.toLowerCase().includes(query) ||
-        p.description?.toLowerCase().includes(query),
-    );
+      (p) => p.name.toLowerCase().includes(query) || p.description?.toLowerCase().includes(query)
+    )
   }
 
   // Sort
   result.sort((a, b) => {
-    if (sortBy.value === "name") {
-      return sortOrder.value === "asc"
-        ? a.name.localeCompare(b.name)
-        : b.name.localeCompare(a.name);
+    if (sortBy.value === 'name') {
+      return sortOrder.value === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name)
     } else {
-      const dateA = new Date(a.updatedAt).getTime();
-      const dateB = new Date(b.updatedAt).getTime();
-      return sortOrder.value === "asc" ? dateA - dateB : dateB - dateA;
+      const dateA = new Date(a.updatedAt).getTime()
+      const dateB = new Date(b.updatedAt).getTime()
+      return sortOrder.value === 'asc' ? dateA - dateB : dateB - dateA
     }
-  });
+  })
 
-  return result;
-});
+  return result
+})
 
 // Methods
 async function loadProjects() {
   try {
-    loading.value = true;
-    error.value = "";
-    projects.value = await projectApi.list();
+    loading.value = true
+    error.value = ''
+    projects.value = await projectApi.list()
   } catch (error: any) {
-    error.value = error.message || String(error);
+    error.value = error.message || String(error)
   } finally {
-    loading.value = false;
+    loading.value = false
   }
 }
 
 async function loadSettings() {
   try {
-    settings.value = await workspaceApi.getSettings();
-    applyTheme(settings.value.themeMode);
+    settings.value = await workspaceApi.getSettings()
+    applyTheme(settings.value.themeMode)
   } catch (error) {
-    console.error("Failed to load settings:", error);
+    console.error('Failed to load settings:', error)
   }
 }
 
 async function loadProjectDetails(project: Project) {
   try {
     // Load Git repositories
-    const repos = await gitApi.repoList(project.id);
+    const repos = await gitApi.repoList(project.id)
     if (repos.length > 0) {
       // Load status for each repo
-      const statuses: Record<string, GitRepoStatus> = {};
+      const statuses: Record<string, GitRepoStatus> = {}
       for (const repo of repos) {
         try {
-          const status = await gitApi.repoStatusGet(repo.id);
-          statuses[repo.id] = status;
+          const status = await gitApi.repoStatusGet(repo.id)
+          statuses[repo.id] = status
         } catch (error) {
-          console.error("Failed to get repo status:", error);
+          console.error('Failed to get repo status:', error)
         }
       }
-      projectStatuses.value[project.id] = Object.values(statuses)[0];
+      projectStatuses.value[project.id] = Object.values(statuses)[0]
     }
   } catch (error) {
-    console.error("Failed to load project details:", error);
+    console.error('Failed to load project details:', error)
   }
 }
 
 async function createProject() {
-  console.log("[createProject] Starting...");
-  if (!newProjectName.value.trim()) return;
+  console.log('[createProject] Starting...')
+  if (!newProjectName.value.trim()) return
 
   try {
-    isCreatingProject.value = true;
-    error.value = "";
-    console.log("[createProject] Calling API with:", {
+    isCreatingProject.value = true
+    error.value = ''
+    console.log('[createProject] Calling API with:', {
       name: newProjectName.value.trim(),
       description: newProjectDescription.value.trim() || undefined,
-    });
+    })
     const project = await projectApi.create({
       name: newProjectName.value.trim(),
       description: newProjectDescription.value.trim() || undefined,
-    });
-    console.log("[createProject] API returned:", project);
-    projects.value.unshift(project);
-    newProjectName.value = "";
-    newProjectDescription.value = "";
-    isCreatingProject.value = false;
+    })
+    console.log('[createProject] API returned:', project)
+    projects.value.unshift(project)
+    newProjectName.value = ''
+    newProjectDescription.value = ''
+    isCreatingProject.value = false
   } catch (error: any) {
-    console.error("[createProject] Error:", error);
-    error.value = error.message || String(error);
-    isCreatingProject.value = false;
+    console.error('[createProject] Error:', error)
+    error.value = error.message || String(error)
+    isCreatingProject.value = false
   }
 }
 
 async function deleteProject(project: Project) {
   if (
     !confirm(
-      locale.value === "zh-CN"
-        ? "确定删除此项目吗？"
-        : "Are you sure you want to delete this project?",
+      locale.value === 'zh-CN'
+        ? '确定删除此项目吗？'
+        : 'Are you sure you want to delete this project?'
     )
   ) {
-    return;
+    return
   }
 
   try {
-    loading.value = true;
-    await projectApi.delete(project.id);
-    projects.value = projects.value.filter((p) => p.id !== project.id);
+    loading.value = true
+    await projectApi.delete(project.id)
+    projects.value = projects.value.filter((p) => p.id !== project.id)
     if (selectedProject.value?.id === project.id) {
-      selectedProject.value = null;
+      selectedProject.value = null
     }
   } catch (error: any) {
-    error.value = error.message || String(error);
+    error.value = error.message || String(error)
   } finally {
-    loading.value = false;
+    loading.value = false
   }
 }
 
 async function openInIde(project: Project) {
   try {
-    await ideApi.openRepo(
-      project.id,
-      project.ideOverride || settings.value.defaultIde,
-    );
+    await ideApi.openRepo(project.id, project.ideOverride || settings.value.defaultIde)
   } catch (error: any) {
-    error.value = error.message || String(error);
+    error.value = error.message || String(error)
   }
 }
 
-function toggleSort(field: "updatedAt" | "name") {
+function toggleSort(field: 'updatedAt' | 'name') {
   if (sortBy.value === field) {
-    sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
+    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
   } else {
-    sortBy.value = field;
-    sortOrder.value = "desc";
+    sortBy.value = field
+    sortOrder.value = 'desc'
   }
 }
 
 function applyTheme(themeMode: string) {
-  const root = document.documentElement;
-  if (themeMode === "dark") {
-    root.classList.add("dark");
-  } else if (themeMode === "light") {
-    root.classList.remove("dark");
-  } else if (themeMode === "system") {
-    if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      root.classList.add("dark");
+  const root = document.documentElement
+  if (themeMode === 'dark') {
+    root.classList.add('dark')
+  } else if (themeMode === 'light') {
+    root.classList.remove('dark')
+  } else if (themeMode === 'system') {
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      root.classList.add('dark')
     } else {
-      root.classList.remove("dark");
+      root.classList.remove('dark')
     }
   }
 }
 
-async function updateTheme(themeMode: "light" | "dark" | "system" | "custom") {
+async function updateTheme(themeMode: 'light' | 'dark' | 'system' | 'custom') {
   try {
-    settings.value = await workspaceApi.updateSettings({ themeMode });
-    applyTheme(themeMode);
+    settings.value = await workspaceApi.updateSettings({ themeMode })
+    applyTheme(themeMode)
   } catch (error) {
-    console.error("Failed to update theme:", error);
+    console.error('Failed to update theme:', error)
   }
 }
 
 function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diff = now.getTime() - date.getTime();
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diff = now.getTime() - date.getTime()
+  const minutes = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const days = Math.floor(diff / 86400000)
 
-  if (minutes < 1) return locale.value === "zh-CN" ? "刚刚" : "Just now";
-  if (minutes < 60)
-    return `${minutes} ${locale.value === "zh-CN" ? "分钟前" : "min ago"}`;
-  if (hours < 24)
-    return `${hours} ${locale.value === "zh-CN" ? "小时前" : "hours ago"}`;
-  if (days < 7)
-    return `${days} ${locale.value === "zh-CN" ? "天前" : "days ago"}`;
+  if (minutes < 1) return locale.value === 'zh-CN' ? '刚刚' : 'Just now'
+  if (minutes < 60) return `${minutes} ${locale.value === 'zh-CN' ? '分钟前' : 'min ago'}`
+  if (hours < 24) return `${hours} ${locale.value === 'zh-CN' ? '小时前' : 'hours ago'}`
+  if (days < 7) return `${days} ${locale.value === 'zh-CN' ? '天前' : 'days ago'}`
 
-  return date.toLocaleDateString(locale.value);
+  return date.toLocaleDateString(locale.value)
 }
 
 function selectProject(project: Project) {
-  selectedProject.value = project;
-  loadProjectDetails(project);
+  selectedProject.value = project
+  loadProjectDetails(project)
 }
 
 // Lifecycle
 onMounted(async () => {
-  await loadSettings();
-  await loadProjects();
-});
+  await loadSettings()
+  await loadProjects()
+})
 </script>
 
 <template>
@@ -261,20 +246,18 @@ onMounted(async () => {
             @click="router.push('/workspace')"
           >
             <ArrowLeft class="w-4 h-4" />
-            {{ $t("projects.switchWorkspace") }}
+            {{ $t('projects.switchWorkspace') }}
           </button>
           <div class="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
           <span class="text-sm text-gray-600 dark:text-gray-400">
-            {{ $t("projects.workspace") }}
+            {{ $t('projects.workspace') }}
           </span>
         </div>
 
         <!-- Right: Actions -->
         <div class="flex items-center gap-3">
           <!-- Theme Toggle -->
-          <div
-            class="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1"
-          >
+          <div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
             <button
               class="p-1.5 rounded-md transition-colors"
               :class="
@@ -326,7 +309,7 @@ onMounted(async () => {
             @click="showCreateDialog = true"
           >
             <FolderPlus class="w-4 h-4" />
-            {{ $t("projects.newProject") }}
+            {{ $t('projects.newProject') }}
           </button>
         </div>
       </div>
@@ -343,9 +326,7 @@ onMounted(async () => {
           <div class="flex items-center gap-4">
             <!-- Search -->
             <div class="flex-1 relative">
-              <Search
-                class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
-              />
+              <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 v-model="searchQuery"
                 type="text"
@@ -365,11 +346,8 @@ onMounted(async () => {
                 "
                 @click="toggleSort('updatedAt')"
               >
-                {{ $t("projects.sortByUpdate") }}
-                <component
-                  :is="sortOrder === 'asc' ? SortAsc : SortDesc"
-                  class="w-4 h-4"
-                />
+                {{ $t('projects.sortByUpdate') }}
+                <component :is="sortOrder === 'asc' ? SortAsc : SortDesc" class="w-4 h-4" />
               </button>
               <button
                 class="flex items-center gap-1 px-3 py-2 text-sm rounded-lg transition-colors"
@@ -380,11 +358,8 @@ onMounted(async () => {
                 "
                 @click="toggleSort('name')"
               >
-                {{ $t("projects.sortByName") }}
-                <component
-                  :is="sortOrder === 'asc' ? SortAsc : SortDesc"
-                  class="w-4 h-4"
-                />
+                {{ $t('projects.sortByName') }}
+                <component :is="sortOrder === 'asc' ? SortAsc : SortDesc" class="w-4 h-4" />
               </button>
             </div>
 
@@ -398,10 +373,7 @@ onMounted(async () => {
               "
               @click="showPreview = !showPreview"
             >
-              <component
-                :is="showPreview ? PanelRightClose : PanelRightOpen"
-                class="w-5 h-5"
-              />
+              <component :is="showPreview ? PanelRightClose : PanelRightOpen" class="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -420,8 +392,8 @@ onMounted(async () => {
             class="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400"
           >
             <Folder class="w-16 h-16 mb-4 opacity-50" />
-            <p class="text-lg">{{ $t("projects.empty") }}</p>
-            <p class="text-sm mt-2">{{ $t("projects.emptyHint") }}</p>
+            <p class="text-lg">{{ $t('projects.empty') }}</p>
+            <p class="text-sm mt-2">{{ $t('projects.emptyHint') }}</p>
           </div>
 
           <div v-else class="grid gap-4">
@@ -442,8 +414,7 @@ onMounted(async () => {
                     <div
                       class="w-10 h-10 rounded-lg flex items-center justify-center text-white font-semibold"
                       :style="{
-                        backgroundColor:
-                          project.display?.themeColor || '#4F46E5',
+                        backgroundColor: project.display?.themeColor || '#4F46E5',
                       }"
                     >
                       {{ project.name.charAt(0).toUpperCase() }}
@@ -452,12 +423,8 @@ onMounted(async () => {
                       <h3 class="font-semibold text-gray-900 dark:text-white">
                         {{ project.name }}
                       </h3>
-                      <p
-                        class="text-sm text-gray-500 dark:text-gray-400 line-clamp-1"
-                      >
-                        {{
-                          project.description || $t("projects.noDescription")
-                        }}
+                      <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
+                        {{ project.description || $t('projects.noDescription') }}
                       </p>
                     </div>
                   </div>
@@ -479,15 +446,8 @@ onMounted(async () => {
                     class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors"
                     @click.stop="router.push(`/projects/${project.id}`)"
                   >
-                    {{ $t("projects.open") }}
+                    {{ $t('projects.open') }}
                     <ChevronRight class="w-4 h-4" />
-                  </button>
-                  <button
-                    class="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                    @click.stop="openInIde(project)"
-                  >
-                    <ExternalLink class="w-4 h-4" />
-                    {{ $t("projects.openInIde") }}
                   </button>
                 </div>
               </div>
@@ -507,8 +467,7 @@ onMounted(async () => {
             <div
               class="w-16 h-16 rounded-xl mx-auto mb-3 flex items-center justify-center text-white text-2xl font-bold"
               :style="{
-                backgroundColor:
-                  selectedProject.display?.themeColor || '#4F46E5',
+                backgroundColor: selectedProject.display?.themeColor || '#4F46E5',
               }"
             >
               {{ selectedProject.name.charAt(0).toUpperCase() }}
@@ -517,17 +476,15 @@ onMounted(async () => {
               {{ selectedProject.name }}
             </h2>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {{ selectedProject.description || $t("projects.noDescription") }}
+              {{ selectedProject.description || $t('projects.noDescription') }}
             </p>
           </div>
 
           <!-- Details -->
           <div class="space-y-4">
             <div>
-              <label
-                class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide"
-              >
-                {{ $t("projects.path") }}
+              <label class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                {{ $t('projects.path') }}
               </label>
               <p class="text-sm text-gray-900 dark:text-white mt-1 break-all">
                 {{ selectedProject.projectPath }}
@@ -535,10 +492,8 @@ onMounted(async () => {
             </div>
 
             <div>
-              <label
-                class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide"
-              >
-                {{ $t("projects.lastUpdated") }}
+              <label class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                {{ $t('projects.lastUpdated') }}
               </label>
               <p class="text-sm text-gray-900 dark:text-white mt-1">
                 {{ formatDate(selectedProject.updatedAt) }}
@@ -546,21 +501,12 @@ onMounted(async () => {
             </div>
 
             <!-- Quick Actions -->
-            <div
-              class="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2"
-            >
+            <div class="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
               <button
                 class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
                 @click="router.push(`/projects/${selectedProject.id}`)"
               >
-                {{ $t("projects.enterWorkspace") }}
-              </button>
-              <button
-                class="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300"
-                @click="openInIde(selectedProject)"
-              >
-                <ExternalLink class="w-4 h-4" />
-                {{ $t("projects.openInIde") }}
+                {{ $t('projects.enterWorkspace') }}
               </button>
             </div>
           </div>
@@ -574,20 +520,16 @@ onMounted(async () => {
       class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
       @click.self="showCreateDialog = false"
     >
-      <div
-        class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md mx-4"
-      >
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md mx-4">
         <div class="p-6">
           <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
-            {{ $t("projects.createNewProject") }}
+            {{ $t('projects.createNewProject') }}
           </h3>
 
           <div class="space-y-4">
             <div>
-              <label
-                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >
-                {{ $t("projects.projectName") }}
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {{ $t('projects.projectName') }}
               </label>
               <input
                 v-model="newProjectName"
@@ -598,10 +540,8 @@ onMounted(async () => {
             </div>
 
             <div>
-              <label
-                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >
-                {{ $t("projects.description") }}
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {{ $t('projects.description') }}
               </label>
               <textarea
                 v-model="newProjectDescription"
@@ -620,23 +560,19 @@ onMounted(async () => {
           </div>
         </div>
 
-        <div
-          class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 flex justify-end gap-3 rounded-b-xl"
-        >
+        <div class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 flex justify-end gap-3 rounded-b-xl">
           <button
             class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
             @click="showCreateDialog = false"
           >
-            {{ $t("common.cancel") }}
+            {{ $t('common.cancel') }}
           </button>
           <button
             class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors disabled:opacity-50"
             @click="createProject"
             :disabled="!newProjectName.trim() || isCreatingProject"
           >
-            {{
-              isCreatingProject ? $t("common.creating") : $t("common.create")
-            }}
+            {{ isCreatingProject ? $t('common.creating') : $t('common.create') }}
           </button>
         </div>
       </div>
