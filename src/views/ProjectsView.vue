@@ -2,7 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLocale } from '../locales/useLocale'
-import { projectApi, ideApi, gitApi, workspaceApi } from '../composables/useApi'
+import { projectApi, gitApi, workspaceApi } from '../composables/useApi'
 import type { Project, GitRepoStatus, WorkspaceSettings } from '../types'
 import {
   FolderPlus,
@@ -15,7 +15,6 @@ import {
   Moon,
   Sun,
   Monitor,
-  ExternalLink,
   Trash2,
   Folder,
   ChevronRight,
@@ -160,14 +159,6 @@ async function deleteProject(project: Project) {
     error.value = error.message || String(error)
   } finally {
     loading.value = false
-  }
-}
-
-async function openInIde(project: Project) {
-  try {
-    await ideApi.openRepo(project.id, project.ideOverride || settings.value.defaultIde)
-  } catch (error: any) {
-    error.value = error.message || String(error)
   }
 }
 
