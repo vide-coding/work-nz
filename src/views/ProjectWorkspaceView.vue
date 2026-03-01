@@ -70,6 +70,7 @@ const repoStatuses = ref<Record<string, GitRepoStatus>>({});
 const isCloning = ref(false);
 const cloneUrl = ref('');
 const cloneTargetDir = ref('');
+const canClone = computed(() => cloneUrl.value.trim() && cloneTargetDir.value.trim());
 
 // Directory types
 const dirTypes = ref<DirectoryType[]>([]);
@@ -824,7 +825,7 @@ onMounted(async () => {
                 <button
                   class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors disabled:opacity-50"
                   @click="cloneRepo"
-                  :disabled="!cloneUrl.trim() || !cloneTargetDir.trim() || isCloning"
+                  :disabled="!canClone || isCloning"
                 >
                   {{ isCloning ? $t('common.cloning') : $t('workspace.clone') }}
                 </button>
