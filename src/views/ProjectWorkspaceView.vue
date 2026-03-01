@@ -67,10 +67,15 @@ const editDescription = ref('');
 // Git repos
 const repos = ref<GitRepository[]>([]);
 const repoStatuses = ref<Record<string, GitRepoStatus>>({});
+const showCloneDialog = ref(false);
 const isCloning = ref(false);
 const cloneUrl = ref('');
 const cloneTargetDir = ref('');
-const canClone = computed(() => cloneUrl.value.trim() && cloneTargetDir.value.trim());
+const repos = ref<GitRepository[]>([]);
+const repoStatuses = ref<Record<string, GitRepoStatus>>({});
+const isCloning = ref(false);
+const cloneUrl = ref('');
+const cloneTargetDir = ref('');
 
 // Directory types
 const dirTypes = ref<DirectoryType[]>([]);
@@ -685,7 +690,7 @@ onMounted(async () => {
               </h2>
               <button
                 class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
-                @click="isCloning = true"
+                @click="showCloneDialog = true"
               >
                 <GitBranch class="w-4 h-4" />
                 {{ $t('workspace.cloneNewRepo') }}
@@ -769,9 +774,9 @@ onMounted(async () => {
 
           <!-- Clone Dialog -->
           <div
-            v-if="isCloning"
+            v-if="showCloneDialog"
             class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-            @click.self="isCloning = false"
+            @click.self="showCloneDialog = false"
           >
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md mx-4">
               <div class="p-6">
@@ -818,14 +823,14 @@ onMounted(async () => {
               >
                 <button
                   class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-                  @click="isCloning = false"
+                  @click="showCloneDialog = false"
                 >
                   {{ $t('common.cancel') }}
                 </button>
                 <button
                   class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors disabled:opacity-50"
                   @click="cloneRepo"
-                  :disabled="!canClone || isCloning"
+                  :disabled="!cloneUrl.trim() || !cloneTargetDir.trim() || isCloning"
                 >
                   {{ isCloning ? $t('common.cloning') : $t('workspace.clone') }}
                 </button>

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/oxlint/configuration_schema.json",
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
   "printWidth": 100,
   "tabWidth": 2,
   "useTabs": false,
@@ -18,12 +18,5 @@
   "htmlWhitespaceSensitivity": "css",
   "vueIndentScriptAndStyle": false,
   "embeddedLanguageFormatting": "auto",
-  "ignorePatterns": [
-    "dist/",
-    "node_modules/",
-    "src-tauri/target/",
-    "*.min.js",
-    "src/auto-imports.d.ts",
-    "src/components.d.ts"
-  ]
+  "ignorePatterns": ["dist/", "node_modules/", "src-tauri/target/", "*.min.js"]
 }

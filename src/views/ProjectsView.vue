@@ -36,6 +36,7 @@ const selectedProject = ref<Project | null>(null);
 const showPreview = ref(true);
 const settings = ref<WorkspaceSettings>({ themeMode: 'system' });
 const projectStatuses = ref<Record<string, GitRepoStatus>>({});
+const showCreateDialog = ref(false);
 const isCreatingProject = ref(false);
 const newProjectName = ref('');
 const newProjectDescription = ref('');
@@ -113,21 +114,28 @@ async function loadProjectDetails(project: Project) {
 }
 
 async function createProject() {
+  console.log('[createProject] Starting...');
   if (!newProjectName.value.trim()) return;
 
   try {
     isCreatingProject.value = true;
     error.value = '';
+    console.log('[createProject] Calling API with:', {
+      name: newProjectName.value.trim(),
+      description: newProjectDescription.value.trim() || undefined,
+    });
     const project = await projectApi.create({
       name: newProjectName.value.trim(),
       description: newProjectDescription.value.trim() || undefined,
     });
+    console.log('[createProject] API returned:', project);
     projects.value.unshift(project);
     newProjectName.value = '';
     newProjectDescription.value = '';
+    isCreatingProject.value = false;
   } catch (e: any) {
+    console.error('[createProject] Error:', e);
     error.value = e.message || String(e);
-  } finally {
     isCreatingProject.value = false;
   }
 }
@@ -300,7 +308,7 @@ onMounted(async () => {
           <!-- New Project -->
           <button
             class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors text-sm font-medium"
-            @click="isCreatingProject = true"
+            @click="showCreateDialog = true"
           >
             <FolderPlus class="w-4 h-4" />
             {{ $t('projects.newProject') }}
@@ -520,9 +528,9 @@ onMounted(async () => {
 
     <!-- Create Project Dialog -->
     <div
-      v-if="isCreatingProject"
+      v-if="showCreateDialog"
       class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-      @click.self="isCreatingProject = false"
+      @click.self="showCreateDialog = false"
     >
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md mx-4">
         <div class="p-6">
@@ -567,7 +575,7 @@ onMounted(async () => {
         <div class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 flex justify-end gap-3 rounded-b-xl">
           <button
             class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-            @click="isCreatingProject = false"
+            @click="showCreateDialog = false"
           >
             {{ $t('common.cancel') }}
           </button>
