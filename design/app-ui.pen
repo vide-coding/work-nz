@@ -757,312 +757,6 @@
     },
     {
       "type": "frame",
-      "id": "TTnxr",
-      "x": 0,
-      "y": 0,
-      "name": "Workspace Selection",
-      "width": 1440,
-      "height": 1024,
-      "fill": "#F3F4F6",
-      "layout": "vertical",
-      "justifyContent": "center",
-      "alignItems": "center",
-      "children": [
-        {
-          "type": "frame",
-          "id": "zOYh1",
-          "name": "Main Card",
-          "width": 600,
-          "fill": "#FFFFFF",
-          "cornerRadius": 16,
-          "effect": {
-            "type": "shadow",
-            "shadowType": "outer",
-            "color": "#0000001A",
-            "offset": {
-              "x": 0,
-              "y": 4
-            },
-            "blur": 20
-          },
-          "layout": "vertical",
-          "gap": 24,
-          "padding": 32,
-          "children": [
-            {
-              "type": "frame",
-              "id": "Jwnwe",
-              "name": "header",
-              "width": "fill_container",
-              "layout": "vertical",
-              "gap": 8,
-              "children": [
-                {
-                  "type": "text",
-                  "id": "3MdS3",
-                  "name": "title",
-                  "fill": "#111827",
-                  "content": "Local Project Manager",
-                  "fontFamily": "Inter",
-                  "fontSize": 24,
-                  "fontWeight": "bold"
-                },
-                {
-                  "type": "text",
-                  "id": "9H5Lt",
-                  "name": "desc",
-                  "fill": "#6B7280",
-                  "content": "Select a workspace folder to store app data and projects.",
-                  "fontFamily": "Inter",
-                  "fontSize": 14,
-                  "fontWeight": "normal"
-                }
-              ]
-            },
-            {
-              "type": "text",
-              "id": "SNqbc",
-              "name": "recentTitle",
-              "fill": "#374151",
-              "content": "Recent Workspaces",
-              "fontFamily": "Inter",
-              "fontSize": 14,
-              "fontWeight": "600"
-            },
-            {
-              "type": "frame",
-              "id": "qhi3S",
-              "name": "recentList",
-              "width": "fill_container",
-              "layout": "vertical",
-              "gap": 8,
-              "children": [
-                {
-                  "type": "frame",
-                  "id": "qRi5o",
-                  "name": "recentItem",
-                  "width": "fill_container",
-                  "fill": "#F9FAFB",
-                  "cornerRadius": 8,
-                  "padding": 12,
-                  "justifyContent": "space_between",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "frame",
-                      "id": "fjSEs",
-                      "name": "recentInfo",
-                      "layout": "vertical",
-                      "gap": 4,
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "RzB0B",
-                          "name": "recentPath",
-                          "fill": "#111827",
-                          "content": "D:\\Projects\\MyWorkspace",
-                          "fontFamily": "Inter",
-                          "fontSize": 14,
-                          "fontWeight": "normal"
-                        },
-                        {
-                          "type": "text",
-                          "id": "kFzM9",
-                          "name": "recentTime",
-                          "fill": "#6B7280",
-                          "content": "Opened 2 hours ago",
-                          "fontFamily": "Inter",
-                          "fontSize": 12,
-                          "fontWeight": "normal"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "frame",
-                      "id": "d9euE",
-                      "name": "openBtn",
-                      "fill": "#FFFFFF",
-                      "cornerRadius": 6,
-                      "stroke": {
-                        "thickness": 1,
-                        "fill": "#D1D5DB"
-                      },
-                      "padding": [
-                        6,
-                        12
-                      ],
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "fUGOl",
-                          "name": "openBtnText",
-                          "fill": "#374151",
-                          "content": "Open",
-                          "fontFamily": "Inter",
-                          "fontSize": 12,
-                          "fontWeight": "normal"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "txPeA",
-              "name": "actionRow",
-              "width": "fill_container",
-              "gap": 12,
-              "children": [
-                {
-                  "type": "frame",
-                  "id": "7IbId",
-                  "name": "selectBtn",
-                  "width": "fill_container",
-                  "height": 40,
-                  "fill": "#4F46E5",
-                  "cornerRadius": 6,
-                  "justifyContent": "center",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "ae9bG",
-                      "name": "selectBtnText",
-                      "fill": "#FFFFFF",
-                      "content": "Select Folder",
-                      "fontFamily": "Inter",
-                      "fontSize": 14,
-                      "fontWeight": "500"
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "aZWG9",
-                  "name": "createBtn",
-                  "width": "fill_container",
-                  "height": 40,
-                  "fill": "#FFFFFF",
-                  "cornerRadius": 6,
-                  "stroke": {
-                    "thickness": 1,
-                    "fill": "#D1D5DB"
-                  },
-                  "justifyContent": "center",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "0gQ6b",
-                      "name": "createBtnText",
-                      "fill": "#374151",
-                      "content": "Create New",
-                      "fontFamily": "Inter",
-                      "fontSize": 14,
-                      "fontWeight": "500"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "G2KEl",
-              "name": "hintBox",
-              "width": "fill_container",
-              "fill": "#ECFDF5",
-              "cornerRadius": 6,
-              "gap": 8,
-              "padding": 12,
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "icon_font",
-                  "id": "8LXJq",
-                  "name": "hintIcon",
-                  "width": 20,
-                  "height": 20,
-                  "iconFontName": "check_circle",
-                  "iconFontFamily": "Material Symbols Outlined",
-                  "fill": "#059669"
-                },
-                {
-                  "type": "text",
-                  "id": "0YTdB",
-                  "name": "hintText",
-                  "fill": "#065F46",
-                  "content": "Valid workspace. Using .app/ directory for data.",
-                  "fontFamily": "Inter",
-                  "fontSize": 13,
-                  "fontWeight": "normal"
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "a2stS",
-              "name": "footer",
-              "width": "fill_container",
-              "gap": 12,
-              "children": [
-                {
-                  "type": "frame",
-                  "id": "7aY7q",
-                  "name": "enterBtn",
-                  "width": "fill_container",
-                  "height": 44,
-                  "fill": "#4F46E5",
-                  "cornerRadius": 6,
-                  "justifyContent": "center",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "RuC5Y",
-                      "name": "enterText",
-                      "fill": "#FFFFFF",
-                      "content": "Enter Workspace",
-                      "fontFamily": "Inter",
-                      "fontSize": 14,
-                      "fontWeight": "600"
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "kgZGq",
-                  "name": "exitBtn",
-                  "height": 44,
-                  "fill": "transparent",
-                  "padding": [
-                    0,
-                    24
-                  ],
-                  "justifyContent": "center",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "Jhm73",
-                      "name": "exitText",
-                      "fill": "#6B7280",
-                      "content": "Exit",
-                      "fontFamily": "Inter",
-                      "fontSize": 14,
-                      "fontWeight": "normal"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "type": "frame",
       "id": "qEEIr",
       "x": 1540,
       "y": 0,
@@ -3434,6 +3128,369 @@
                           ]
                         }
                       ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "MgmYC",
+      "x": 9190,
+      "y": 0,
+      "name": "Workspace Selection",
+      "width": 1440,
+      "height": 1024,
+      "fill": "#F3F4F6",
+      "layout": "vertical",
+      "justifyContent": "center",
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "frame",
+          "id": "0DT0e",
+          "name": "Settings Bar",
+          "fill": "transparent",
+          "gap": 16,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "Az2db",
+              "name": "Language",
+              "fill": "transparent",
+              "cornerRadius": 6,
+              "gap": 8,
+              "padding": [
+                8,
+                16
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "U5W9C",
+                  "name": "langIcon",
+                  "width": 20,
+                  "height": 20,
+                  "iconFontName": "language",
+                  "iconFontFamily": "Material Symbols Outlined",
+                  "fill": "#6B7280"
+                },
+                {
+                  "type": "text",
+                  "id": "wh39J",
+                  "name": "langText",
+                  "fill": "#6B7280",
+                  "content": "English",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "9C23I",
+              "name": "Theme",
+              "fill": "transparent",
+              "cornerRadius": 6,
+              "gap": 8,
+              "padding": [
+                8,
+                16
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "ooALz",
+                  "name": "themeIcon",
+                  "width": 20,
+                  "height": 20,
+                  "iconFontName": "palette",
+                  "iconFontFamily": "Material Symbols Outlined",
+                  "fill": "#6B7280"
+                },
+                {
+                  "type": "text",
+                  "id": "gIsni",
+                  "name": "themeText",
+                  "fill": "#6B7280",
+                  "content": "Light",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "Uo2an",
+          "name": "Main Card",
+          "width": 500,
+          "fill": "#FFFFFF",
+          "cornerRadius": 16,
+          "layout": "vertical",
+          "gap": 24,
+          "padding": 32,
+          "children": [
+            {
+              "type": "frame",
+              "id": "96uzt",
+              "name": "Header",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "8d8rV",
+                  "name": "title",
+                  "fill": "#111827",
+                  "content": "Local Project Manager",
+                  "fontFamily": "Inter",
+                  "fontSize": 24,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "text",
+                  "id": "XPF5p",
+                  "name": "desc",
+                  "fill": "#6B7280",
+                  "content": "Select a workspace folder to store app data and projects.",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "yoDr4",
+              "name": "Recent Workspaces",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "MlHCj",
+                  "name": "recentTitle",
+                  "fill": "#374151",
+                  "content": "Recent Workspaces",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "frame",
+                  "id": "77hXI",
+                  "name": "recentItem",
+                  "width": "fill_container",
+                  "fill": "#F9FAFB",
+                  "cornerRadius": 8,
+                  "padding": 12,
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "Pbiex",
+                      "name": "recentInfo",
+                      "layout": "vertical",
+                      "gap": 4,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "uEgx5",
+                          "name": "recentPath",
+                          "fill": "#111827",
+                          "content": "D:\\Projects\\MyWorkspace",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "Um0EX",
+                          "name": "recentTime",
+                          "fill": "#6B7280",
+                          "content": "Opened 2 hours ago",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "pNmLg",
+                      "name": "openBtn",
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 6,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "#D1D5DB"
+                      },
+                      "padding": [
+                        6,
+                        12
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ZLs7V",
+                          "name": "openBtnText",
+                          "fill": "#374151",
+                          "content": "Open",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "YXANG",
+              "name": "Action Buttons",
+              "width": "fill_container",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "wLsYx",
+                  "name": "selectBtn",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "#4F46E5",
+                  "cornerRadius": 6,
+                  "padding": [
+                    16,
+                    24
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "wgEpS",
+                      "name": "selectBtnText",
+                      "fill": "#FFFFFF",
+                      "content": "Select Folder",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "bFQrV",
+                  "name": "createBtn",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 6,
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "#D1D5DB"
+                  },
+                  "padding": [
+                    16,
+                    24
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ui2mT",
+                      "name": "createBtnText",
+                      "fill": "#374151",
+                      "content": "Create New",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "1yRCV",
+              "name": "hintBox",
+              "width": "fill_container",
+              "fill": "#ECFDF5",
+              "cornerRadius": 6,
+              "gap": 8,
+              "padding": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "GhiOh",
+                  "name": "hintIcon",
+                  "width": 20,
+                  "height": 20,
+                  "iconFontName": "check_circle",
+                  "iconFontFamily": "Material Symbols Outlined",
+                  "fill": "#059669"
+                },
+                {
+                  "type": "text",
+                  "id": "EpZhy",
+                  "name": "hintText",
+                  "fill": "#065F46",
+                  "content": "Valid workspace. Using .app/ directory for data.",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Kxeyz",
+              "name": "footer",
+              "width": "fill_container",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "IvGvL",
+                  "name": "enterBtn",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "#4F46E5",
+                  "cornerRadius": 6,
+                  "padding": [
+                    16,
+                    24
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "cKCQz",
+                      "name": "enterText",
+                      "fill": "#FFFFFF",
+                      "content": "Enter Workspace",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "600"
                     }
                   ]
                 }
