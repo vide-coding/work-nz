@@ -20,28 +20,29 @@ Use local registration for better maintainability, smaller bundles, and explicit
 - [ ] Review existing global components and migrate to local registration where possible
 
 **Incorrect:**
+
 ```javascript
 // main.js - registering many components globally
-import { createApp } from 'vue'
-import App from './App.vue'
-import Card from './components/Card.vue'
-import Modal from './components/Modal.vue'
-import Table from './components/Table.vue'
-import Pagination from './components/Pagination.vue'
-import UserAvatar from './components/UserAvatar.vue'
-import SearchBar from './components/SearchBar.vue'
+import { createApp } from 'vue';
+import App from './App.vue';
+import Card from './components/Card.vue';
+import Modal from './components/Modal.vue';
+import Table from './components/Table.vue';
+import Pagination from './components/Pagination.vue';
+import UserAvatar from './components/UserAvatar.vue';
+import SearchBar from './components/SearchBar.vue';
 
-const app = createApp(App)
+const app = createApp(App);
 
 // WRONG: All these components are now in the bundle even if unused
-app.component('Card', Card)
-app.component('Modal', Modal)
-app.component('Table', Table)
-app.component('Pagination', Pagination)
-app.component('UserAvatar', UserAvatar)
-app.component('SearchBar', SearchBar)
+app.component('Card', Card);
+app.component('Modal', Modal);
+app.component('Table', Table);
+app.component('Pagination', Pagination);
+app.component('UserAvatar', UserAvatar);
+app.component('SearchBar', SearchBar);
 
-app.mount('#app')
+app.mount('#app');
 ```
 
 ```vue
@@ -59,20 +60,21 @@ app.mount('#app')
 ```
 
 **Correct:**
+
 ```javascript
 // main.js - only register truly universal components globally
-import { createApp } from 'vue'
-import App from './App.vue'
-import BaseIcon from './components/BaseIcon.vue'
-import BaseButton from './components/BaseButton.vue'
+import { createApp } from 'vue';
+import App from './App.vue';
+import BaseIcon from './components/BaseIcon.vue';
+import BaseButton from './components/BaseButton.vue';
 
-const app = createApp(App)
+const app = createApp(App);
 
 // Only truly ubiquitous base components
-app.component('BaseIcon', BaseIcon)
-app.component('BaseButton', BaseButton)
+app.component('BaseIcon', BaseIcon);
+app.component('BaseButton', BaseButton);
 
-app.mount('#app')
+app.mount('#app');
 ```
 
 ```vue
@@ -80,8 +82,8 @@ app.mount('#app')
 <script setup>
 // CORRECT: Explicit imports enable tree-shaking
 // Only Card is included in the bundle for this component
-import Card from '@/components/Card.vue'
-import UserAvatar from '@/components/UserAvatar.vue'
+import Card from '@/components/Card.vue';
+import UserAvatar from '@/components/UserAvatar.vue';
 </script>
 
 <template>
@@ -95,15 +97,15 @@ import UserAvatar from '@/components/UserAvatar.vue'
 ```vue
 <!-- Options API local registration -->
 <script>
-import Card from '@/components/Card.vue'
-import UserAvatar from '@/components/UserAvatar.vue'
+import Card from '@/components/Card.vue';
+import UserAvatar from '@/components/UserAvatar.vue';
 
 export default {
   components: {
     Card,
-    UserAvatar
-  }
-}
+    UserAvatar,
+  },
+};
 </script>
 ```
 
@@ -111,27 +113,28 @@ export default {
 
 ```javascript
 // Truly universal base components used across the entire app
-import BaseIcon from './components/BaseIcon.vue'
-import BaseButton from './components/BaseButton.vue'
-import BaseInput from './components/BaseInput.vue'
+import BaseIcon from './components/BaseIcon.vue';
+import BaseButton from './components/BaseButton.vue';
+import BaseInput from './components/BaseInput.vue';
 
 // Third-party component libraries with controlled scope
-import { Button, Input } from 'some-ui-library'
+import { Button, Input } from 'some-ui-library';
 
-app.component('BaseIcon', BaseIcon)
-app.component('BaseButton', BaseButton)
-app.component('BaseInput', BaseInput)
+app.component('BaseIcon', BaseIcon);
+app.component('BaseButton', BaseButton);
+app.component('BaseInput', BaseInput);
 ```
 
 ## Benefits of Local Registration
 
-| Aspect | Global | Local |
-|--------|--------|-------|
-| Tree-shaking | Not possible | Full support |
-| Dependency tracking | Implicit/hidden | Explicit imports |
-| Component location | Hard to find | Follow import path |
-| Bundle size | All registered components | Only used components |
-| Refactoring | Risk of breaking unknown usages | Clear dependency graph |
+| Aspect              | Global                          | Local                  |
+| ------------------- | ------------------------------- | ---------------------- |
+| Tree-shaking        | Not possible                    | Full support           |
+| Dependency tracking | Implicit/hidden                 | Explicit imports       |
+| Component location  | Hard to find                    | Follow import path     |
+| Bundle size         | All registered components       | Only used components   |
+| Refactoring         | Risk of breaking unknown usages | Clear dependency graph |
 
 ## Reference
+
 - [Vue.js Component Registration](https://vuejs.org/guide/components/registration.html)

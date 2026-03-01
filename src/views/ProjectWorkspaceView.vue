@@ -1,9 +1,26 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from "vue";
-import { useRouter, useRoute } from "vue-router";
-import { useLocale } from "../locales/useLocale";
-import { projectApi, gitApi, fsApi, dirTypeApi, ideApi, workspaceApi, previewApi } from "../composables/useApi";
-import type { Project, GitRepository, GitRepoStatus, FileNode, DirectoryType, ProjectDirectory, WorkspaceSettings, PreviewKind } from "../types";
+import { ref, onMounted, computed, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { useLocale } from '../locales/useLocale';
+import {
+  projectApi,
+  gitApi,
+  fsApi,
+  dirTypeApi,
+  ideApi,
+  workspaceApi,
+  previewApi,
+} from '../composables/useApi';
+import type {
+  Project,
+  GitRepository,
+  GitRepoStatus,
+  FileNode,
+  DirectoryType,
+  ProjectDirectory,
+  WorkspaceSettings,
+  PreviewKind,
+} from '../types';
 import {
   ArrowLeft,
   Home,
@@ -25,7 +42,7 @@ import {
   File,
   Image as ImageIcon,
   FileCode,
-} from "lucide-vue-next";
+} from 'lucide-vue-next';
 
 const props = defineProps<{
   id: string;
@@ -36,58 +53,58 @@ const route = useRoute();
 const { locale, changeLocale } = useLocale();
 
 // Navigation
-type NavItem = "intro" | "code" | "docs" | "ui_design" | "project_planning" | string;
-const currentNav = ref<NavItem>("intro");
+type NavItem = 'intro' | 'code' | 'docs' | 'ui_design' | 'project_planning' | string;
+const currentNav = ref<NavItem>('intro');
 
 // State
 const project = ref<Project | null>(null);
-const settings = ref<WorkspaceSettings>({ themeMode: "system" });
+const settings = ref<WorkspaceSettings>({ themeMode: 'system' });
 const loading = ref(false);
-const error = ref("");
+const error = ref('');
 const isEditing = ref(false);
-const editDescription = ref("");
+const editDescription = ref('');
 
 // Git repos
 const repos = ref<GitRepository[]>([]);
 const repoStatuses = ref<Record<string, GitRepoStatus>>({});
 const isCloning = ref(false);
-const cloneUrl = ref("");
-const cloneTargetDir = ref("");
+const cloneUrl = ref('');
+const cloneTargetDir = ref('');
 
 // Directory types
 const dirTypes = ref<DirectoryType[]>([]);
 const projectDirs = ref<ProjectDirectory[]>([]);
 
 // File browser
-const currentDirPath = ref("");
+const currentDirPath = ref('');
 const fileTree = ref<FileNode[]>([]);
-const viewMode = ref<"grid" | "list">("grid");
+const viewMode = ref<'grid' | 'list'>('grid');
 const selectedFile = ref<FileNode | null>(null);
-const fileContent = ref("");
+const fileContent = ref('');
 const previewKind = ref<PreviewKind | null>(null);
 const isLoadingTree = ref(false);
 const isLoadingPreview = ref(false);
 
 // Create folder dialog
 const isCreatingFolder = ref(false);
-const newFolderName = ref("");
+const newFolderName = ref('');
 
 // Initialize project ID from props
-const projectId = computed(() => props.id || route.params.id as string);
+const projectId = computed(() => props.id || (route.params.id as string));
 
 // Navigation items
 const navItems = computed(() => {
   const items = [
-    { id: "intro", labelKey: "workspace.projectIntro", icon: Home },
-    { id: "code", labelKey: "workspace.code", icon: Code },
-    { id: "docs", labelKey: "workspace.docs", icon: FileText },
-    { id: "ui_design", labelKey: "workspace.uiDesign", icon: Image },
-    { id: "project_planning", labelKey: "workspace.projectPlanning", icon: Map },
+    { id: 'intro', labelKey: 'workspace.projectIntro', icon: Home },
+    { id: 'code', labelKey: 'workspace.code', icon: Code },
+    { id: 'docs', labelKey: 'workspace.docs', icon: FileText },
+    { id: 'ui_design', labelKey: 'workspace.uiDesign', icon: Image },
+    { id: 'project_planning', labelKey: 'workspace.projectPlanning', icon: Map },
   ];
 
   // Add custom directory types
-  const customTypes = dirTypes.value.filter(t => t.kind === "custom");
-  customTypes.forEach(t => {
+  const customTypes = dirTypes.value.filter((t) => t.kind === 'custom');
+  customTypes.forEach((t) => {
     items.push({ id: t.id, labelKey: t.name, icon: Folder });
   });
 
@@ -96,12 +113,12 @@ const navItems = computed(() => {
 
 // Computed
 const currentDirType = computed(() => {
-  return dirTypes.value.find(t => t.id === currentNav.value || t.kind === currentNav.value);
+  return dirTypes.value.find((t) => t.id === currentNav.value || t.kind === currentNav.value);
 });
 
 const boundDirs = computed(() => {
-  return projectDirs.value.filter(pd => {
-    const dt = dirTypes.value.find(d => d.id === pd.dirTypeId);
+  return projectDirs.value.filter((pd) => {
+    const dt = dirTypes.value.find((d) => d.id === pd.dirTypeId);
     return dt && (dt.kind === currentNav.value || dt.id === currentNav.value);
   });
 });
@@ -110,9 +127,9 @@ const boundDirs = computed(() => {
 async function loadProject() {
   try {
     loading.value = true;
-    error.value = "";
+    error.value = '';
     project.value = await projectApi.get(projectId.value);
-    editDescription.value = project.value.description || "";
+    editDescription.value = project.value.description || '';
   } catch (e: any) {
     error.value = e.message || String(e);
   } finally {
@@ -125,7 +142,7 @@ async function loadSettings() {
     settings.value = await workspaceApi.getSettings();
     applyTheme(settings.value.themeMode);
   } catch (e) {
-    console.error("Failed to load settings:", e);
+    console.error('Failed to load settings:', e);
   }
 }
 
@@ -133,7 +150,7 @@ async function loadDirTypes() {
   try {
     dirTypes.value = await dirTypeApi.list();
   } catch (e) {
-    console.error("Failed to load directory types:", e);
+    console.error('Failed to load directory types:', e);
   }
 }
 
@@ -141,7 +158,7 @@ async function loadProjectDirs() {
   try {
     projectDirs.value = await dirTypeApi.listProjectDirs(projectId.value);
   } catch (e) {
-    console.error("Failed to load project directories:", e);
+    console.error('Failed to load project directories:', e);
   }
 }
 
@@ -155,12 +172,12 @@ async function loadRepos() {
         const status = await gitApi.repoStatusGet(repo.id);
         statuses[repo.id] = status;
       } catch (e) {
-        console.error("Failed to get repo status:", e);
+        console.error('Failed to get repo status:', e);
       }
     }
     repoStatuses.value = statuses;
   } catch (e) {
-    console.error("Failed to load repos:", e);
+    console.error('Failed to load repos:', e);
   }
 }
 
@@ -169,14 +186,14 @@ async function cloneRepo() {
 
   try {
     isCloning.value = true;
-    error.value = "";
+    error.value = '';
     const repo = await gitApi.repoClone(projectId.value, {
       remoteUrl: cloneUrl.value.trim(),
       targetDirName: cloneTargetDir.value.trim(),
     });
     repos.value.push(repo);
-    cloneUrl.value = "";
-    cloneTargetDir.value = "";
+    cloneUrl.value = '';
+    cloneTargetDir.value = '';
   } catch (e: any) {
     error.value = e.message || String(e);
   } finally {
@@ -190,7 +207,7 @@ async function pullRepo(repo: GitRepository) {
     if (result.ok) {
       await loadRepos();
     } else {
-      error.value = result.message || "Pull failed";
+      error.value = result.message || 'Pull failed';
     }
   } catch (e: any) {
     error.value = e.message || String(e);
@@ -206,7 +223,13 @@ async function openInIde(repo: GitRepository) {
 }
 
 async function deleteRepo(_repo: GitRepository) {
-  if (!confirm(locale.value === "zh-CN" ? "确定删除此仓库吗？" : "Are you sure you want to delete this repository?")) {
+  if (
+    !confirm(
+      locale.value === 'zh-CN'
+        ? '确定删除此仓库吗？'
+        : 'Are you sure you want to delete this repository?'
+    )
+  ) {
     return;
   }
 
@@ -236,7 +259,7 @@ async function bindDirectory() {
   try {
     if (!currentDirType.value) return;
 
-    const dirPath = currentDirType.value.kind + "s";
+    const dirPath = currentDirType.value.kind + 's';
     await dirTypeApi.createOrUpdateProjectDir(projectId.value, {
       dirTypeId: currentDirType.value.id,
       relativePath: dirPath,
@@ -255,7 +278,7 @@ async function loadFileTree(relativePath: string) {
     const tree = await fsApi.tree(projectId.value, relativePath);
     fileTree.value = tree.children || [];
     selectedFile.value = null;
-    fileContent.value = "";
+    fileContent.value = '';
   } catch (e: any) {
     // Directory might not exist yet
     fileTree.value = [];
@@ -266,8 +289,8 @@ async function loadFileTree(relativePath: string) {
 }
 
 async function selectFile(node: FileNode) {
-  if (node.kind === "dir") {
-    await loadFileTree(currentDirPath.value + "/" + node.name);
+  if (node.kind === 'dir') {
+    await loadFileTree(currentDirPath.value + '/' + node.name);
     return;
   }
 
@@ -276,20 +299,20 @@ async function selectFile(node: FileNode) {
 
   try {
     // Detect preview kind
-    const fullPath = currentDirPath.value + "/" + node.name;
+    const fullPath = currentDirPath.value + '/' + node.name;
     const detected = await previewApi.detect(fullPath);
     previewKind.value = detected.kind;
 
     // Load content if text/markdown
-    if (detected.kind === "text" || detected.kind === "markdown") {
+    if (detected.kind === 'text' || detected.kind === 'markdown') {
       const result = await fsApi.readText(fullPath);
       fileContent.value = result.content;
     } else {
-      fileContent.value = "";
+      fileContent.value = '';
     }
   } catch (e) {
-    console.error("Failed to load file preview:", e);
-    fileContent.value = "";
+    console.error('Failed to load file preview:', e);
+    fileContent.value = '';
     previewKind.value = null;
   } finally {
     isLoadingPreview.value = false;
@@ -300,10 +323,10 @@ async function createFolder() {
   if (!newFolderName.value.trim()) return;
 
   try {
-    const fullPath = currentDirPath.value + "/" + newFolderName.value.trim();
+    const fullPath = currentDirPath.value + '/' + newFolderName.value.trim();
     await fsApi.createDir(fullPath);
     await loadFileTree(currentDirPath.value);
-    newFolderName.value = "";
+    newFolderName.value = '';
     isCreatingFolder.value = false;
   } catch (e: any) {
     error.value = e.message || String(e);
@@ -311,56 +334,56 @@ async function createFolder() {
 }
 
 function navigateToParent() {
-  const parts = currentDirPath.value.split("/");
+  const parts = currentDirPath.value.split('/');
   if (parts.length > 1) {
     parts.pop();
-    loadFileTree(parts.join("/"));
+    loadFileTree(parts.join('/'));
   }
 }
 
 function applyTheme(themeMode: string) {
   const root = document.documentElement;
-  if (themeMode === "dark") {
-    root.classList.add("dark");
-  } else if (themeMode === "light") {
-    root.classList.remove("dark");
-  } else if (themeMode === "system") {
-    if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      root.classList.add("dark");
+  if (themeMode === 'dark') {
+    root.classList.add('dark');
+  } else if (themeMode === 'light') {
+    root.classList.remove('dark');
+  } else if (themeMode === 'system') {
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      root.classList.add('dark');
     } else {
-      root.classList.remove("dark");
+      root.classList.remove('dark');
     }
   }
 }
 
-async function updateTheme(themeMode: "light" | "dark" | "system" | "custom") {
+async function updateTheme(themeMode: 'light' | 'dark' | 'system' | 'custom') {
   try {
     settings.value = await workspaceApi.updateSettings({ themeMode });
     applyTheme(themeMode);
   } catch (e) {
-    console.error("Failed to update theme:", e);
+    console.error('Failed to update theme:', e);
   }
 }
 
 function getFileIcon(node: FileNode) {
-  if (node.kind === "dir") return Folder;
-  const ext = node.name.split(".").pop()?.toLowerCase();
-  if (["jpg", "jpeg", "png", "gif", "svg", "webp"].includes(ext || "")) return ImageIcon;
-  if (["md", "txt", "json", "js", "ts", "vue", "css", "html"].includes(ext || "")) return FileCode;
+  if (node.kind === 'dir') return Folder;
+  const ext = node.name.split('.').pop()?.toLowerCase();
+  if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'].includes(ext || '')) return ImageIcon;
+  if (['md', 'txt', 'json', 'js', 'ts', 'vue', 'css', 'html'].includes(ext || '')) return FileCode;
   return File;
 }
 
 // Watch navigation changes
 watch(currentNav, async (newNav) => {
-  if (newNav === "intro") {
+  if (newNav === 'intro') {
     await loadProject();
-  } else if (newNav === "code") {
+  } else if (newNav === 'code') {
     await loadRepos();
   } else {
     // Resource directory
-    const dt = dirTypes.value.find(t => t.id === newNav || t.kind === newNav);
+    const dt = dirTypes.value.find((t) => t.id === newNav || t.kind === newNav);
     if (dt) {
-      const pd = projectDirs.value.find(p => p.dirTypeId === dt.id);
+      const pd = projectDirs.value.find((p) => p.dirTypeId === dt.id);
       if (pd) {
         await loadFileTree(pd.relativePath);
       }
@@ -381,7 +404,9 @@ onMounted(async () => {
 <template>
   <div class="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
     <!-- Top Bar -->
-    <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-3">
+    <header
+      class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-3"
+    >
       <div class="flex items-center justify-between">
         <!-- Breadcrumb -->
         <div class="flex items-center gap-2">
@@ -390,11 +415,11 @@ onMounted(async () => {
             @click="router.push('/projects')"
           >
             <ArrowLeft class="w-4 h-4" />
-            {{ $t("projects.title") }}
+            {{ $t('projects.title') }}
           </button>
           <ChevronRight class="w-4 h-4 text-gray-400" />
           <span class="text-sm font-medium text-gray-900 dark:text-white">
-            {{ project?.name || $t("workspace.projectWorkspace") }}
+            {{ project?.name || $t('workspace.projectWorkspace') }}
           </span>
         </div>
 
@@ -404,24 +429,72 @@ onMounted(async () => {
           <div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
             <button
               class="p-1.5 rounded-md transition-colors"
-              :class="settings.themeMode === 'light' ? 'bg-white dark:bg-gray-600 shadow-sm' : 'hover:bg-gray-200 dark:hover:bg-gray-600'"
+              :class="
+                settings.themeMode === 'light'
+                  ? 'bg-white dark:bg-gray-600 shadow-sm'
+                  : 'hover:bg-gray-200 dark:hover:bg-gray-600'
+              "
               @click="updateTheme('light')"
             >
-              <svg class="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+              <svg
+                class="w-4 h-4 text-gray-600 dark:text-gray-300"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                />
+              </svg>
             </button>
             <button
               class="p-1.5 rounded-md transition-colors"
-              :class="settings.themeMode === 'dark' ? 'bg-white dark:bg-gray-600 shadow-sm' : 'hover:bg-gray-200 dark:hover:bg-gray-600'"
+              :class="
+                settings.themeMode === 'dark'
+                  ? 'bg-white dark:bg-gray-600 shadow-sm'
+                  : 'hover:bg-gray-200 dark:hover:bg-gray-600'
+              "
               @click="updateTheme('dark')"
             >
-              <svg class="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+              <svg
+                class="w-4 h-4 text-gray-600 dark:text-gray-300"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+                />
+              </svg>
             </button>
             <button
               class="p-1.5 rounded-md transition-colors"
-              :class="settings.themeMode === 'system' ? 'bg-white dark:bg-gray-600 shadow-sm' : 'hover:bg-gray-200 dark:hover:bg-gray-600'"
+              :class="
+                settings.themeMode === 'system'
+                  ? 'bg-white dark:bg-gray-600 shadow-sm'
+                  : 'hover:bg-gray-200 dark:hover:bg-gray-600'
+              "
               @click="updateTheme('system')"
             >
-              <svg class="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+              <svg
+                class="w-4 h-4 text-gray-600 dark:text-gray-300"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
+              </svg>
             </button>
           </div>
 
@@ -441,7 +514,7 @@ onMounted(async () => {
             @click="() => {}"
           >
             <ExternalLink class="w-4 h-4" />
-            {{ $t("workspace.openInIde") }}
+            {{ $t('workspace.openInIde') }}
           </button>
         </div>
       </div>
@@ -450,15 +523,19 @@ onMounted(async () => {
     <!-- Main Content -->
     <div class="flex-1 flex overflow-hidden">
       <!-- Sidebar -->
-      <aside class="w-56 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-auto">
+      <aside
+        class="w-56 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-auto"
+      >
         <nav class="p-4 space-y-1">
           <button
             v-for="item in navItems"
             :key="item.id"
             class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left"
-            :class="currentNav === item.id
-              ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
-              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
+            :class="
+              currentNav === item.id
+                ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+            "
             @click="currentNav = item.id"
           >
             <component :is="item.icon" class="w-5 h-5" />
@@ -486,7 +563,7 @@ onMounted(async () => {
                     {{ project?.name }}
                   </h1>
                   <p v-if="!isEditing" class="text-gray-600 dark:text-gray-400 mt-1">
-                    {{ project?.description || $t("projects.noDescription") }}
+                    {{ project?.description || $t('projects.noDescription') }}
                   </p>
                 </div>
               </div>
@@ -497,7 +574,7 @@ onMounted(async () => {
                 @click="isEditing = true"
               >
                 <Edit3 class="w-4 h-4" />
-                {{ $t("common.edit") }}
+                {{ $t('common.edit') }}
               </button>
             </div>
 
@@ -514,14 +591,14 @@ onMounted(async () => {
                   class="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                   @click="isEditing = false"
                 >
-                  {{ $t("common.cancel") }}
+                  {{ $t('common.cancel') }}
                 </button>
                 <button
                   class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
                   @click="updateProject"
                 >
                   <Save class="w-4 h-4" />
-                  {{ $t("common.save") }}
+                  {{ $t('common.save') }}
                 </button>
               </div>
             </div>
@@ -529,43 +606,69 @@ onMounted(async () => {
             <!-- Stats Cards -->
             <div class="grid grid-cols-3 gap-4">
               <!-- Code Stats -->
-              <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+              <div
+                class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700"
+              >
                 <div class="flex items-center gap-3 mb-4">
                   <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                     <Code class="w-5 h-5 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <span class="font-medium text-gray-900 dark:text-white">{{ $t("workspace.codeOverview") }}</span>
+                  <span class="font-medium text-gray-900 dark:text-white">{{
+                    $t('workspace.codeOverview')
+                  }}</span>
                 </div>
                 <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ repos.length }}</p>
-                <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t("workspace.repositories") }}</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                  {{ $t('workspace.repositories') }}
+                </p>
               </div>
 
               <!-- Docs Stats -->
-              <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+              <div
+                class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700"
+              >
                 <div class="flex items-center gap-3 mb-4">
                   <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
                     <FileText class="w-5 h-5 text-green-600 dark:text-green-400" />
                   </div>
-                  <span class="font-medium text-gray-900 dark:text-white">{{ $t("workspace.docsOverview") }}</span>
+                  <span class="font-medium text-gray-900 dark:text-white">{{
+                    $t('workspace.docsOverview')
+                  }}</span>
                 </div>
                 <p class="text-3xl font-bold text-gray-900 dark:text-white">
-                  {{ projectDirs.filter(pd => dirTypes.find(d => d.id === pd.dirTypeId && d.kind === 'docs')).length }}
+                  {{
+                    projectDirs.filter((pd) =>
+                      dirTypes.find((d) => d.id === pd.dirTypeId && d.kind === 'docs')
+                    ).length
+                  }}
                 </p>
-                <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t("workspace.directories") }}</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                  {{ $t('workspace.directories') }}
+                </p>
               </div>
 
               <!-- UI Design Stats -->
-              <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+              <div
+                class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700"
+              >
                 <div class="flex items-center gap-3 mb-4">
                   <div class="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
                     <Image class="w-5 h-5 text-purple-600 dark:text-purple-400" />
                   </div>
-                  <span class="font-medium text-gray-900 dark:text-white">{{ $t("workspace.designOverview") }}</span>
+                  <span class="font-medium text-gray-900 dark:text-white">{{
+                    $t('workspace.designOverview')
+                  }}</span>
                 </div>
                 <p class="text-3xl font-bold text-gray-900 dark:text-white">
-                  {{ projectDirs.filter(pd => dirTypes.find(d => d.id === pd.dirTypeId && d.kind === 'ui_design')).length }}
+                  {{
+                    projectDirs.filter((pd) =>
+                      dirTypes.find((d) => d.id === pd.dirTypeId && d.kind === 'ui_design')
+                    ).length
+                  }}
                 </p>
-                <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t("workspace.directories") }}</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                  {{ $t('workspace.directories') }}
+                </p>
               </div>
             </div>
           </div>
@@ -577,22 +680,25 @@ onMounted(async () => {
             <!-- Header -->
             <div class="flex items-center justify-between mb-6">
               <h2 class="text-xl font-bold text-gray-900 dark:text-white">
-                {{ $t("workspace.codeRepositories") }}
+                {{ $t('workspace.codeRepositories') }}
               </h2>
               <button
                 class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
                 @click="isCloning = true"
               >
                 <GitBranch class="w-4 h-4" />
-                {{ $t("workspace.cloneNewRepo") }}
+                {{ $t('workspace.cloneNewRepo') }}
               </button>
             </div>
 
             <!-- Repo List -->
-            <div v-if="repos.length === 0" class="text-center py-12 text-gray-500 dark:text-gray-400">
+            <div
+              v-if="repos.length === 0"
+              class="text-center py-12 text-gray-500 dark:text-gray-400"
+            >
               <GitBranch class="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>{{ $t("workspace.noRepos") }}</p>
-              <p class="text-sm mt-2">{{ $t("workspace.noReposHint") }}</p>
+              <p>{{ $t('workspace.noRepos') }}</p>
+              <p class="text-sm mt-2">{{ $t('workspace.noReposHint') }}</p>
             </div>
 
             <div v-else class="space-y-4">
@@ -610,14 +716,23 @@ onMounted(async () => {
                       <h3 class="font-medium text-gray-900 dark:text-white">{{ repo.name }}</h3>
                       <p class="text-sm text-gray-500 dark:text-gray-400">{{ repo.path }}</p>
                       <div class="flex items-center gap-3 mt-2">
-                        <span v-if="repo.branch" class="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded">
+                        <span
+                          v-if="repo.branch"
+                          class="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded"
+                        >
                           {{ repo.branch }}
                         </span>
-                        <span v-if="repoStatuses[repo.id]?.dirty" class="text-xs px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 rounded">
-                          {{ $t("workspace.dirty") }}
+                        <span
+                          v-if="repoStatuses[repo.id]?.dirty"
+                          class="text-xs px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 rounded"
+                        >
+                          {{ $t('workspace.dirty') }}
                         </span>
-                        <span v-if="(repoStatuses[repo.id]?.behind || 0) > 0" class="text-xs px-2 py-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded">
-                          {{ $t("workspace.behind", { n: repoStatuses[repo.id]?.behind }) }}
+                        <span
+                          v-if="(repoStatuses[repo.id]?.behind || 0) > 0"
+                          class="text-xs px-2 py-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded"
+                        >
+                          {{ $t('workspace.behind', { n: repoStatuses[repo.id]?.behind }) }}
                         </span>
                       </div>
                     </div>
@@ -660,13 +775,13 @@ onMounted(async () => {
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md mx-4">
               <div class="p-6">
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
-                  {{ $t("workspace.cloneRepo") }}
+                  {{ $t('workspace.cloneRepo') }}
                 </h3>
 
                 <div class="space-y-4">
                   <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      {{ $t("workspace.repoUrl") }}
+                      {{ $t('workspace.repoUrl') }}
                     </label>
                     <input
                       v-model="cloneUrl"
@@ -678,7 +793,7 @@ onMounted(async () => {
 
                   <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      {{ $t("workspace.targetDir") }}
+                      {{ $t('workspace.targetDir') }}
                     </label>
                     <input
                       v-model="cloneTargetDir"
@@ -688,25 +803,30 @@ onMounted(async () => {
                     />
                   </div>
 
-                  <div v-if="error" class="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <div
+                    v-if="error"
+                    class="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
+                  >
                     <p class="text-sm text-red-600 dark:text-red-400">{{ error }}</p>
                   </div>
                 </div>
               </div>
 
-              <div class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 flex justify-end gap-3 rounded-b-xl">
+              <div
+                class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 flex justify-end gap-3 rounded-b-xl"
+              >
                 <button
                   class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                   @click="isCloning = false"
                 >
-                  {{ $t("common.cancel") }}
+                  {{ $t('common.cancel') }}
                 </button>
                 <button
                   class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors disabled:opacity-50"
                   @click="cloneRepo"
                   :disabled="!cloneUrl.trim() || !cloneTargetDir.trim() || isCloning"
                 >
-                  {{ isCloning ? $t("common.cloning") : $t("workspace.clone") }}
+                  {{ isCloning ? $t('common.cloning') : $t('workspace.clone') }}
                 </button>
               </div>
             </div>
@@ -716,7 +836,9 @@ onMounted(async () => {
         <!-- Resource Directory (Docs, UI Design, Project Planning) -->
         <div v-else class="flex flex-col h-full">
           <!-- Toolbar -->
-          <div class="px-6 py-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <div
+            class="px-6 py-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between"
+          >
             <div class="flex items-center gap-4">
               <!-- Bind directory if not bound -->
               <button
@@ -725,7 +847,7 @@ onMounted(async () => {
                 @click="bindDirectory"
               >
                 <FolderPlus class="w-4 h-4" />
-                {{ $t("workspace.bindDirectory") }}
+                {{ $t('workspace.bindDirectory') }}
               </button>
 
               <!-- Current path -->
@@ -775,15 +897,18 @@ onMounted(async () => {
                 <Loader2 class="w-8 h-8 text-indigo-600 animate-spin" />
               </div>
 
-              <div v-else-if="fileTree.length === 0" class="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
+              <div
+                v-else-if="fileTree.length === 0"
+                class="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400"
+              >
                 <Folder class="w-16 h-16 mb-4 opacity-50" />
-                <p class="text-lg">{{ $t("workspace.emptyDirectory") }}</p>
+                <p class="text-lg">{{ $t('workspace.emptyDirectory') }}</p>
                 <button
                   class="mt-4 flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
                   @click="isCreatingFolder = true"
                 >
                   <FolderPlus class="w-4 h-4" />
-                  {{ $t("workspace.createFolder") }}
+                  {{ $t('workspace.createFolder') }}
                 </button>
               </div>
 
@@ -796,7 +921,9 @@ onMounted(async () => {
                   @click="selectFile(node)"
                 >
                   <component :is="getFileIcon(node)" class="w-12 h-12 text-gray-400 mb-2" />
-                  <span class="text-sm text-gray-900 dark:text-white text-center truncate w-full">{{ node.name }}</span>
+                  <span class="text-sm text-gray-900 dark:text-white text-center truncate w-full">{{
+                    node.name
+                  }}</span>
                 </div>
               </div>
 
@@ -810,7 +937,9 @@ onMounted(async () => {
                 >
                   <component :is="getFileIcon(node)" class="w-5 h-5 text-gray-400" />
                   <span class="text-sm text-gray-900 dark:text-white flex-1">{{ node.name }}</span>
-                  <span class="text-xs text-gray-500">{{ node.kind === 'dir' ? $t('workspace.folder') : $t('workspace.file') }}</span>
+                  <span class="text-xs text-gray-500">{{
+                    node.kind === 'dir' ? $t('workspace.folder') : $t('workspace.file')
+                  }}</span>
                 </div>
               </div>
             </div>
@@ -824,8 +953,14 @@ onMounted(async () => {
                 <div class="flex items-center gap-3 mb-4">
                   <component :is="getFileIcon(selectedFile)" class="w-8 h-8 text-gray-400" />
                   <div class="flex-1 min-w-0">
-                    <p class="font-medium text-gray-900 dark:text-white truncate">{{ selectedFile.name }}</p>
-                    <p class="text-xs text-gray-500">{{ selectedFile.kind === 'dir' ? $t('workspace.folder') : $t('workspace.file') }}</p>
+                    <p class="font-medium text-gray-900 dark:text-white truncate">
+                      {{ selectedFile.name }}
+                    </p>
+                    <p class="text-xs text-gray-500">
+                      {{
+                        selectedFile.kind === 'dir' ? $t('workspace.folder') : $t('workspace.file')
+                      }}
+                    </p>
                   </div>
                 </div>
 
@@ -834,16 +969,27 @@ onMounted(async () => {
                   <Loader2 class="w-6 h-6 text-indigo-600 animate-spin" />
                 </div>
 
-                <div v-else-if="previewKind === 'image'" class="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
-                  <p class="text-sm text-gray-500 text-center">{{ $t("workspace.imagePreview") }}</p>
+                <div
+                  v-else-if="previewKind === 'image'"
+                  class="bg-gray-100 dark:bg-gray-700 rounded-lg p-4"
+                >
+                  <p class="text-sm text-gray-500 text-center">
+                    {{ $t('workspace.imagePreview') }}
+                  </p>
                 </div>
 
-                <div v-else-if="previewKind === 'markdown' || previewKind === 'text'" class="prose dark:prose-invert max-w-none">
-                  <pre class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-mono bg-gray-50 dark:bg-gray-900 p-4 rounded-lg overflow-auto max-h-96">{{ fileContent }}</pre>
+                <div
+                  v-else-if="previewKind === 'markdown' || previewKind === 'text'"
+                  class="prose dark:prose-invert max-w-none"
+                >
+                  <pre
+                    class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-mono bg-gray-50 dark:bg-gray-900 p-4 rounded-lg overflow-auto max-h-96"
+                    >{{ fileContent }}</pre
+                  >
                 </div>
 
                 <div v-else class="text-center py-8 text-gray-500 dark:text-gray-400">
-                  <p>{{ $t("workspace.noPreview") }}</p>
+                  <p>{{ $t('workspace.noPreview') }}</p>
                 </div>
               </div>
             </aside>
@@ -861,7 +1007,7 @@ onMounted(async () => {
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-sm mx-4">
         <div class="p-6">
           <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
-            {{ $t("workspace.createFolder") }}
+            {{ $t('workspace.createFolder') }}
           </h3>
           <input
             v-model="newFolderName"
@@ -876,14 +1022,14 @@ onMounted(async () => {
             class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
             @click="isCreatingFolder = false"
           >
-            {{ $t("common.cancel") }}
+            {{ $t('common.cancel') }}
           </button>
           <button
             class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
             @click="createFolder"
             :disabled="!newFolderName.trim()"
           >
-            {{ $t("common.create") }}
+            {{ $t('common.create') }}
           </button>
         </div>
       </div>

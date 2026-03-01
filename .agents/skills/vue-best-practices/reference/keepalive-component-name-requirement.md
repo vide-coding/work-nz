@@ -32,7 +32,7 @@ tags: [vue3, keepalive, component-name, include, exclude, sfc]
 <!-- TabA.vue - NO NAME DECLARED -->
 <script setup>
 // No name option - will NOT match "TabA" in include!
-const count = ref(0)
+const count = ref(0);
 </script>
 
 <template>
@@ -49,13 +49,13 @@ const count = ref(0)
 ```vue
 <!-- TabA.vue -->
 <script setup>
-import { ref } from 'vue'
+import { ref } from 'vue';
 
 defineOptions({
-  name: 'TabA'  // Now matches include="TabA"
-})
+  name: 'TabA', // Now matches include="TabA"
+});
 
-const count = ref(0)
+const count = ref(0);
 </script>
 
 <template>
@@ -69,13 +69,13 @@ const count = ref(0)
 <!-- TabA.vue -->
 <script>
 export default {
-  name: 'TabA'
-}
+  name: 'TabA',
+};
 </script>
 
 <script setup>
-import { ref } from 'vue'
-const count = ref(0)
+import { ref } from 'vue';
+const count = ref(0);
 </script>
 
 <template>
@@ -97,8 +97,8 @@ my-component.vue -> name is "my-component" (kebab-case preserved)
 <!-- Works automatically since Vue 3.2.34+ -->
 <!-- File: TabA.vue -->
 <script setup>
-import { ref } from 'vue'
-const count = ref(0)
+import { ref } from 'vue';
+const count = ref(0);
 </script>
 
 <template>
@@ -123,8 +123,8 @@ const count = ref(0)
 ```vue
 <script>
 export default {
-  name: 'tab-a'  // lowercase kebab-case
-}
+  name: 'tab-a', // lowercase kebab-case
+};
 </script>
 ```
 
@@ -147,10 +147,10 @@ export default {
 
 ```vue
 <script setup>
-import { defineAsyncComponent } from 'vue'
+import { defineAsyncComponent } from 'vue';
 
 // Async component - might not have name!
-const AsyncTab = defineAsyncComponent(() => import('./Tab.vue'))
+const AsyncTab = defineAsyncComponent(() => import('./Tab.vue'));
 </script>
 ```
 
@@ -162,8 +162,8 @@ const AsyncTab = defineAsyncComponent(() => import('./Tab.vue'))
 <script>
 export default {
   // This doesn't set the component name!
-  props: ['name']  // 'name' prop is different from component name option
-}
+  props: ['name'], // 'name' prop is different from component name option
+};
 </script>
 ```
 
@@ -173,13 +173,13 @@ Check what name Vue sees for your component:
 
 ```vue
 <script setup>
-import { getCurrentInstance, onMounted } from 'vue'
+import { getCurrentInstance, onMounted } from 'vue';
 
 onMounted(() => {
-  const instance = getCurrentInstance()
-  console.log('Component name:', instance?.type?.name)
-  console.log('Component __name:', instance?.type?.__name)
-})
+  const instance = getCurrentInstance();
+  console.log('Component name:', instance?.type?.name);
+  console.log('Component __name:', instance?.type?.__name);
+});
 </script>
 ```
 
@@ -213,6 +213,7 @@ onMounted(() => {
 5. **Multiple formats available** - String, RegExp, or Array for include/exclude
 
 ## Reference
+
 - [Vue.js KeepAlive - Include/Exclude](https://vuejs.org/guide/built-ins/keep-alive.html#include-exclude)
 - [Vue.js SFC `<script setup>`](https://vuejs.org/api/sfc-script-setup.html)
 - [defineOptions documentation](https://vuejs.org/api/sfc-script-setup.html#defineoptions)

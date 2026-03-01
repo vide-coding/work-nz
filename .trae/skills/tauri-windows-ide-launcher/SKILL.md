@@ -1,6 +1,6 @@
 ---
-name: "tauri-windows-ide-launcher"
-description: "指导在 Windows 上用 Tauri(Rust) 打开项目到主流 IDE，并实现工作区默认 IDE + 项目覆盖。实现 open-in-IDE 功能时调用。"
+name: 'tauri-windows-ide-launcher'
+description: '指导在 Windows 上用 Tauri(Rust) 打开项目到主流 IDE，并实现工作区默认 IDE + 项目覆盖。实现 open-in-IDE 功能时调用。'
 ---
 
 # Windows IDE Launcher（Tauri Rust 侧）
@@ -65,4 +65,3 @@ pub fn open_in_ide(command: &str, args_template: &[String], project_path: &Path)
 
 - 即便是个人应用，也应限制参数模板仅能替换 `{path}`，避免被误配成任意命令注入
 - 失败时返回清晰错误：`IDE_NOT_FOUND`、`IDE_LAUNCH_FAILED`、`INVALID_IDE_CONFIG`
-

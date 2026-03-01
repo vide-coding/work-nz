@@ -31,13 +31,13 @@ Relying heavily on experimental features in production code creates maintenance 
 
 ```vue
 <script setup>
-import { ref } from 'vue'
+import { ref } from 'vue';
 
 // Prepare fallback loading strategy
-const isLoading = ref(false)
+const isLoading = ref(false);
 
 // Can toggle between Suspense and manual loading if needed
-const useSuspense = true
+const useSuspense = true;
 </script>
 
 <template>

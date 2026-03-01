@@ -10,11 +10,11 @@ Tracks the visibility of an element within the viewport.
 
 ```vue
 <script setup lang="ts">
-import { useElementVisibility } from '@vueuse/core'
-import { useTemplateRef } from 'vue'
+import { useElementVisibility } from '@vueuse/core';
+import { useTemplateRef } from 'vue';
 
-const target = useTemplateRef('target')
-const targetIsVisible = useElementVisibility(target)
+const target = useTemplateRef('target');
+const targetIsVisible = useElementVisibility(target);
 </script>
 
 <template>
@@ -30,11 +30,11 @@ If you wish to trigger your callback sooner before the element is fully visible,
 the `rootMargin` option (See [MDN IntersectionObserver/rootMargin](https://developer.mozilla.org/en-US/docs/Web/API/IntersectionObserver/rootMargin)).
 
 ```ts
-import { useElementVisibility } from '@vueuse/core'
+import { useElementVisibility } from '@vueuse/core';
 // ---cut---
 const targetIsVisible = useElementVisibility(target, {
   rootMargin: '0px 0px 100px 0px',
-})
+});
 ```
 
 ### threshold
@@ -44,16 +44,14 @@ If you want to control the percentage of the visibility required to update the v
 ```ts
 const targetIsVisible = useElementVisibility(target, {
   threshold: 1.0, // 100% visible
-})
+});
 ```
 
 ## Component Usage
 
 ```vue
 <template>
-  <UseElementVisibility v-slot="{ isVisible }">
-    Is Visible: {{ isVisible }}
-  </UseElementVisibility>
+  <UseElementVisibility v-slot="{ isVisible }"> Is Visible: {{ isVisible }} </UseElementVisibility>
 </template>
 ```
 
@@ -61,14 +59,14 @@ const targetIsVisible = useElementVisibility(target, {
 
 ```vue
 <script setup lang="ts">
-import { vElementVisibility } from '@vueuse/components'
-import { shallowRef, useTemplateRef } from 'vue'
+import { vElementVisibility } from '@vueuse/components';
+import { shallowRef, useTemplateRef } from 'vue';
 
-const target = useTemplateRef('target')
-const isVisible = shallowRef(false)
+const target = useTemplateRef('target');
+const isVisible = shallowRef(false);
 
 function onElementVisibility(state) {
-  isVisible.value = state
+  isVisible.value = state;
 }
 </script>
 
@@ -90,28 +88,27 @@ function onElementVisibility(state) {
 
 ```ts
 export interface UseElementVisibilityOptions
-  extends ConfigurableWindow,
-    Pick<UseIntersectionObserverOptions, "threshold"> {
+  extends ConfigurableWindow, Pick<UseIntersectionObserverOptions, 'threshold'> {
   /**
    * Initial value.
    *
    * @default false
    */
-  initialValue?: boolean
+  initialValue?: boolean;
   /**
    * @see https://developer.mozilla.org/en-US/docs/Web/API/IntersectionObserver/rootMargin
    */
-  rootMargin?: MaybeRefOrGetter<string>
+  rootMargin?: MaybeRefOrGetter<string>;
   /**
    * The element that is used as the viewport for checking visibility of the target.
    */
-  scrollTarget?: MaybeRefOrGetter<HTMLElement | undefined | null>
+  scrollTarget?: MaybeRefOrGetter<HTMLElement | undefined | null>;
   /**
    * Stop tracking when element visibility changes for the first time
    *
    * @default false
    */
-  once?: boolean
+  once?: boolean;
 }
 /**
  * Tracks the visibility of an element within the viewport.
@@ -120,7 +117,7 @@ export interface UseElementVisibilityOptions
  */
 export declare function useElementVisibility(
   element: MaybeComputedElementRef,
-  options?: UseElementVisibilityOptions,
-): ShallowRef<boolean, boolean>
-export type UseElementVisibilityReturn = ReturnType<typeof useElementVisibility>
+  options?: UseElementVisibilityOptions
+): ShallowRef<boolean, boolean>;
+export type UseElementVisibilityReturn = ReturnType<typeof useElementVisibility>;
 ```

@@ -20,6 +20,7 @@ Vue's `createApp` API explicitly supports multiple application instances on the 
 - [ ] Consider shared state via external stores if instances need to communicate
 
 **Incorrect:**
+
 ```javascript
 // Server-rendered page with Vue only needed for a few interactive widgets
 // WRONG: Mounting to entire page
@@ -34,34 +35,35 @@ Vue's `createApp` API explicitly supports multiple application instances on the 
 //   <footer>...</footer>        <!-- static -->
 // </body>
 
-import { createApp } from 'vue'
-import BigApp from './BigApp.vue'
+import { createApp } from 'vue';
+import BigApp from './BigApp.vue';
 
 // WRONG: Vue now controls entire page, including static content
-createApp(BigApp).mount('#app')
+createApp(BigApp).mount('#app');
 ```
 
 **Correct:**
+
 ```javascript
 // CORRECT: Mount separate instances to specific elements
 
-import { createApp } from 'vue'
-import SearchWidget from './widgets/SearchWidget.vue'
-import CartWidget from './widgets/CartWidget.vue'
-import { createPinia } from 'pinia'
+import { createApp } from 'vue';
+import SearchWidget from './widgets/SearchWidget.vue';
+import CartWidget from './widgets/CartWidget.vue';
+import { createPinia } from 'pinia';
 
 // Shared store for cross-widget state
-const pinia = createPinia()
+const pinia = createPinia();
 
 // Widget 1: Search functionality
-const searchApp = createApp(SearchWidget)
-searchApp.use(pinia)
-searchApp.mount('.widget-search')
+const searchApp = createApp(SearchWidget);
+searchApp.use(pinia);
+searchApp.mount('.widget-search');
 
 // Widget 2: Shopping cart
-const cartApp = createApp(CartWidget)
-cartApp.use(pinia)  // Same Pinia instance = shared state
-cartApp.mount('.widget-cart')
+const cartApp = createApp(CartWidget);
+cartApp.use(pinia); // Same Pinia instance = shared state
+cartApp.mount('.widget-cart');
 
 // Rest of page remains server-rendered static HTML
 ```
@@ -70,20 +72,20 @@ cartApp.mount('.widget-cart')
 
 ```javascript
 // 1. Isolated configuration per section
-const adminApp = createApp(AdminPanel)
-adminApp.config.errorHandler = adminErrorHandler
-adminApp.use(adminOnlyPlugin)
-adminApp.mount('#admin-panel')
+const adminApp = createApp(AdminPanel);
+adminApp.config.errorHandler = adminErrorHandler;
+adminApp.use(adminOnlyPlugin);
+adminApp.mount('#admin-panel');
 
-const publicApp = createApp(PublicWidget)
-publicApp.config.errorHandler = publicErrorHandler
+const publicApp = createApp(PublicWidget);
+publicApp.config.errorHandler = publicErrorHandler;
 // Different plugins, components, configuration
-publicApp.mount('#public-widget')
+publicApp.mount('#public-widget');
 
 // 2. Independent lifecycle
 // Can unmount/remount sections independently
-const app1 = createApp(Widget1).mount('#widget-1')
-const app2 = createApp(Widget2).mount('#widget-2')
+const app1 = createApp(Widget1).mount('#widget-1');
+const app2 = createApp(Widget2).mount('#widget-2');
 
 // Later, unmount just one widget
 // app1.$destroy() in Vue 2, use app.unmount() for the app instance in Vue 3
@@ -93,23 +95,24 @@ const app2 = createApp(Widget2).mount('#widget-2')
 
 ```javascript
 // Option 1: Shared Pinia store
-const pinia = createPinia()
+const pinia = createPinia();
 
-createApp(App1).use(pinia).mount('#app1')
-createApp(App2).use(pinia).mount('#app2')
+createApp(App1).use(pinia).mount('#app1');
+createApp(App2).use(pinia).mount('#app2');
 // Both apps share the same Pinia stores
 
 // Option 2: Shared reactive state module
 // sharedState.js
-import { reactive } from 'vue'
+import { reactive } from 'vue';
 export const sharedState = reactive({
   user: null,
-  cart: []
-})
+  cart: [],
+});
 
 // Both apps import and use sharedState directly
 ```
 
 ## Reference
+
 - [Vue.js - Multiple Application Instances](https://vuejs.org/guide/essentials/application.html#multiple-application-instances)
 - [Vue.js Application API](https://vuejs.org/api/application.html)

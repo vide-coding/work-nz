@@ -1,6 +1,6 @@
 ---
-name: "tauri-sqlite-diesel"
-description: "指导 Tauri(Rust) 侧使用 SQLite + Diesel：迁移、连接池、命令边界与路径策略。实现本地数据持久化或写查询命令时调用。"
+name: 'tauri-sqlite-diesel'
+description: '指导 Tauri(Rust) 侧使用 SQLite + Diesel：迁移、连接池、命令边界与路径策略。实现本地数据持久化或写查询命令时调用。'
 ---
 
 # SQLite + Diesel（Tauri Rust 侧）
@@ -71,4 +71,3 @@ pub fn create_pool(database_url: &str) -> anyhow::Result<DbPool> {
 
 - 路径统一使用 Rust `Path/PathBuf`，不要在前端拼接 `\\`
 - DB 文件可能被杀毒/同步软件占用：写入失败要给可读错误与重试
-

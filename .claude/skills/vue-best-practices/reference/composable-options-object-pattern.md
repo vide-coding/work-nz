@@ -19,6 +19,7 @@ tags: [vue3, composables, composition-api, api-design, typescript, patterns]
 - [ ] Required parameters can be positional; optional ones in options
 
 **Incorrect:**
+
 ```javascript
 // WRONG: Many positional parameters - unclear and error-prone
 export function useFetch(url, method, headers, timeout, retries, onError) {
@@ -26,7 +27,7 @@ export function useFetch(url, method, headers, timeout, retries, onError) {
 }
 
 // Usage - which boolean is which?
-const { data } = useFetch('/api/users', 'GET', null, 5000, 3, handleError)
+const { data } = useFetch('/api/users', 'GET', null, 5000, 3, handleError);
 
 // WRONG: Easy to get order wrong
 export function useDebounce(value, delay, immediate, maxWait) {
@@ -34,10 +35,11 @@ export function useDebounce(value, delay, immediate, maxWait) {
 }
 
 // Is 500 the delay or maxWait? Is true immediate?
-const debounced = useDebounce(searchQuery, 500, true, 1000)
+const debounced = useDebounce(searchQuery, 500, true, 1000);
 ```
 
 **Correct:**
+
 ```javascript
 // CORRECT: Options object pattern
 export function useFetch(url, options = {}) {
@@ -97,12 +99,12 @@ export function useFetch(url, options = {}) {
 
 // Both key and storage are required for this to make sense
 export function useStorage(key, storage, options = {}) {
-  const { serializer = JSON, deep = true } = options
+  const { serializer = JSON, deep = true } = options;
   // ...
 }
 
 // Usage
-useStorage('user-prefs', localStorage, { deep: false })
+useStorage('user-prefs', localStorage, { deep: false });
 ```
 
 ## Pattern: Reactive Options
@@ -112,23 +114,23 @@ Options can also be reactive for dynamic behavior:
 ```javascript
 export function useFetch(url, options = {}) {
   const {
-    refetch = ref(true),  // Can be a ref!
-    interval = null
-  } = options
+    refetch = ref(true), // Can be a ref!
+    interval = null,
+  } = options;
 
   watchEffect(() => {
     if (toValue(refetch)) {
       // Perform fetch
     }
-  })
+  });
 }
 
 // Usage with reactive option
-const shouldFetch = ref(true)
-const { data } = useFetch('/api/data', { refetch: shouldFetch })
+const shouldFetch = ref(true);
+const { data } = useFetch('/api/data', { refetch: shouldFetch });
 
 // Later, disable fetching
-shouldFetch.value = false
+shouldFetch.value = false;
 ```
 
 ## Pattern: Returning Configuration
@@ -137,23 +139,23 @@ Options objects also work well for return values:
 
 ```javascript
 export function useCounter(options = {}) {
-  const { initial = 0, min = -Infinity, max = Infinity, step = 1 } = options
+  const { initial = 0, min = -Infinity, max = Infinity, step = 1 } = options;
 
-  const count = ref(initial)
+  const count = ref(initial);
 
   function increment() {
-    count.value = Math.min(count.value + step, max)
+    count.value = Math.min(count.value + step, max);
   }
 
   function decrement() {
-    count.value = Math.max(count.value - step, min)
+    count.value = Math.max(count.value - step, min);
   }
 
   function set(value) {
-    count.value = Math.min(Math.max(value, min), max)
+    count.value = Math.min(Math.max(value, min), max);
   }
 
-  return { count, increment, decrement, set }
+  return { count, increment, decrement, set };
 }
 
 // Clear, readable usage
@@ -161,8 +163,8 @@ const { count, increment, decrement } = useCounter({
   initial: 10,
   min: 0,
   max: 100,
-  step: 5
-})
+  step: 5,
+});
 ```
 
 ## VueUse Convention
@@ -170,21 +172,21 @@ const { count, increment, decrement } = useCounter({
 VueUse uses this pattern extensively:
 
 ```javascript
-import { useDebounceFn, useThrottleFn, useLocalStorage } from '@vueuse/core'
+import { useDebounceFn, useThrottleFn, useLocalStorage } from '@vueuse/core';
 
 // All use options objects
-const debouncedFn = useDebounceFn(fn, 1000, { maxWait: 5000 })
+const debouncedFn = useDebounceFn(fn, 1000, { maxWait: 5000 });
 
-const throttledFn = useThrottleFn(fn, 1000, { trailing: true, leading: false })
+const throttledFn = useThrottleFn(fn, 1000, { trailing: true, leading: false });
 
 const state = useLocalStorage('key', defaultValue, {
   deep: true,
   listenToStorageChanges: true,
   serializer: {
     read: JSON.parse,
-    write: JSON.stringify
-  }
-})
+    write: JSON.stringify,
+  },
+});
 ```
 
 ## Anti-pattern: Boolean Trap
@@ -193,17 +195,18 @@ Options objects prevent the "boolean trap":
 
 ```javascript
 // BAD: What do these booleans mean?
-useModal(true, false, true)
+useModal(true, false, true);
 
 // GOOD: Self-documenting
 useModal({
   closable: true,
   backdrop: false,
-  keyboard: true
-})
+  keyboard: true,
+});
 ```
 
 ## Reference
+
 - [Vue.js Composables](https://vuejs.org/guide/reusability/composables.html)
 - [VueUse Composables](https://vueuse.org/) - Examples of options pattern
 - [Good Practices for Vue Composables](https://dev.to/jacobandrewsky/good-practices-and-design-patterns-for-vue-composables-24lk)

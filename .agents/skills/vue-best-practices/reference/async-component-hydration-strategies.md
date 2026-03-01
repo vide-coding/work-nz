@@ -16,19 +16,19 @@ Hydrates when the browser is idle using `requestIdleCallback`:
 
 ```vue
 <script setup>
-import { defineAsyncComponent, hydrateOnIdle } from 'vue'
+import { defineAsyncComponent, hydrateOnIdle } from 'vue';
 
 // Good for non-critical, below-the-fold content
 const AsyncFooter = defineAsyncComponent({
   loader: () => import('./Footer.vue'),
-  hydrate: hydrateOnIdle()
-})
+  hydrate: hydrateOnIdle(),
+});
 
 // With max timeout (in case idle never occurs)
 const AsyncSidebar = defineAsyncComponent({
   loader: () => import('./Sidebar.vue'),
-  hydrate: hydrateOnIdle(5000) // Max 5 seconds
-})
+  hydrate: hydrateOnIdle(5000), // Max 5 seconds
+});
 </script>
 ```
 
@@ -38,19 +38,19 @@ Hydrates when element enters the viewport via `IntersectionObserver`:
 
 ```vue
 <script setup>
-import { defineAsyncComponent, hydrateOnVisible } from 'vue'
+import { defineAsyncComponent, hydrateOnVisible } from 'vue';
 
 // Good for content below the fold
 const AsyncComments = defineAsyncComponent({
   loader: () => import('./Comments.vue'),
-  hydrate: hydrateOnVisible()
-})
+  hydrate: hydrateOnVisible(),
+});
 
 // With root margin for earlier hydration
 const AsyncRelatedPosts = defineAsyncComponent({
   loader: () => import('./RelatedPosts.vue'),
-  hydrate: hydrateOnVisible({ rootMargin: '100px' })
-})
+  hydrate: hydrateOnVisible({ rootMargin: '100px' }),
+});
 </script>
 ```
 
@@ -60,19 +60,19 @@ Hydrates when a media query matches:
 
 ```vue
 <script setup>
-import { defineAsyncComponent, hydrateOnMediaQuery } from 'vue'
+import { defineAsyncComponent, hydrateOnMediaQuery } from 'vue';
 
 // Only hydrate on mobile devices
 const AsyncMobileMenu = defineAsyncComponent({
   loader: () => import('./MobileMenu.vue'),
-  hydrate: hydrateOnMediaQuery('(max-width: 768px)')
-})
+  hydrate: hydrateOnMediaQuery('(max-width: 768px)'),
+});
 
 // Only hydrate on desktop
 const AsyncDesktopSidebar = defineAsyncComponent({
   loader: () => import('./DesktopSidebar.vue'),
-  hydrate: hydrateOnMediaQuery('(min-width: 1024px)')
-})
+  hydrate: hydrateOnMediaQuery('(min-width: 1024px)'),
+});
 </script>
 ```
 
@@ -82,19 +82,19 @@ Hydrates when user interacts with the component:
 
 ```vue
 <script setup>
-import { defineAsyncComponent, hydrateOnInteraction } from 'vue'
+import { defineAsyncComponent, hydrateOnInteraction } from 'vue';
 
 // Hydrate on click
 const AsyncDropdown = defineAsyncComponent({
   loader: () => import('./Dropdown.vue'),
-  hydrate: hydrateOnInteraction('click')
-})
+  hydrate: hydrateOnInteraction('click'),
+});
 
 // Hydrate on multiple events
 const AsyncTooltip = defineAsyncComponent({
   loader: () => import('./Tooltip.vue'),
-  hydrate: hydrateOnInteraction(['mouseover', 'focus'])
-})
+  hydrate: hydrateOnInteraction(['mouseover', 'focus']),
+});
 </script>
 ```
 
@@ -103,19 +103,19 @@ const AsyncTooltip = defineAsyncComponent({
 ## Custom Hydration Strategy
 
 ```typescript
-import { defineAsyncComponent, type HydrationStrategy } from 'vue'
+import { defineAsyncComponent, type HydrationStrategy } from 'vue';
 
 const hydrateAfterAnimation: HydrationStrategy = (hydrate, forEachElement) => {
   // Wait for page load animation to complete
-  const timeout = setTimeout(hydrate, 1000)
+  const timeout = setTimeout(hydrate, 1000);
 
-  return () => clearTimeout(timeout) // Cleanup
-}
+  return () => clearTimeout(timeout); // Cleanup
+};
 
 const AsyncWidget = defineAsyncComponent({
   loader: () => import('./Widget.vue'),
-  hydrate: hydrateAfterAnimation
-})
+  hydrate: hydrateAfterAnimation,
+});
 ```
 
 ## Key Points
@@ -129,12 +129,12 @@ const AsyncWidget = defineAsyncComponent({
 
 ## Strategy Selection Guide
 
-| Component Type | Recommended Strategy |
-|----------------|---------------------|
-| Footer, related content | `hydrateOnIdle` |
-| Below-the-fold sections | `hydrateOnVisible` |
-| Interactive widgets | `hydrateOnInteraction` |
-| Mobile-only components | `hydrateOnMediaQuery` |
+| Component Type          | Recommended Strategy    |
+| ----------------------- | ----------------------- |
+| Footer, related content | `hydrateOnIdle`         |
+| Below-the-fold sections | `hydrateOnVisible`      |
+| Interactive widgets     | `hydrateOnInteraction`  |
+| Mobile-only components  | `hydrateOnMediaQuery`   |
 | Critical above-the-fold | No strategy (immediate) |
 
 ## References

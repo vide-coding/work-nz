@@ -21,31 +21,31 @@ tags: [vue3, typescript, directives, module-augmentation, ComponentCustomPropert
 
 ```typescript
 // directives/highlight.ts
-import type { Directive, DirectiveBinding } from 'vue'
+import type { Directive, DirectiveBinding } from 'vue';
 
 // Define the directive's value type
-export type HighlightValue = string | { color: string; intensity?: number }
+export type HighlightValue = string | { color: string; intensity?: number };
 
 // Create typed directive
 export const vHighlight: Directive<HTMLElement, HighlightValue> = {
   mounted(el, binding) {
-    const value = binding.value
+    const value = binding.value;
     if (typeof value === 'string') {
-      el.style.backgroundColor = value
+      el.style.backgroundColor = value;
     } else {
-      el.style.backgroundColor = value.color
-      el.style.opacity = String(value.intensity ?? 1)
+      el.style.backgroundColor = value.color;
+      el.style.opacity = String(value.intensity ?? 1);
     }
   },
   updated(el, binding) {
     // Same logic for updates
-  }
-}
+  },
+};
 
 // Type augmentation for template usage
 declare module 'vue' {
   interface ComponentCustomProperties {
-    vHighlight: typeof vHighlight  // Use 'v' prefix!
+    vHighlight: typeof vHighlight; // Use 'v' prefix!
   }
 }
 ```
@@ -54,27 +54,27 @@ declare module 'vue' {
 
 ```typescript
 // directives/focus.ts
-import type { Directive } from 'vue'
+import type { Directive } from 'vue';
 
 // The directive value is boolean: auto-focus if true
-export type FocusValue = boolean
+export type FocusValue = boolean;
 
 export const vFocus = {
   mounted(el, binding) {
     if (binding.value) {
-      el.focus()
+      el.focus();
     }
   },
   updated(el, binding) {
     if (binding.value && !binding.oldValue) {
-      el.focus()
+      el.focus();
     }
-  }
-} satisfies Directive<HTMLInputElement, FocusValue>
+  },
+} satisfies Directive<HTMLInputElement, FocusValue>;
 
 declare module 'vue' {
   interface ComponentCustomProperties {
-    vFocus: Directive<HTMLInputElement, FocusValue>
+    vFocus: Directive<HTMLInputElement, FocusValue>;
   }
 }
 ```
@@ -83,50 +83,50 @@ declare module 'vue' {
 
 ```typescript
 // directives/tooltip.ts
-import type { Directive, DirectiveBinding } from 'vue'
+import type { Directive, DirectiveBinding } from 'vue';
 
 export interface TooltipValue {
-  text: string
-  delay?: number
+  text: string;
+  delay?: number;
 }
 
 export interface TooltipModifiers {
-  top?: boolean
-  bottom?: boolean
-  left?: boolean
-  right?: boolean
+  top?: boolean;
+  bottom?: boolean;
+  left?: boolean;
+  right?: boolean;
 }
 
 // Type the full binding
-type TooltipBinding = DirectiveBinding<TooltipValue, TooltipModifiers>
+type TooltipBinding = DirectiveBinding<TooltipValue, TooltipModifiers>;
 
 export const vTooltip: Directive<HTMLElement, TooltipValue> = {
   mounted(el: HTMLElement, binding: TooltipBinding) {
-    const { value, modifiers } = binding
+    const { value, modifiers } = binding;
 
-    let position: string = 'bottom'
-    if (modifiers.top) position = 'top'
-    else if (modifiers.left) position = 'left'
-    else if (modifiers.right) position = 'right'
+    let position: string = 'bottom';
+    if (modifiers.top) position = 'top';
+    else if (modifiers.left) position = 'left';
+    else if (modifiers.right) position = 'right';
 
-    el.setAttribute('data-tooltip', value.text)
-    el.setAttribute('data-tooltip-position', position)
-    el.setAttribute('data-tooltip-delay', String(value.delay ?? 300))
+    el.setAttribute('data-tooltip', value.text);
+    el.setAttribute('data-tooltip-position', position);
+    el.setAttribute('data-tooltip-delay', String(value.delay ?? 300));
   },
 
   updated(el, binding) {
-    el.setAttribute('data-tooltip', binding.value.text)
+    el.setAttribute('data-tooltip', binding.value.text);
   },
 
   unmounted(el) {
     // Cleanup
-    el.removeAttribute('data-tooltip')
-  }
-}
+    el.removeAttribute('data-tooltip');
+  },
+};
 
 declare module 'vue' {
   interface ComponentCustomProperties {
-    vTooltip: typeof vTooltip
+    vTooltip: typeof vTooltip;
   }
 }
 ```
@@ -135,20 +135,20 @@ declare module 'vue' {
 
 ```typescript
 // main.ts
-import { createApp } from 'vue'
-import App from './App.vue'
-import { vHighlight } from './directives/highlight'
-import { vFocus } from './directives/focus'
-import { vTooltip } from './directives/tooltip'
+import { createApp } from 'vue';
+import App from './App.vue';
+import { vHighlight } from './directives/highlight';
+import { vFocus } from './directives/focus';
+import { vTooltip } from './directives/tooltip';
 
-const app = createApp(App)
+const app = createApp(App);
 
 // Register globally
-app.directive('highlight', vHighlight)
-app.directive('focus', vFocus)
-app.directive('tooltip', vTooltip)
+app.directive('highlight', vHighlight);
+app.directive('focus', vFocus);
+app.directive('tooltip', vTooltip);
 
-app.mount('#app')
+app.mount('#app');
 ```
 
 ```vue
@@ -160,9 +160,7 @@ app.mount('#app')
 
   <input v-focus="shouldFocus" />
 
-  <button v-tooltip="{ text: 'Click me', delay: 500 }">
-    Hover for tooltip
-  </button>
+  <button v-tooltip="{ text: 'Click me', delay: 500 }">Hover for tooltip</button>
 
   <!-- With modifiers -->
   <span v-tooltip.top="{ text: 'Above' }">Top tooltip</span>
@@ -186,16 +184,16 @@ src/
 
 ```typescript
 // types/directives.d.ts
-import type { Directive } from 'vue'
-import type { HighlightValue } from '@/directives/highlight'
-import type { FocusValue } from '@/directives/focus'
-import type { TooltipValue } from '@/directives/tooltip'
+import type { Directive } from 'vue';
+import type { HighlightValue } from '@/directives/highlight';
+import type { FocusValue } from '@/directives/focus';
+import type { TooltipValue } from '@/directives/tooltip';
 
 declare module 'vue' {
   interface ComponentCustomProperties {
-    vHighlight: Directive<HTMLElement, HighlightValue>
-    vFocus: Directive<HTMLInputElement, FocusValue>
-    vTooltip: Directive<HTMLElement, TooltipValue>
+    vHighlight: Directive<HTMLElement, HighlightValue>;
+    vFocus: Directive<HTMLInputElement, FocusValue>;
+    vTooltip: Directive<HTMLElement, TooltipValue>;
   }
 }
 ```
@@ -207,11 +205,7 @@ declare module 'vue' {
   "compilerOptions": {
     // ...
   },
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.vue",
-    "src/types/**/*.d.ts"
-  ]
+  "include": ["src/**/*.ts", "src/**/*.vue", "src/types/**/*.d.ts"]
 }
 ```
 
@@ -221,16 +215,16 @@ For simple directives that only need `mounted` and `updated`:
 
 ```typescript
 // directives/color.ts
-import type { Directive } from 'vue'
+import type { Directive } from 'vue';
 
 // Function shorthand - runs on mounted AND updated
 export const vColor: Directive<HTMLElement, string> = (el, binding) => {
-  el.style.color = binding.value
-}
+  el.style.color = binding.value;
+};
 
 declare module 'vue' {
   interface ComponentCustomProperties {
-    vColor: typeof vColor
+    vColor: typeof vColor;
   }
 }
 ```
@@ -241,14 +235,14 @@ For directives registered only in specific components:
 
 ```vue
 <script setup lang="ts">
-import type { Directive } from 'vue'
+import type { Directive } from 'vue';
 
 // Local directive with inline type
 const vLocalHighlight: Directive<HTMLElement, string> = {
   mounted(el, binding) {
-    el.style.backgroundColor = binding.value
-  }
-}
+    el.style.backgroundColor = binding.value;
+  },
+};
 </script>
 
 <template>
@@ -260,5 +254,6 @@ const vLocalHighlight: Directive<HTMLElement, string> = {
 Note: Local directives don't need module augmentation since TypeScript can infer the type from the local variable.
 
 ## Reference
+
 - [Vue.js Custom Directives](https://vuejs.org/guide/reusability/custom-directives.html)
 - [Vue.js TypeScript - Augmenting Global Properties](https://vuejs.org/guide/typescript/options-api.html#augmenting-global-properties)

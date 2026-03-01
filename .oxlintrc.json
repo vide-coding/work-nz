@@ -1,12 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": [
-    "import",
-    "typescript",
-    "react",
-    "unicorn",
-    "jsx-a11y"
-  ],
+  "plugins": ["import", "typescript", "react", "unicorn", "jsx-a11y"],
   "env": {
     "browser": true,
     "es2022": true,
@@ -89,11 +83,5 @@
       "rules": {}
     }
   ],
-  "ignorePatterns": [
-    "dist/",
-    "node_modules/",
-    "src-tauri/",
-    "*.min.js",
-    "*.d.ts"
-  ]
+  "ignorePatterns": ["dist/", "node_modules/", "src-tauri/", "*.min.js", "*.d.ts"]
 }

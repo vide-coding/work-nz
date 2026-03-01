@@ -35,6 +35,7 @@ tags: [vue3, keepalive, vue-router, navigation, cache, ux]
 ```
 
 **Scenario:**
+
 1. User visits `/products?category=shoes` - sees shoes
 2. User navigates to `/products?category=hats` - sees hats
 3. User clicks "Products" nav link (to `/products`)
@@ -65,32 +66,32 @@ Users clicking navigation expect a "fresh start" but get the cached state.
 ```vue
 <!-- Products.vue -->
 <script setup>
-import { ref, onActivated, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, onActivated, watch } from 'vue';
+import { useRoute } from 'vue-router';
 
-const route = useRoute()
-const products = ref([])
-const lastParams = ref(null)
+const route = useRoute();
+const products = ref([]);
+const lastParams = ref(null);
 
 async function fetchProducts() {
-  const params = route.query
-  products.value = await api.getProducts(params)
-  lastParams.value = JSON.stringify(params)
+  const params = route.query;
+  products.value = await api.getProducts(params);
+  lastParams.value = JSON.stringify(params);
 }
 
 // Initial fetch
-fetchProducts()
+fetchProducts();
 
 // Refresh when re-activated if params changed
 onActivated(() => {
-  const currentParams = JSON.stringify(route.query)
+  const currentParams = JSON.stringify(route.query);
   if (currentParams !== lastParams.value) {
-    fetchProducts()
+    fetchProducts();
   }
-})
+});
 
 // Also watch for changes while component is active
-watch(() => route.query, fetchProducts, { deep: true })
+watch(() => route.query, fetchProducts, { deep: true });
 </script>
 ```
 
@@ -100,27 +101,27 @@ Different behavior based on how user navigated:
 
 ```vue
 <script setup>
-import { ref, onActivated } from 'vue'
-import { useRoute, useRouter, onBeforeRouteUpdate } from 'vue-router'
+import { ref, onActivated } from 'vue';
+import { useRoute, useRouter, onBeforeRouteUpdate } from 'vue-router';
 
-const route = useRoute()
-const router = useRouter()
-const shouldRefresh = ref(false)
+const route = useRoute();
+const router = useRouter();
+const shouldRefresh = ref(false);
 
 // Mark for refresh when coming from nav link (no query params)
 onBeforeRouteUpdate((to, from) => {
   // If navigating to base path without params, user wants fresh view
   if (Object.keys(to.query).length === 0 && Object.keys(from.query).length > 0) {
-    shouldRefresh.value = true
+    shouldRefresh.value = true;
   }
-})
+});
 
 onActivated(() => {
   if (shouldRefresh.value) {
-    resetToDefaultState()
-    shouldRefresh.value = false
+    resetToDefaultState();
+    shouldRefresh.value = false;
   }
-})
+});
 
 function resetToDefaultState() {
   // Reset filters, clear search, show default view
@@ -133,7 +134,7 @@ function resetToDefaultState() {
 ```vue
 <script setup>
 // Don't cache pages where query params significantly change content
-const noCacheRoutes = ['ProductSearch', 'SearchResults', 'FilteredList']
+const noCacheRoutes = ['ProductSearch', 'SearchResults', 'FilteredList'];
 </script>
 
 <template>
@@ -155,20 +156,20 @@ const routes = [
     component: Products,
     meta: {
       keepAlive: true,
-      refreshOnDirectNavigation: true
-    }
-  }
-]
+      refreshOnDirectNavigation: true,
+    },
+  },
+];
 ```
 
 ```vue
 <!-- App.vue -->
 <script setup>
-import { watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { watch } from 'vue';
+import { useRoute } from 'vue-router';
 
-const route = useRoute()
-const forceRefreshKey = ref(0)
+const route = useRoute();
+const forceRefreshKey = ref(0);
 
 // Watch for navigation to routes that want fresh state
 watch(
@@ -176,19 +177,16 @@ watch(
   (newPath, oldPath) => {
     // Direct navigation to base path = user wants fresh
     if (route.meta.refreshOnDirectNavigation && !route.query.length) {
-      forceRefreshKey.value++
+      forceRefreshKey.value++;
     }
   }
-)
+);
 </script>
 
 <template>
   <router-view v-slot="{ Component }">
     <KeepAlive>
-      <component
-        :is="Component"
-        :key="`${route.name}-${forceRefreshKey}`"
-      />
+      <component :is="Component" :key="`${route.name}-${forceRefreshKey}`" />
     </KeepAlive>
   </router-view>
 </template>
@@ -208,8 +206,8 @@ export const CACHE_RULES = {
   NEVER: ['SearchResults', 'FilteredProducts'],
 
   // Cached but refreshes on activation
-  STALE_WHILE_REVALIDATE: ['Notifications', 'Messages']
-}
+  STALE_WHILE_REVALIDATE: ['Notifications', 'Messages'],
+};
 ```
 
 ## Key Points
@@ -221,6 +219,7 @@ export const CACHE_RULES = {
 5. **Document cache behavior** - Make rules explicit for your team
 
 ## Reference
+
 - [Vue.js KeepAlive Documentation](https://vuejs.org/guide/built-ins/keep-alive.html)
 - [Vue Router Navigation](https://router.vuejs.org/guide/essentials/navigation.html)
 - [Stack Keep-Alive Library](https://github.com/Zippowxk/stack-keep-alive)

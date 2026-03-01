@@ -1,6 +1,6 @@
 ---
-name: "tauri-vue-vapor-reka-ui"
-description: "指导 Tauri + Vue 3.6（Vapor）+ Reka UI 的工程结构、IPC 与主题。用户要搭建/调整前端架构、UI 组件与主题切换时调用。"
+name: 'tauri-vue-vapor-reka-ui'
+description: '指导 Tauri + Vue 3.6（Vapor）+ Reka UI 的工程结构、IPC 与主题。用户要搭建/调整前端架构、UI 组件与主题切换时调用。'
 ---
 
 # Tauri + Vue 3.6 Vapor + Reka UI
@@ -38,9 +38,9 @@ description: "指导 Tauri + Vue 3.6（Vapor）+ Reka UI 的工程结构、IPC �
 示例（前端 invoke 薄封装，函数级中文注释）：
 
 ```ts
-import { invoke } from '@tauri-apps/api/core'
+import { invoke } from '@tauri-apps/api/core';
 
-type CommandError = { code: string; message: string }
+type CommandError = { code: string; message: string };
 
 /**
  * 统一调用 Rust 命令并规范化错误。
@@ -48,10 +48,10 @@ type CommandError = { code: string; message: string }
  */
 export async function invokeCmd<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
   try {
-    return await invoke<T>(cmd, args)
+    return await invoke<T>(cmd, args);
   } catch (e) {
-    const err = e as Partial<CommandError>
-    throw new Error(err.message ?? '命令执行失败')
+    const err = e as Partial<CommandError>;
+    throw new Error(err.message ?? '命令执行失败');
   }
 }
 ```
@@ -77,4 +77,3 @@ Vue 3.6 Vapor 仍可能处于快速演进阶段；建议：
 - 先确保“非 Vapor 模式”可稳定跑通（功能优先）
 - 将 Vapor 的开启与组件级改造作为可选增强，逐步迁移
 - 避免依赖不稳定的编译期细节；在 CI 中固定 Vue/Vite 版本，减少升级噪音
-

@@ -23,66 +23,67 @@ This is one of the key advantages of the Composition API over mixins - dependenc
 
 ```javascript
 // composables/useEventListener.js - Low-level building block
-import { onMounted, onUnmounted, toValue } from 'vue'
+import { onMounted, onUnmounted, toValue } from 'vue';
 
 export function useEventListener(target, event, callback) {
   onMounted(() => {
-    const el = toValue(target)
-    el.addEventListener(event, callback)
-  })
+    const el = toValue(target);
+    el.addEventListener(event, callback);
+  });
 
   onUnmounted(() => {
-    const el = toValue(target)
-    el.removeEventListener(event, callback)
-  })
+    const el = toValue(target);
+    el.removeEventListener(event, callback);
+  });
 }
 
 // composables/useMouse.js - Composes useEventListener
-import { ref } from 'vue'
-import { useEventListener } from './useEventListener'
+import { ref } from 'vue';
+import { useEventListener } from './useEventListener';
 
 export function useMouse() {
-  const x = ref(0)
-  const y = ref(0)
+  const x = ref(0);
+  const y = ref(0);
 
   function update(event) {
-    x.value = event.pageX
-    y.value = event.pageY
+    x.value = event.pageX;
+    y.value = event.pageY;
   }
 
   // Reuse the event listener composable
-  useEventListener(window, 'mousemove', update)
+  useEventListener(window, 'mousemove', update);
 
-  return { x, y }
+  return { x, y };
 }
 
 // composables/useMouseInElement.js - Composes useMouse
-import { ref, computed } from 'vue'
-import { useMouse } from './useMouse'
+import { ref, computed } from 'vue';
+import { useMouse } from './useMouse';
 
 export function useMouseInElement(elementRef) {
-  const { x, y } = useMouse()
+  const { x, y } = useMouse();
 
   const elementX = computed(() => {
-    if (!elementRef.value) return 0
-    const rect = elementRef.value.getBoundingClientRect()
-    return x.value - rect.left
-  })
+    if (!elementRef.value) return 0;
+    const rect = elementRef.value.getBoundingClientRect();
+    return x.value - rect.left;
+  });
 
   const elementY = computed(() => {
-    if (!elementRef.value) return 0
-    const rect = elementRef.value.getBoundingClientRect()
-    return y.value - rect.top
-  })
+    if (!elementRef.value) return 0;
+    const rect = elementRef.value.getBoundingClientRect();
+    return y.value - rect.top;
+  });
 
   const isOutside = computed(() => {
-    if (!elementRef.value) return true
-    const rect = elementRef.value.getBoundingClientRect()
-    return x.value < rect.left || x.value > rect.right ||
-           y.value < rect.top || y.value > rect.bottom
-  })
+    if (!elementRef.value) return true;
+    const rect = elementRef.value.getBoundingClientRect();
+    return (
+      x.value < rect.left || x.value > rect.right || y.value < rect.top || y.value > rect.bottom
+    );
+  });
 
-  return { x, y, elementX, elementY, isOutside }
+  return { x, y, elementX, elementY, isOutside };
 }
 ```
 
@@ -90,58 +91,68 @@ export function useMouseInElement(elementRef) {
 
 ```javascript
 // Layer 1: Primitives
-export function useEventListener(target, event, callback) { /* ... */ }
-export function useInterval(callback, delay) { /* ... */ }
-export function useTimeout(callback, delay) { /* ... */ }
+export function useEventListener(target, event, callback) {
+  /* ... */
+}
+export function useInterval(callback, delay) {
+  /* ... */
+}
+export function useTimeout(callback, delay) {
+  /* ... */
+}
 
 // Layer 2: Building on primitives
 export function useWindowSize() {
-  const width = ref(window.innerWidth)
-  const height = ref(window.innerHeight)
+  const width = ref(window.innerWidth);
+  const height = ref(window.innerHeight);
 
   useEventListener(window, 'resize', () => {
-    width.value = window.innerWidth
-    height.value = window.innerHeight
-  })
+    width.value = window.innerWidth;
+    height.value = window.innerHeight;
+  });
 
-  return { width, height }
+  return { width, height };
 }
 
 export function useOnline() {
-  const isOnline = ref(navigator.onLine)
+  const isOnline = ref(navigator.onLine);
 
-  useEventListener(window, 'online', () => isOnline.value = true)
-  useEventListener(window, 'offline', () => isOnline.value = false)
+  useEventListener(window, 'online', () => (isOnline.value = true));
+  useEventListener(window, 'offline', () => (isOnline.value = false));
 
-  return { isOnline }
+  return { isOnline };
 }
 
 // Layer 3: Complex features combining multiple composables
 export function useAutoSave(dataRef, saveFunction, options = {}) {
-  const { debounce = 1000, onlyWhenOnline = true } = options
+  const { debounce = 1000, onlyWhenOnline = true } = options;
 
-  const { isOnline } = useOnline()
-  const isSaving = ref(false)
-  const lastSaved = ref(null)
+  const { isOnline } = useOnline();
+  const isSaving = ref(false);
+  const lastSaved = ref(null);
 
-  let timeoutId = null
+  let timeoutId = null;
 
-  watch(dataRef, (newData) => {
-    if (onlyWhenOnline && !isOnline.value) return
+  watch(
+    dataRef,
+    (newData) => {
+      if (onlyWhenOnline && !isOnline.value) return;
 
-    clearTimeout(timeoutId)
-    timeoutId = setTimeout(async () => {
-      isSaving.value = true
-      try {
-        await saveFunction(newData)
-        lastSaved.value = new Date()
-      } finally {
-        isSaving.value = false
-      }
-    }, debounce)
-  }, { deep: true })
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(async () => {
+        isSaving.value = true;
+        try {
+          await saveFunction(newData);
+          lastSaved.value = new Date();
+        } finally {
+          isSaving.value = false;
+        }
+      }, debounce);
+    },
+    { deep: true }
+  );
 
-  return { isSaving, lastSaved, isOnline }
+  return { isSaving, lastSaved, isOnline };
 }
 ```
 
@@ -152,15 +163,15 @@ Extract inline composables when a component gets complex:
 ```vue
 <script setup>
 // BEFORE: All logic mixed together
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue';
 
-const searchQuery = ref('')
-const filters = ref({ category: null, minPrice: 0 })
-const products = ref([])
-const isLoading = ref(false)
-const error = ref(null)
-const sortBy = ref('name')
-const sortOrder = ref('asc')
+const searchQuery = ref('');
+const filters = ref({ category: null, minPrice: 0 });
+const products = ref([]);
+const isLoading = ref(false);
+const error = ref(null);
+const sortBy = ref('name');
+const sortOrder = ref('asc');
 
 // ...50 more lines of mixed concerns
 </script>
@@ -169,13 +180,13 @@ const sortOrder = ref('asc')
 ```vue
 <script setup>
 // AFTER: Separated into focused composables
-import { useProductSearch } from './composables/useProductSearch'
-import { useProductFilters } from './composables/useProductFilters'
-import { useProductSort } from './composables/useProductSort'
+import { useProductSearch } from './composables/useProductSearch';
+import { useProductFilters } from './composables/useProductFilters';
+import { useProductSort } from './composables/useProductSort';
 
-const { searchQuery, debouncedQuery } = useProductSearch()
-const { filters, activeFilters, clearFilters } = useProductFilters()
-const { sortBy, sortOrder, sortedProducts } = useProductSort()
+const { searchQuery, debouncedQuery } = useProductSearch();
+const { filters, activeFilters, clearFilters } = useProductFilters();
+const { sortBy, sortOrder, sortedProducts } = useProductSort();
 
 // Each composable is focused, testable, and potentially reusable
 </script>
@@ -187,50 +198,51 @@ const { sortBy, sortOrder, sortedProducts } = useProductSort()
 // Composables can accept refs from other composables
 export function useFilteredProducts(products, filters) {
   return computed(() => {
-    let result = toValue(products)
+    let result = toValue(products);
 
     if (filters.value.category) {
-      result = result.filter(p => p.category === filters.value.category)
+      result = result.filter((p) => p.category === filters.value.category);
     }
 
     if (filters.value.minPrice > 0) {
-      result = result.filter(p => p.price >= filters.value.minPrice)
+      result = result.filter((p) => p.price >= filters.value.minPrice);
     }
 
-    return result
-  })
+    return result;
+  });
 }
 
 export function useSortedProducts(products, sortConfig) {
   return computed(() => {
-    const items = [...toValue(products)]
-    const { field, order } = sortConfig.value
+    const items = [...toValue(products)];
+    const { field, order } = sortConfig.value;
 
     return items.sort((a, b) => {
-      const comparison = a[field] > b[field] ? 1 : -1
-      return order === 'asc' ? comparison : -comparison
-    })
-  })
+      const comparison = a[field] > b[field] ? 1 : -1;
+      return order === 'asc' ? comparison : -comparison;
+    });
+  });
 }
 
 // Usage - composables are chained through their outputs
-const { products, isLoading } = useFetch('/api/products')
-const { filters } = useFilters()
-const filteredProducts = useFilteredProducts(products, filters)
-const { sortConfig } = useSortConfig()
-const sortedProducts = useSortedProducts(filteredProducts, sortConfig)
+const { products, isLoading } = useFetch('/api/products');
+const { filters } = useFilters();
+const filteredProducts = useFilteredProducts(products, filters);
+const { sortConfig } = useSortConfig();
+const sortedProducts = useSortedProducts(filteredProducts, sortConfig);
 ```
 
 ## Advantages Over Mixins
 
-| Composables | Mixins |
-|-------------|--------|
-| Explicit dependencies via imports | Implicit dependencies |
-| Clear data flow via parameters | Unclear which mixin provides what |
-| No namespace collisions | Properties can conflict |
-| Easy to trace and debug | Hard to track origins |
-| TypeScript-friendly | Poor TypeScript support |
+| Composables                       | Mixins                            |
+| --------------------------------- | --------------------------------- |
+| Explicit dependencies via imports | Implicit dependencies             |
+| Clear data flow via parameters    | Unclear which mixin provides what |
+| No namespace collisions           | Properties can conflict           |
+| Easy to trace and debug           | Hard to track origins             |
+| TypeScript-friendly               | Poor TypeScript support           |
 
 ## Reference
+
 - [Vue.js Composables](https://vuejs.org/guide/reusability/composables.html)
 - [Vue.js Composables vs Mixins](https://vuejs.org/guide/reusability/composables.html#comparisons-with-other-techniques)

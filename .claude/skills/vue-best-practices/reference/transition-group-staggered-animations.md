@@ -21,6 +21,7 @@ This pattern is particularly useful for enter animations when new items are adde
 - [ ] Consider using animation libraries (GSAP) for complex animations
 
 **Basic Pattern:**
+
 ```vue
 <template>
   <TransitionGroup
@@ -30,11 +31,7 @@ This pattern is particularly useful for enter animations when new items are adde
     @enter="onEnter"
     @leave="onLeave"
   >
-    <li
-      v-for="(item, index) in items"
-      :key="item.id"
-      :data-index="index"
-    >
+    <li v-for="(item, index) in items" :key="item.id" :data-index="index">
       {{ item.name }}
     </li>
   </TransitionGroup>
@@ -42,38 +39,39 @@ This pattern is particularly useful for enter animations when new items are adde
 
 <script setup>
 function onBeforeEnter(el) {
-  el.style.opacity = 0
-  el.style.transform = 'translateY(20px)'
+  el.style.opacity = 0;
+  el.style.transform = 'translateY(20px)';
 }
 
 function onEnter(el, done) {
-  const delay = el.dataset.index * 150 // 150ms between each item
+  const delay = el.dataset.index * 150; // 150ms between each item
 
   setTimeout(() => {
-    el.style.transition = 'all 0.4s ease-out'
-    el.style.opacity = 1
-    el.style.transform = 'translateY(0)'
+    el.style.transition = 'all 0.4s ease-out';
+    el.style.opacity = 1;
+    el.style.transform = 'translateY(0)';
 
     // Call done after transition completes
-    setTimeout(done, 400)
-  }, delay)
+    setTimeout(done, 400);
+  }, delay);
 }
 
 function onLeave(el, done) {
-  const delay = el.dataset.index * 100
+  const delay = el.dataset.index * 100;
 
   setTimeout(() => {
-    el.style.transition = 'all 0.3s ease-in'
-    el.style.opacity = 0
-    el.style.transform = 'translateY(-20px)'
+    el.style.transition = 'all 0.3s ease-in';
+    el.style.opacity = 0;
+    el.style.transform = 'translateY(-20px)';
 
-    setTimeout(done, 300)
-  }, delay)
+    setTimeout(done, 300);
+  }, delay);
 }
 </script>
 ```
 
 **With GSAP Animation Library:**
+
 ```vue
 <template>
   <TransitionGroup
@@ -83,22 +81,18 @@ function onLeave(el, done) {
     @enter="onEnter"
     @leave="onLeave"
   >
-    <li
-      v-for="(item, index) in computedList"
-      :key="item.id"
-      :data-index="index"
-    >
+    <li v-for="(item, index) in computedList" :key="item.id" :data-index="index">
       {{ item.msg }}
     </li>
   </TransitionGroup>
 </template>
 
 <script setup>
-import gsap from 'gsap'
+import gsap from 'gsap';
 
 function onBeforeEnter(el) {
-  el.style.opacity = 0
-  el.style.height = 0
+  el.style.opacity = 0;
+  el.style.height = 0;
 }
 
 function onEnter(el, done) {
@@ -106,8 +100,8 @@ function onEnter(el, done) {
     opacity: 1,
     height: '1.6em',
     delay: el.dataset.index * 0.15,
-    onComplete: done
-  })
+    onComplete: done,
+  });
 }
 
 function onLeave(el, done) {
@@ -115,8 +109,8 @@ function onLeave(el, done) {
     opacity: 0,
     height: 0,
     delay: el.dataset.index * 0.15,
-    onComplete: done
-  })
+    onComplete: done,
+  });
 }
 </script>
 ```
@@ -134,6 +128,7 @@ When set, Vue skips CSS transition detection:
 ```
 
 Use `:css="false"` when:
+
 - You're handling all animations in JavaScript
 - You want to avoid CSS class application overhead
 - You're using a JavaScript animation library (GSAP, anime.js, etc.)
@@ -144,21 +139,19 @@ When filtering a list, the index in `v-for` changes. Consider using a computed p
 
 ```vue
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed } from 'vue';
 
 const items = ref([
   { id: 1, msg: 'Bruce Lee', show: true },
   { id: 2, msg: 'Jackie Chan', show: true },
-  { id: 3, msg: 'Chuck Norris', show: true }
-])
+  { id: 3, msg: 'Chuck Norris', show: true },
+]);
 
-const query = ref('')
+const query = ref('');
 
 const computedList = computed(() => {
-  return items.value.filter(item =>
-    item.msg.toLowerCase().includes(query.value.toLowerCase())
-  )
-})
+  return items.value.filter((item) => item.msg.toLowerCase().includes(query.value.toLowerCase()));
+});
 </script>
 ```
 
@@ -168,17 +161,17 @@ For more advanced effects, calculate delay from center:
 
 ```javascript
 function onEnter(el, done) {
-  const totalItems = document.querySelectorAll('[data-index]').length
-  const index = parseInt(el.dataset.index)
-  const center = Math.floor(totalItems / 2)
-  const distanceFromCenter = Math.abs(index - center)
+  const totalItems = document.querySelectorAll('[data-index]').length;
+  const index = parseInt(el.dataset.index);
+  const center = Math.floor(totalItems / 2);
+  const distanceFromCenter = Math.abs(index - center);
 
   gsap.to(el, {
     opacity: 1,
     scale: 1,
     delay: distanceFromCenter * 0.1, // Items closer to center animate first
-    onComplete: done
-  })
+    onComplete: done,
+  });
 }
 ```
 
@@ -196,5 +189,6 @@ function onEnter(el, done) {
 ```
 
 ## Reference
+
 - [Vue.js TransitionGroup Staggering Transitions](https://vuejs.org/guide/built-ins/transition-group.html#staggering-list-transitions)
 - [GSAP Animation Library](https://greensock.com/gsap/)

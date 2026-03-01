@@ -21,19 +21,19 @@ When using `provide/inject` in Vue plugins, use Symbol keys (preferably with `In
 export default {
   install(app) {
     // String key - can collide with other plugins!
-    app.provide('http', axios)
-    app.provide('config', appConfig)
-  }
-}
+    app.provide('http', axios);
+    app.provide('config', appConfig);
+  },
+};
 
 // component.vue
-const http = inject('http')  // Type is unknown
-const config = inject('config')  // Type is unknown
+const http = inject('http'); // Type is unknown
+const config = inject('config'); // Type is unknown
 
 // Another plugin accidentally uses the same key
 otherPlugin.install = (app) => {
-  app.provide('http', differentHttpClient)  // COLLISION! Overwrites first
-}
+  app.provide('http', differentHttpClient); // COLLISION! Overwrites first
+};
 ```
 
 ## Good Practice
@@ -79,15 +79,15 @@ const config = inject(configKey)  // Type: AppConfig | undefined
 // With InjectionKey, default values are type-checked
 const config = inject(configKey, {
   apiUrl: '/default-api',
-  timeout: 3000
-})
+  timeout: 3000,
+});
 // Type: AppConfig (not undefined because default provided)
 
 // Type error if default doesn't match!
 const config = inject(configKey, {
-  apiUrl: '/api'
+  apiUrl: '/api',
   // Missing 'timeout' - TypeScript error!
-})
+});
 ```
 
 ## Organizing Injection Keys
@@ -96,28 +96,28 @@ For larger applications, organize keys by domain:
 
 ```typescript
 // injection-keys/index.ts
-export * from './auth'
-export * from './i18n'
-export * from './http'
+export * from './auth';
+export * from './i18n';
+export * from './http';
 
 // injection-keys/auth.ts
-import type { InjectionKey } from 'vue'
+import type { InjectionKey } from 'vue';
 
 export interface AuthService {
-  login: (credentials: Credentials) => Promise<User>
-  logout: () => Promise<void>
-  currentUser: Ref<User | null>
+  login: (credentials: Credentials) => Promise<User>;
+  logout: () => Promise<void>;
+  currentUser: Ref<User | null>;
 }
 
-export const authKey: InjectionKey<AuthService> = Symbol('auth')
+export const authKey: InjectionKey<AuthService> = Symbol('auth');
 
 // injection-keys/i18n.ts
 export interface I18n {
-  t: (key: string, params?: Record<string, string>) => string
-  locale: Ref<string>
+  t: (key: string, params?: Record<string, string>) => string;
+  locale: Ref<string>;
 }
 
-export const i18nKey: InjectionKey<I18n> = Symbol('i18n')
+export const i18nKey: InjectionKey<I18n> = Symbol('i18n');
 ```
 
 ## Creating a useInject Helper
@@ -156,7 +156,7 @@ Even then, consider using a namespaced string:
 
 ```typescript
 // Better than plain 'config'
-app.provide('myPlugin:config', config)
+app.provide('myPlugin:config', config);
 ```
 
 ## References

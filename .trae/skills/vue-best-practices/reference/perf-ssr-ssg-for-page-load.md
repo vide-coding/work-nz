@@ -22,31 +22,33 @@ Choose your architecture based on your content's nature and page load requiremen
 
 ## Architecture Decision Guide
 
-| Content Type | Changes | Best Approach | Example |
-|--------------|---------|---------------|---------|
-| Marketing pages | Rarely | SSG | Landing pages, docs |
-| Blog/content | On publish | SSG with regeneration | Blog, documentation |
-| E-commerce catalog | Hourly/daily | SSG + ISR | Product listings |
-| User dashboard | Per request | SPA (ok) | Admin panels |
-| Social feed | Real-time | SSR or SPA | News feed |
-| Authenticated app | Per user | SPA (ok) | Internal tools |
+| Content Type       | Changes      | Best Approach         | Example             |
+| ------------------ | ------------ | --------------------- | ------------------- |
+| Marketing pages    | Rarely       | SSG                   | Landing pages, docs |
+| Blog/content       | On publish   | SSG with regeneration | Blog, documentation |
+| E-commerce catalog | Hourly/daily | SSG + ISR             | Product listings    |
+| User dashboard     | Per request  | SPA (ok)              | Admin panels        |
+| Social feed        | Real-time    | SSR or SPA            | News feed           |
+| Authenticated app  | Per user     | SPA (ok)              | Internal tools      |
 
 **Incorrect:**
+
 ```javascript
 // BAD: Pure client-side SPA for a marketing site
 // Users see blank page until JS loads and executes
 
 // main.js
-import { createApp } from 'vue'
-import App from './App.vue'
+import { createApp } from 'vue';
+import App from './App.vue';
 
-createApp(App).mount('#app')  // Nothing visible until this runs
+createApp(App).mount('#app'); // Nothing visible until this runs
 
 // index.html - Users see empty #app until JS executes
 // <div id="app"></div>
 ```
 
 **Correct:**
+
 ```javascript
 // GOOD: Use Nuxt.js for SSR/SSG
 // nuxt.config.ts
@@ -78,7 +80,7 @@ export default defineNuxtConfig({
 
 <script setup>
 // Data fetched at build time (SSG) or request time (SSR)
-const { data: features } = await useFetch('/api/features')
+const { data: features } = await useFetch('/api/features');
 </script>
 ```
 
@@ -99,25 +101,25 @@ export default defineNuxtConfig({
     '/app/**': { ssr: false },
 
     // API routes - server-side
-    '/api/**': { cors: true }
-  }
-})
+    '/api/**': { cors: true },
+  },
+});
 ```
 
 ## Manual SSR with Vue (without Nuxt)
 
 ```javascript
 // server.js - Express with Vue SSR
-import express from 'express'
-import { createSSRApp } from 'vue'
-import { renderToString } from 'vue/server-renderer'
-import App from './App.vue'
+import express from 'express';
+import { createSSRApp } from 'vue';
+import { renderToString } from 'vue/server-renderer';
+import App from './App.vue';
 
-const app = express()
+const app = express();
 
 app.get('*', async (req, res) => {
-  const vueApp = createSSRApp(App)
-  const html = await renderToString(vueApp)
+  const vueApp = createSSRApp(App);
+  const html = await renderToString(vueApp);
 
   res.send(`
     <!DOCTYPE html>
@@ -128,17 +130,17 @@ app.get('*', async (req, res) => {
         <script type="module" src="/client.js"></script>
       </body>
     </html>
-  `)
-})
+  `);
+});
 ```
 
 ## Performance Impact
 
-| Approach | Time to First Byte | LCP | JavaScript Required |
-|----------|-------------------|-----|---------------------|
-| Client SPA | Fast | Slow (waits for JS) | Yes, before content |
-| SSR | Slower | Fast (HTML ready) | No, for initial view |
-| SSG | Fast (CDN) | Fast (HTML ready) | No, for initial view |
+| Approach   | Time to First Byte | LCP                 | JavaScript Required  |
+| ---------- | ------------------ | ------------------- | -------------------- |
+| Client SPA | Fast               | Slow (waits for JS) | Yes, before content  |
+| SSR        | Slower             | Fast (HTML ready)   | No, for initial view |
+| SSG        | Fast (CDN)         | Fast (HTML ready)   | No, for initial view |
 
 ## When Client-Side SPA Is Acceptable
 
@@ -152,19 +154,20 @@ app.get('*', async (req, res) => {
 
 ```javascript
 // vite.config.js - Using vite-ssg for SSG
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
+import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
 
 export default defineConfig({
   plugins: [vue()],
   ssgOptions: {
     script: 'async',
-    formatting: 'minify'
-  }
-})
+    formatting: 'minify',
+  },
+});
 ```
 
 ## Reference
+
 - [Vue.js Performance - Page Load Optimizations](https://vuejs.org/guide/best-practices/performance.html#page-load-optimizations)
 - [Vue.js SSR Guide](https://vuejs.org/guide/scaling-up/ssr.html)
 - [Nuxt.js Documentation](https://nuxt.com/)

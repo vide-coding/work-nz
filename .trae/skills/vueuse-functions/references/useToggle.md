@@ -9,18 +9,18 @@ A boolean switcher with utility functions.
 ## Usage
 
 ```ts
-import { useToggle } from '@vueuse/core'
+import { useToggle } from '@vueuse/core';
 
-const [value, toggle] = useToggle()
+const [value, toggle] = useToggle();
 ```
 
 When you pass a ref, `useToggle` will return a simple toggle function instead:
 
 ```ts
-import { useDark, useToggle } from '@vueuse/core'
+import { useDark, useToggle } from '@vueuse/core';
 
-const isDark = useDark()
-const toggleDark = useToggle(isDark)
+const isDark = useDark();
+const toggleDark = useToggle(isDark);
 ```
 
 Note: be aware that the toggle function accepts the first argument as the override value. You might want to avoid directly passing the function to events in the template, as the event object will pass in.
@@ -35,22 +35,18 @@ Note: be aware that the toggle function accepts the first argument as the overri
 ## Type Declarations
 
 ```ts
-export type ToggleFn = (value?: boolean) => void
-export type UseToggleReturn = [ShallowRef<boolean>, ToggleFn] | ToggleFn
+export type ToggleFn = (value?: boolean) => void;
+export type UseToggleReturn = [ShallowRef<boolean>, ToggleFn] | ToggleFn;
 export interface UseToggleOptions<Truthy, Falsy> {
-  truthyValue?: MaybeRefOrGetter<Truthy>
-  falsyValue?: MaybeRefOrGetter<Falsy>
+  truthyValue?: MaybeRefOrGetter<Truthy>;
+  falsyValue?: MaybeRefOrGetter<Falsy>;
 }
 export declare function useToggle<Truthy, Falsy, T = Truthy | Falsy>(
   initialValue: Ref<T>,
-  options?: UseToggleOptions<Truthy, Falsy>,
-): (value?: T) => T
-export declare function useToggle<
-  Truthy = true,
-  Falsy = false,
-  T = Truthy | Falsy,
->(
+  options?: UseToggleOptions<Truthy, Falsy>
+): (value?: T) => T;
+export declare function useToggle<Truthy = true, Falsy = false, T = Truthy | Falsy>(
   initialValue?: T,
-  options?: UseToggleOptions<Truthy, Falsy>,
-): [ShallowRef<T>, (value?: T) => T]
+  options?: UseToggleOptions<Truthy, Falsy>
+): [ShallowRef<T>, (value?: T) => T];
 ```

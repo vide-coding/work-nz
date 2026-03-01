@@ -20,55 +20,57 @@ If you need to share information across hooks, use the element's `dataset` attri
 - [ ] Only modify `el` (the DOM element) directly
 
 **Incorrect:**
+
 ```javascript
 // WRONG: Mutating binding object
 const vBadDirective = {
   mounted(el, binding) {
     // DON'T DO THIS - modifying binding
-    binding.value = 'modified' // WRONG!
-    binding.customData = 'stored' // WRONG!
-    binding.modifiers.custom = true // WRONG!
+    binding.value = 'modified'; // WRONG!
+    binding.customData = 'stored'; // WRONG!
+    binding.modifiers.custom = true; // WRONG!
   },
   updated(el, binding) {
     // These modifications may be lost or cause errors
-    console.log(binding.customData) // undefined or error
-  }
-}
+    console.log(binding.customData); // undefined or error
+  },
+};
 
 // WRONG: Mutating vnode
 const vAnotherBadDirective = {
   mounted(el, binding, vnode) {
     // DON'T DO THIS
-    vnode.myData = 'stored' // WRONG!
-    vnode.props.modified = true // WRONG!
-  }
-}
+    vnode.myData = 'stored'; // WRONG!
+    vnode.props.modified = true; // WRONG!
+  },
+};
 ```
 
 **Correct:**
+
 ```javascript
 // CORRECT: Use el.dataset for simple data
 const vWithDataset = {
   mounted(el, binding) {
     // Store data on the element's dataset
-    el.dataset.originalValue = binding.value
-    el.dataset.mountedAt = Date.now().toString()
+    el.dataset.originalValue = binding.value;
+    el.dataset.mountedAt = Date.now().toString();
   },
   updated(el, binding) {
     // Access previously stored data
-    console.log('Original:', el.dataset.originalValue)
-    console.log('Current:', binding.value)
-    console.log('Mounted at:', el.dataset.mountedAt)
+    console.log('Original:', el.dataset.originalValue);
+    console.log('Current:', binding.value);
+    console.log('Mounted at:', el.dataset.mountedAt);
   },
   unmounted(el) {
     // Clean up dataset if needed
-    delete el.dataset.originalValue
-    delete el.dataset.mountedAt
-  }
-}
+    delete el.dataset.originalValue;
+    delete el.dataset.mountedAt;
+  },
+};
 
 // CORRECT: Use WeakMap for complex data
-const directiveState = new WeakMap()
+const directiveState = new WeakMap();
 
 const vWithWeakMap = {
   mounted(el, binding) {
@@ -78,28 +80,28 @@ const vWithWeakMap = {
       config: binding.arg,
       mountedAt: Date.now(),
       callbacks: [],
-      observers: []
-    })
+      observers: [],
+    });
   },
   updated(el, binding) {
-    const state = directiveState.get(el)
+    const state = directiveState.get(el);
     if (state) {
-      console.log('Original:', state.originalValue)
-      console.log('Current:', binding.value)
+      console.log('Original:', state.originalValue);
+      console.log('Current:', binding.value);
       // Can safely modify state object
-      state.updateCount = (state.updateCount || 0) + 1
+      state.updateCount = (state.updateCount || 0) + 1;
     }
   },
   unmounted(el) {
     // WeakMap auto-cleans when element is garbage collected
     // but explicit cleanup is good for observers/listeners
-    const state = directiveState.get(el)
+    const state = directiveState.get(el);
     if (state) {
-      state.observers.forEach(obs => obs.disconnect())
-      directiveState.delete(el)
+      state.observers.forEach((obs) => obs.disconnect());
+      directiveState.delete(el);
     }
-  }
-}
+  },
+};
 ```
 
 ## Using Element Properties
@@ -109,24 +111,24 @@ const vWithWeakMap = {
 const vTooltip = {
   mounted(el, binding) {
     // Store on element with underscore prefix to avoid conflicts
-    el._tooltipInstance = createTooltip(el, binding.value)
-    el._tooltipConfig = { ...binding.modifiers }
+    el._tooltipInstance = createTooltip(el, binding.value);
+    el._tooltipConfig = { ...binding.modifiers };
   },
   updated(el, binding) {
     // Access and update stored instance
     if (el._tooltipInstance) {
-      el._tooltipInstance.update(binding.value)
+      el._tooltipInstance.update(binding.value);
     }
   },
   unmounted(el) {
     // Clean up
     if (el._tooltipInstance) {
-      el._tooltipInstance.destroy()
-      delete el._tooltipInstance
-      delete el._tooltipConfig
+      el._tooltipInstance.destroy();
+      delete el._tooltipInstance;
+      delete el._tooltipConfig;
     }
-  }
-}
+  },
+};
 ```
 
 ## What You CAN Modify
@@ -137,21 +139,22 @@ You are allowed to modify the `el` (DOM element) itself:
 const vHighlight = {
   mounted(el, binding) {
     // CORRECT: Modifying el directly is allowed
-    el.style.backgroundColor = binding.value
-    el.classList.add('highlighted')
-    el.setAttribute('data-highlighted', 'true')
-    el.textContent = 'Modified content'
+    el.style.backgroundColor = binding.value;
+    el.classList.add('highlighted');
+    el.setAttribute('data-highlighted', 'true');
+    el.textContent = 'Modified content';
   },
   updated(el, binding) {
     // CORRECT: Update el when binding changes
-    el.style.backgroundColor = binding.value
-  }
-}
+    el.style.backgroundColor = binding.value;
+  },
+};
 ```
 
 ## Binding Object Properties (Read-Only Reference)
 
 The `binding` object contains:
+
 - `value` - Current value passed to directive (read-only)
 - `oldValue` - Previous value (only in beforeUpdate/updated) (read-only)
 - `arg` - Argument passed (e.g., `v-dir:arg`) (read-only)
@@ -163,18 +166,19 @@ The `binding` object contains:
 const vExample = {
   mounted(el, binding) {
     // READ these properties, don't modify them
-    console.log(binding.value)      // Read: OK
-    console.log(binding.arg)        // Read: OK
-    console.log(binding.modifiers)  // Read: OK
-    console.log(binding.instance)   // Read: OK
+    console.log(binding.value); // Read: OK
+    console.log(binding.arg); // Read: OK
+    console.log(binding.modifiers); // Read: OK
+    console.log(binding.instance); // Read: OK
 
     // Store what you need for later
-    el.dataset.directiveArg = binding.arg || ''
-    el.dataset.hasModifierFoo = binding.modifiers.foo ? 'true' : 'false'
-  }
-}
+    el.dataset.directiveArg = binding.arg || '';
+    el.dataset.hasModifierFoo = binding.modifiers.foo ? 'true' : 'false';
+  },
+};
 ```
 
 ## Reference
+
 - [Vue.js Custom Directives - Hook Arguments](https://vuejs.org/guide/reusability/custom-directives#hook-arguments)
 - [MDN - HTMLElement.dataset](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/dataset)

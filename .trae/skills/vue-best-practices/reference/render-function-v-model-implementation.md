@@ -20,55 +20,60 @@ In templates, `v-model` is syntactic sugar that expands to a `modelValue` prop a
 - [ ] Use emit in child components to trigger updates
 
 **Incorrect:**
+
 ```javascript
-import { h } from 'vue'
-import CustomInput from './CustomInput.vue'
+import { h } from 'vue';
+import CustomInput from './CustomInput.vue';
 
 export default {
   setup() {
-    const text = ref('')
+    const text = ref('');
 
-    return () => h(CustomInput, {
-      // WRONG: Missing the update handler
-      modelValue: text.value
-    })
-  }
-}
+    return () =>
+      h(CustomInput, {
+        // WRONG: Missing the update handler
+        modelValue: text.value,
+      });
+  },
+};
 ```
 
 ```javascript
-import { h } from 'vue'
-import CustomInput from './CustomInput.vue'
+import { h } from 'vue';
+import CustomInput from './CustomInput.vue';
 
 export default {
   setup() {
-    const text = ref('')
+    const text = ref('');
 
-    return () => h(CustomInput, {
-      // WRONG: Wrong event name format
-      modelValue: text.value,
-      onModelValueUpdate: (val) => text.value = val
-    })
-  }
-}
+    return () =>
+      h(CustomInput, {
+        // WRONG: Wrong event name format
+        modelValue: text.value,
+        onModelValueUpdate: (val) => (text.value = val),
+      });
+  },
+};
 ```
 
 **Correct:**
+
 ```javascript
-import { h, ref } from 'vue'
-import CustomInput from './CustomInput.vue'
+import { h, ref } from 'vue';
+import CustomInput from './CustomInput.vue';
 
 export default {
   setup() {
-    const text = ref('')
+    const text = ref('');
 
-    return () => h(CustomInput, {
-      // CORRECT: modelValue prop + onUpdate:modelValue handler
-      modelValue: text.value,
-      'onUpdate:modelValue': (value) => text.value = value
-    })
-  }
-}
+    return () =>
+      h(CustomInput, {
+        // CORRECT: modelValue prop + onUpdate:modelValue handler
+        modelValue: text.value,
+        'onUpdate:modelValue': (value) => (text.value = value),
+      });
+  },
+};
 ```
 
 ## Native Input Elements
@@ -76,42 +81,44 @@ export default {
 For native inputs, use `value` and `onInput`:
 
 ```javascript
-import { h, ref } from 'vue'
+import { h, ref } from 'vue';
 
 export default {
   setup() {
-    const text = ref('')
+    const text = ref('');
 
-    return () => h('input', {
-      value: text.value,
-      onInput: (e) => text.value = e.target.value
-    })
-  }
-}
+    return () =>
+      h('input', {
+        value: text.value,
+        onInput: (e) => (text.value = e.target.value),
+      });
+  },
+};
 ```
 
 ## Named v-models (Multiple v-models)
 
 ```javascript
-import { h, ref } from 'vue'
-import UserForm from './UserForm.vue'
+import { h, ref } from 'vue';
+import UserForm from './UserForm.vue';
 
 export default {
   setup() {
-    const firstName = ref('')
-    const lastName = ref('')
+    const firstName = ref('');
+    const lastName = ref('');
 
-    return () => h(UserForm, {
-      // v-model:firstName
-      firstName: firstName.value,
-      'onUpdate:firstName': (val) => firstName.value = val,
+    return () =>
+      h(UserForm, {
+        // v-model:firstName
+        firstName: firstName.value,
+        'onUpdate:firstName': (val) => (firstName.value = val),
 
-      // v-model:lastName
-      lastName: lastName.value,
-      'onUpdate:lastName': (val) => lastName.value = val
-    })
-  }
-}
+        // v-model:lastName
+        lastName: lastName.value,
+        'onUpdate:lastName': (val) => (lastName.value = val),
+      });
+  },
+};
 ```
 
 ## v-model with Modifiers
@@ -164,58 +171,51 @@ export default {
 ## JSX Syntax
 
 ```jsx
-import { ref } from 'vue'
-import CustomInput from './CustomInput.vue'
+import { ref } from 'vue';
+import CustomInput from './CustomInput.vue';
 
 export default {
   setup() {
-    const text = ref('')
-    const count = ref(0)
+    const text = ref('');
+    const count = ref(0);
 
     return () => (
       <div>
         {/* v-model on custom component */}
-        <CustomInput
-          modelValue={text.value}
-          onUpdate:modelValue={(val) => text.value = val}
-        />
+        <CustomInput modelValue={text.value} onUpdate:modelValue={(val) => (text.value = val)} />
 
         {/* v-model on native input */}
-        <input
-          value={text.value}
-          onInput={(e) => text.value = e.target.value}
-        />
+        <input value={text.value} onInput={(e) => (text.value = e.target.value)} />
 
         {/* Named v-model */}
-        <Counter
-          count={count.value}
-          onUpdate:count={(val) => count.value = val}
-        />
+        <Counter count={count.value} onUpdate:count={(val) => (count.value = val)} />
       </div>
-    )
-  }
-}
+    );
+  },
+};
 ```
 
 ## Creating v-model-compatible Components
 
 ```javascript
-import { h } from 'vue'
+import { h } from 'vue';
 
 export default {
   props: {
-    modelValue: String
+    modelValue: String,
   },
   emits: ['update:modelValue'],
   setup(props, { emit }) {
-    return () => h('input', {
-      value: props.modelValue,
-      onInput: (e) => emit('update:modelValue', e.target.value)
-    })
-  }
-}
+    return () =>
+      h('input', {
+        value: props.modelValue,
+        onInput: (e) => emit('update:modelValue', e.target.value),
+      });
+  },
+};
 ```
 
 ## Reference
+
 - [Vue.js Render Functions - v-model](https://vuejs.org/guide/extras/render-function.html#v-model)
 - [Vue.js Component v-model](https://vuejs.org/guide/components/v-model.html)

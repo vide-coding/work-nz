@@ -20,76 +20,76 @@ Exposing raw refs allows any consumer to modify state directly, leading to bugs 
 - [ ] Consider returning `shallowReadonly()` for performance with large objects
 
 **Incorrect:**
+
 ```javascript
 // WRONG: State is fully mutable by any consumer
 export function useCart() {
-  const items = ref([])
+  const items = ref([]);
   const total = computed(() =>
     items.value.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  )
+  );
 
-  return { items, total }  // Anyone can mutate items directly!
+  return { items, total }; // Anyone can mutate items directly!
 }
 
 // Consumer code - mutations scattered everywhere
-const { items, total } = useCart()
+const { items, total } = useCart();
 
 // In component A
-items.value.push({ id: 1, name: 'Widget', price: 10, quantity: 1 })
+items.value.push({ id: 1, name: 'Widget', price: 10, quantity: 1 });
 
 // In component B - different mutation pattern
-items.value = items.value.filter(item => item.id !== 1)
+items.value = items.value.filter((item) => item.id !== 1);
 
 // In component C - direct modification
-items.value[0].quantity = 5
+items.value[0].quantity = 5;
 
 // Hard to track: where did this item come from? Why did quantity change?
 ```
 
 **Correct:**
+
 ```javascript
-import { ref, computed, readonly } from 'vue'
+import { ref, computed, readonly } from 'vue';
 
 export function useCart() {
-  const items = ref([])
+  const items = ref([]);
 
   const total = computed(() =>
     items.value.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  )
+  );
 
-  const itemCount = computed(() =>
-    items.value.reduce((sum, item) => sum + item.quantity, 0)
-  )
+  const itemCount = computed(() => items.value.reduce((sum, item) => sum + item.quantity, 0));
 
   // Explicit, controlled mutations
   function addItem(product, quantity = 1) {
-    const existing = items.value.find(item => item.id === product.id)
+    const existing = items.value.find((item) => item.id === product.id);
     if (existing) {
-      existing.quantity += quantity
+      existing.quantity += quantity;
     } else {
-      items.value.push({ ...product, quantity })
+      items.value.push({ ...product, quantity });
     }
   }
 
   function removeItem(productId) {
-    const index = items.value.findIndex(item => item.id === productId)
+    const index = items.value.findIndex((item) => item.id === productId);
     if (index > -1) {
-      items.value.splice(index, 1)
+      items.value.splice(index, 1);
     }
   }
 
   function updateQuantity(productId, quantity) {
-    const item = items.value.find(item => item.id === productId)
+    const item = items.value.find((item) => item.id === productId);
     if (item) {
-      item.quantity = Math.max(0, quantity)
+      item.quantity = Math.max(0, quantity);
       if (item.quantity === 0) {
-        removeItem(productId)
+        removeItem(productId);
       }
     }
   }
 
   function clearCart() {
-    items.value = []
+    items.value = [];
   }
 
   return {
@@ -101,20 +101,20 @@ export function useCart() {
     addItem,
     removeItem,
     updateQuantity,
-    clearCart
-  }
+    clearCart,
+  };
 }
 
 // Consumer code - controlled mutations only
-const { items, total, addItem, removeItem, updateQuantity } = useCart()
+const { items, total, addItem, removeItem, updateQuantity } = useCart();
 
 // items.value.push(...)  // TypeScript error: readonly!
 // items.value = []       // TypeScript error: readonly!
 
 // Correct way - through explicit methods
-addItem({ id: 1, name: 'Widget', price: 10 })
-updateQuantity(1, 3)
-removeItem(1)
+addItem({ id: 1, name: 'Widget', price: 10 });
+updateQuantity(1, 3);
+removeItem(1);
 ```
 
 ## Pattern: Internal vs External State
@@ -124,30 +124,30 @@ Keep internal state private, expose readonly view:
 ```javascript
 export function useAuth() {
   // Internal, fully mutable
-  const _user = ref(null)
-  const _token = ref(null)
-  const _isLoading = ref(false)
-  const _error = ref(null)
+  const _user = ref(null);
+  const _token = ref(null);
+  const _isLoading = ref(false);
+  const _error = ref(null);
 
   async function login(credentials) {
-    _isLoading.value = true
-    _error.value = null
+    _isLoading.value = true;
+    _error.value = null;
 
     try {
-      const response = await api.login(credentials)
-      _user.value = response.user
-      _token.value = response.token
+      const response = await api.login(credentials);
+      _user.value = response.user;
+      _token.value = response.token;
     } catch (e) {
-      _error.value = e.message
-      throw e
+      _error.value = e.message;
+      throw e;
     } finally {
-      _isLoading.value = false
+      _isLoading.value = false;
     }
   }
 
   function logout() {
-    _user.value = null
-    _token.value = null
+    _user.value = null;
+    _token.value = null;
   }
 
   return {
@@ -158,44 +158,44 @@ export function useAuth() {
     error: readonly(_error),
     // Methods for state changes
     login,
-    logout
-  }
+    logout,
+  };
 }
 ```
 
 ## When to Use readonly vs Not
 
-| Use `readonly` | Don't Use `readonly` |
-|----------------|----------------------|
-| State with specific update rules | Simple two-way binding state |
-| Shared state between components | Form input values |
-| State that needs validation on change | Local component state |
+| Use `readonly`                          | Don't Use `readonly`             |
+| --------------------------------------- | -------------------------------- |
+| State with specific update rules        | Simple two-way binding state     |
+| Shared state between components         | Form input values                |
+| State that needs validation on change   | Local component state            |
 | When debugging mutation sources matters | When consumers need full control |
 
 ```javascript
 // Form input - consumers SHOULD mutate directly
 export function useForm(initial) {
-  const values = ref({ ...initial })
-  return { values }  // No readonly - it's meant to be mutated
+  const values = ref({ ...initial });
+  return { values }; // No readonly - it's meant to be mutated
 }
 
 // Counter with min/max - needs controlled mutations
 export function useCounter(min = 0, max = 100) {
-  const _count = ref(min)
+  const _count = ref(min);
 
   function increment() {
-    if (_count.value < max) _count.value++
+    if (_count.value < max) _count.value++;
   }
 
   function decrement() {
-    if (_count.value > min) _count.value--
+    if (_count.value > min) _count.value--;
   }
 
   return {
     count: readonly(_count),
     increment,
-    decrement
-  }
+    decrement,
+  };
 }
 ```
 
@@ -205,17 +205,20 @@ For large objects, use `shallowReadonly` to avoid deep readonly conversion:
 
 ```javascript
 export function useLargeDataset() {
-  const data = ref([/* thousands of items */])
+  const data = ref([
+    /* thousands of items */
+  ]);
 
   return {
     // shallowReadonly - only top level is readonly
     // Nested properties are still technically mutable
     // but the ref itself can't be reassigned
-    data: shallowReadonly(data)
-  }
+    data: shallowReadonly(data),
+  };
 }
 ```
 
 ## Reference
+
 - [Vue.js Reactivity API - readonly](https://vuejs.org/api/reactivity-core.html#readonly)
 - [13 Vue Composables Tips](https://michaelnthiessen.com/13-vue-composables-tips/)

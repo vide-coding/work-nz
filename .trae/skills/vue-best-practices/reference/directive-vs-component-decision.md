@@ -22,67 +22,67 @@ Choosing the wrong abstraction leads to code that's harder to maintain, test, an
 
 ## Decision Matrix
 
-| Requirement | Use Directive | Use Component | Use Composable |
-|-------------|--------------|---------------|----------------|
-| DOM manipulation only | Yes | - | - |
-| Needs own template | - | Yes | - |
-| Encapsulated state | - | Yes | Maybe |
-| Reusable behavior | Yes | Yes | Yes |
-| Access to parent instance | Avoid | - | Yes |
-| SSR support needed | Avoid | Yes | Yes |
-| Third-party lib integration | Yes | - | Maybe |
-| Complex reactive logic | - | Yes | Yes |
+| Requirement                 | Use Directive | Use Component | Use Composable |
+| --------------------------- | ------------- | ------------- | -------------- |
+| DOM manipulation only       | Yes           | -             | -              |
+| Needs own template          | -             | Yes           | -              |
+| Encapsulated state          | -             | Yes           | Maybe          |
+| Reusable behavior           | Yes           | Yes           | Yes            |
+| Access to parent instance   | Avoid         | -             | Yes            |
+| SSR support needed          | Avoid         | Yes           | Yes            |
+| Third-party lib integration | Yes           | -             | Maybe          |
+| Complex reactive logic      | -             | Yes           | Yes            |
 
 ## Directive-Appropriate Use Cases
 
 ```javascript
 // GOOD: Simple DOM manipulation
 const vFocus = {
-  mounted: (el) => el.focus()
-}
+  mounted: (el) => el.focus(),
+};
 
 // GOOD: Third-party library integration
 const vTippy = {
   mounted(el, binding) {
-    el._tippy = tippy(el, binding.value)
+    el._tippy = tippy(el, binding.value);
   },
   updated(el, binding) {
-    el._tippy?.setProps(binding.value)
+    el._tippy?.setProps(binding.value);
   },
   unmounted(el) {
-    el._tippy?.destroy()
-  }
-}
+    el._tippy?.destroy();
+  },
+};
 
 // GOOD: Event handling that Vue doesn't provide
 const vClickOutside = {
   mounted(el, binding) {
     el._handler = (e) => {
-      if (!el.contains(e.target)) binding.value(e)
-    }
-    document.addEventListener('click', el._handler)
+      if (!el.contains(e.target)) binding.value(e);
+    };
+    document.addEventListener('click', el._handler);
   },
   unmounted(el) {
-    document.removeEventListener('click', el._handler)
-  }
-}
+    document.removeEventListener('click', el._handler);
+  },
+};
 
 // GOOD: Intersection Observer
 const vLazyLoad = {
   mounted(el, binding) {
     const observer = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting) {
-        el.src = binding.value
-        observer.disconnect()
+        el.src = binding.value;
+        observer.disconnect();
       }
-    })
-    observer.observe(el)
-    el._observer = observer
+    });
+    observer.observe(el);
+    el._observer = observer;
   },
   unmounted(el) {
-    el._observer?.disconnect()
-  }
-}
+    el._observer?.disconnect();
+  },
+};
 ```
 
 ## Component-Appropriate Use Cases
@@ -102,15 +102,15 @@ const vLazyLoad = {
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref } from 'vue';
 
 defineProps({
-  content: String
-})
+  content: String,
+});
 
-const isVisible = ref(false)
-const show = () => isVisible.value = true
-const hide = () => isVisible.value = false
+const isVisible = ref(false);
+const show = () => (isVisible.value = true);
+const hide = () => (isVisible.value = false);
 </script>
 ```
 
@@ -127,28 +127,30 @@ const hide = () => isVisible.value = false
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue';
 
 const props = defineProps({
-  threshold: { type: Number, default: 100 }
-})
+  threshold: { type: Number, default: 100 },
+});
 
-const emit = defineEmits(['load-more'])
-const container = ref(null)
-const loading = ref(false)
+const emit = defineEmits(['load-more']);
+const container = ref(null);
+const loading = ref(false);
 
 // Complex scroll logic with state management
 const handleScroll = () => {
-  if (loading.value) return
-  const { scrollHeight, scrollTop, clientHeight } = container.value
+  if (loading.value) return;
+  const { scrollHeight, scrollTop, clientHeight } = container.value;
   if (scrollHeight - scrollTop - clientHeight < props.threshold) {
-    loading.value = true
-    emit('load-more', () => { loading.value = false })
+    loading.value = true;
+    emit('load-more', () => {
+      loading.value = false;
+    });
   }
-}
+};
 
-onMounted(() => container.value?.addEventListener('scroll', handleScroll))
-onUnmounted(() => container.value?.removeEventListener('scroll', handleScroll))
+onMounted(() => container.value?.addEventListener('scroll', handleScroll));
+onUnmounted(() => container.value?.removeEventListener('scroll', handleScroll));
 </script>
 ```
 
@@ -157,29 +159,29 @@ onUnmounted(() => container.value?.removeEventListener('scroll', handleScroll))
 ```javascript
 // GOOD: Reusable stateful logic without template
 // useClickOutside.js
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue';
 
 export function useClickOutside(elementRef, callback) {
-  const isClickedOutside = ref(false)
+  const isClickedOutside = ref(false);
 
   const handler = (e) => {
     if (elementRef.value && !elementRef.value.contains(e.target)) {
-      isClickedOutside.value = true
-      callback?.(e)
+      isClickedOutside.value = true;
+      callback?.(e);
     }
-  }
+  };
 
-  onMounted(() => document.addEventListener('click', handler))
-  onUnmounted(() => document.removeEventListener('click', handler))
+  onMounted(() => document.addEventListener('click', handler));
+  onUnmounted(() => document.removeEventListener('click', handler));
 
-  return { isClickedOutside }
+  return { isClickedOutside };
 }
 
 // Usage in component
-const dropdownRef = ref(null)
+const dropdownRef = ref(null);
 const { isClickedOutside } = useClickOutside(dropdownRef, () => {
-  isOpen.value = false
-})
+  isOpen.value = false;
+});
 ```
 
 ## Anti-Pattern: Directive Accessing Instance Too Much
@@ -216,15 +218,16 @@ const props = defineProps(['someProp'])
 const vPermission = {
   mounted(el, binding) {
     // Checking a global permission - acceptable
-    const userPermissions = binding.instance.$store?.state.user.permissions
+    const userPermissions = binding.instance.$store?.state.user.permissions;
     if (!userPermissions?.includes(binding.value)) {
-      el.style.display = 'none'
+      el.style.display = 'none';
     }
-  }
-}
+  },
+};
 ```
 
 ## Reference
+
 - [Vue.js Custom Directives](https://vuejs.org/guide/reusability/custom-directives)
 - [Vue.js Composables](https://vuejs.org/guide/reusability/composables.html)
 - [Vue.js Components Basics](https://vuejs.org/guide/essentials/component-basics.html)

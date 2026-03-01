@@ -40,11 +40,11 @@ This is a common source of confusion for developers coming from vanilla JavaScri
 ```vue
 <!-- Child.vue -->
 <script setup>
-const emit = defineEmits(['item-selected'])
+const emit = defineEmits(['item-selected']);
 
 function selectItem(item) {
   // This event reaches Parent, but NOT GrandParent
-  emit('item-selected', item)
+  emit('item-selected', item);
 }
 </script>
 ```
@@ -54,6 +54,7 @@ function selectItem(item) {
 Manually forward events through each component.
 
 **Correct:**
+
 ```vue
 <!-- GrandParent.vue -->
 <template>
@@ -64,7 +65,7 @@ Manually forward events through each component.
 ```vue
 <!-- Parent.vue -->
 <script setup>
-const emit = defineEmits(['item-selected'])
+const emit = defineEmits(['item-selected']);
 </script>
 
 <template>
@@ -76,10 +77,10 @@ const emit = defineEmits(['item-selected'])
 ```vue
 <!-- Child.vue -->
 <script setup>
-const emit = defineEmits(['item-selected'])
+const emit = defineEmits(['item-selected']);
 
 function selectItem(item) {
-  emit('item-selected', item)
+  emit('item-selected', item);
 }
 </script>
 ```
@@ -91,17 +92,18 @@ function selectItem(item) {
 For deeply nested components, provide a callback from the ancestor.
 
 **Correct:**
+
 ```vue
 <!-- GrandParent.vue -->
 <script setup>
-import { provide } from 'vue'
+import { provide } from 'vue';
 
 function handleItemSelected(item) {
-  console.log('Item selected:', item)
+  console.log('Item selected:', item);
 }
 
 // Provide the callback to all descendants
-provide('onItemSelected', handleItemSelected)
+provide('onItemSelected', handleItemSelected);
 </script>
 
 <template>
@@ -119,18 +121,19 @@ provide('onItemSelected', handleItemSelected)
 ```vue
 <!-- Child.vue -->
 <script setup>
-import { inject } from 'vue'
+import { inject } from 'vue';
 
 // Inject the callback from any ancestor
-const onItemSelected = inject('onItemSelected', () => {})
+const onItemSelected = inject('onItemSelected', () => {});
 
 function selectItem(item) {
-  onItemSelected(item)
+  onItemSelected(item);
 }
 </script>
 ```
 
 **Advantages:**
+
 - Skips intermediate components
 - No prop drilling or re-emitting
 - Works at any nesting depth
@@ -140,31 +143,32 @@ function selectItem(item) {
 For cross-component communication, especially between siblings or unrelated components, use Pinia.
 
 **Correct:**
+
 ```js
 // stores/selection.js
-import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { defineStore } from 'pinia';
+import { ref } from 'vue';
 
 export const useSelectionStore = defineStore('selection', () => {
-  const selectedItem = ref(null)
+  const selectedItem = ref(null);
 
   function selectItem(item) {
-    selectedItem.value = item
+    selectedItem.value = item;
   }
 
-  return { selectedItem, selectItem }
-})
+  return { selectedItem, selectItem };
+});
 ```
 
 ```vue
 <!-- DeepChild.vue - Updates state -->
 <script setup>
-import { useSelectionStore } from '@/stores/selection'
+import { useSelectionStore } from '@/stores/selection';
 
-const store = useSelectionStore()
+const store = useSelectionStore();
 
 function handleSelect(item) {
-  store.selectItem(item)
+  store.selectItem(item);
 }
 </script>
 ```
@@ -172,15 +176,13 @@ function handleSelect(item) {
 ```vue
 <!-- SiblingComponent.vue - Reacts to state -->
 <script setup>
-import { useSelectionStore } from '@/stores/selection'
+import { useSelectionStore } from '@/stores/selection';
 
-const store = useSelectionStore()
+const store = useSelectionStore();
 </script>
 
 <template>
-  <div v-if="store.selectedItem">
-    Selected: {{ store.selectedItem.name }}
-  </div>
+  <div v-if="store.selectedItem">Selected: {{ store.selectedItem.name }}</div>
 </template>
 ```
 
@@ -190,17 +192,17 @@ For truly decoupled components, a simple event bus can work:
 
 ```js
 // eventBus.js
-import mitt from 'mitt'
-export const emitter = mitt()
+import mitt from 'mitt';
+export const emitter = mitt();
 ```
 
 ```vue
 <!-- ComponentA.vue -->
 <script setup>
-import { emitter } from './eventBus'
+import { emitter } from './eventBus';
 
 function notify() {
-  emitter.emit('custom-event', { data: 'value' })
+  emitter.emit('custom-event', { data: 'value' });
 }
 </script>
 ```
@@ -208,15 +210,15 @@ function notify() {
 ```vue
 <!-- ComponentB.vue -->
 <script setup>
-import { onMounted, onUnmounted } from 'vue'
-import { emitter } from './eventBus'
+import { onMounted, onUnmounted } from 'vue';
+import { emitter } from './eventBus';
 
 function handleEvent(data) {
-  console.log('Received:', data)
+  console.log('Received:', data);
 }
 
-onMounted(() => emitter.on('custom-event', handleEvent))
-onUnmounted(() => emitter.off('custom-event', handleEvent))
+onMounted(() => emitter.on('custom-event', handleEvent));
+onUnmounted(() => emitter.off('custom-event', handleEvent));
 </script>
 ```
 
@@ -224,12 +226,12 @@ onUnmounted(() => emitter.off('custom-event', handleEvent))
 
 ## Comparison Table
 
-| Method | Best For | Complexity |
-|--------|----------|------------|
-| Re-emit | 1-2 levels deep | Low |
-| Provide/Inject | Deep nesting, ancestor communication | Medium |
-| Pinia/State | Complex apps, sibling communication | Medium |
-| Event Bus | Truly decoupled, rare cases | Low (but risky) |
+| Method         | Best For                             | Complexity      |
+| -------------- | ------------------------------------ | --------------- |
+| Re-emit        | 1-2 levels deep                      | Low             |
+| Provide/Inject | Deep nesting, ancestor communication | Medium          |
+| Pinia/State    | Complex apps, sibling communication  | Medium          |
+| Event Bus      | Truly decoupled, rare cases          | Low (but risky) |
 
 ## Native Events DO Bubble
 
@@ -248,5 +250,6 @@ Note that native DOM events attached to elements still bubble normally:
 Only Vue component events (those emitted with `emit()`) don't bubble.
 
 ## Reference
+
 - [Vue.js Component Events](https://vuejs.org/guide/components/events.html)
 - [Vue.js Provide/Inject](https://vuejs.org/guide/components/provide-inject.html)

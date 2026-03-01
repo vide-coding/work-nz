@@ -11,29 +11,29 @@ Shorthand for v-model binding, props + emit -> ref
 ## Usage
 
 ```ts
-import { useVModel } from '@vueuse/core'
+import { useVModel } from '@vueuse/core';
 
 const props = defineProps<{
-  modelValue: string
-}>()
-const emit = defineEmits(['update:modelValue'])
+  modelValue: string;
+}>();
+const emit = defineEmits(['update:modelValue']);
 
-const data = useVModel(props, 'modelValue', emit)
+const data = useVModel(props, 'modelValue', emit);
 ```
 
 ### Options API
 
 ```ts
-import { useVModel } from '@vueuse/core'
+import { useVModel } from '@vueuse/core';
 
 export default {
   setup(props, { emit }) {
-    const data = useVModel(props, 'data', emit)
+    const data = useVModel(props, 'data', emit);
 
-    console.log(data.value) // props.data
-    data.value = 'foo' // emit('update:data', 'foo')
+    console.log(data.value); // props.data
+    data.value = 'foo'; // emit('update:data', 'foo')
   },
-}
+};
 ```
 
 ## Type Declarations
@@ -46,26 +46,26 @@ export interface UseVModelOptions<T, Passive extends boolean = false> {
    *
    * @default false
    */
-  passive?: Passive
+  passive?: Passive;
   /**
    * When eventName is set, it's value will be used to overwrite the emit event name.
    *
    * @default undefined
    */
-  eventName?: string
+  eventName?: string;
   /**
    * Attempting to check for changes of properties in a deeply nested object or array.
    * Apply only when `passive` option is set to `true`
    *
    * @default false
    */
-  deep?: boolean
+  deep?: boolean;
   /**
    * Defining default value for return ref when no value is passed.
    *
    * @default undefined
    */
-  defaultValue?: T
+  defaultValue?: T;
   /**
    * Clone the props.
    * Accepts a custom clone function.
@@ -73,14 +73,14 @@ export interface UseVModelOptions<T, Passive extends boolean = false> {
    *
    * @default false
    */
-  clone?: boolean | CloneFn<T>
+  clone?: boolean | CloneFn<T>;
   /**
    * The hook before triggering the emit event can be used for form validation.
    * if false is returned, the emit event will not be triggered.
    *
    * @default undefined
    */
-  shouldEmit?: (v: T) => boolean
+  shouldEmit?: (v: T) => boolean;
 }
 /**
  * Shorthand for v-model binding, props + emit -> ref
@@ -93,24 +93,16 @@ export interface UseVModelOptions<T, Passive extends boolean = false> {
  *
  * @__NO_SIDE_EFFECTS__
  */
-export declare function useVModel<
-  P extends object,
-  K extends keyof P,
-  Name extends string,
->(
+export declare function useVModel<P extends object, K extends keyof P, Name extends string>(
   props: P,
   key?: K,
   emit?: (name: Name, ...args: any[]) => void,
-  options?: UseVModelOptions<P[K], false>,
-): WritableComputedRef<P[K]>
-export declare function useVModel<
-  P extends object,
-  K extends keyof P,
-  Name extends string,
->(
+  options?: UseVModelOptions<P[K], false>
+): WritableComputedRef<P[K]>;
+export declare function useVModel<P extends object, K extends keyof P, Name extends string>(
   props: P,
   key?: K,
   emit?: (name: Name, ...args: any[]) => void,
-  options?: UseVModelOptions<P[K], true>,
-): Ref<UnwrapRef<P[K]>>
+  options?: UseVModelOptions<P[K], true>
+): Ref<UnwrapRef<P[K]>>;
 ```

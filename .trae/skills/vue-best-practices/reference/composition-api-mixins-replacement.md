@@ -21,32 +21,37 @@ The ability to create clean, reusable logic through composables is the primary a
 - [ ] Prefix composables with "use" (useAuth, useFetch, useForm)
 
 **Problems with Mixins:**
+
 ```javascript
 // userMixin.js
 export const userMixin = {
   data() {
     return {
       user: null,
-      loading: false  // Conflict waiting to happen!
-    }
+      loading: false, // Conflict waiting to happen!
+    };
   },
   methods: {
-    fetchUser() { /* ... */ }
-  }
-}
+    fetchUser() {
+      /* ... */
+    },
+  },
+};
 
 // authMixin.js
 export const authMixin = {
   data() {
     return {
       token: null,
-      loading: false  // NAME CONFLICT with userMixin!
-    }
+      loading: false, // NAME CONFLICT with userMixin!
+    };
   },
   methods: {
-    login() { /* ... */ }
-  }
-}
+    login() {
+      /* ... */
+    },
+  },
+};
 
 // Component using mixins - PROBLEMATIC
 export default {
@@ -54,18 +59,19 @@ export default {
 
   mounted() {
     // PROBLEM 1: Where does 'user' come from? Have to check mixins
-    console.log(this.user)
+    console.log(this.user);
 
     // PROBLEM 2: Which 'loading'? Last mixin wins, silently!
-    console.log(this.loading)  // Is this user loading or auth loading?
+    console.log(this.loading); // Is this user loading or auth loading?
 
     // PROBLEM 3: Can't customize behavior per-component
-    this.fetchUser()  // Always fetches the same way
-  }
-}
+    this.fetchUser(); // Always fetches the same way
+  },
+};
 ```
 
 **Composables Solution:**
+
 ```javascript
 // composables/useUser.js
 import { ref } from 'vue'
@@ -131,41 +137,45 @@ onMounted(() => {
 // BEFORE: Mixin with options
 export const formMixin = {
   data() {
-    return { errors: {}, submitting: false }
+    return { errors: {}, submitting: false };
   },
   methods: {
-    validate() { /* ... */ },
-    submit() { /* ... */ }
-  }
-}
+    validate() {
+      /* ... */
+    },
+    submit() {
+      /* ... */
+    },
+  },
+};
 
 // AFTER: Composable with flexibility
 export function useForm(initialValues, validationSchema) {
-  const values = ref({ ...initialValues })
-  const errors = ref({})
-  const submitting = ref(false)
-  const touched = ref({})
+  const values = ref({ ...initialValues });
+  const errors = ref({});
+  const submitting = ref(false);
+  const touched = ref({});
 
   function validate() {
-    errors.value = validationSchema.validate(values.value)
-    return Object.keys(errors.value).length === 0
+    errors.value = validationSchema.validate(values.value);
+    return Object.keys(errors.value).length === 0;
   }
 
   async function submit(onSubmit) {
-    if (!validate()) return
+    if (!validate()) return;
 
-    submitting.value = true
+    submitting.value = true;
     try {
-      await onSubmit(values.value)
+      await onSubmit(values.value);
     } finally {
-      submitting.value = false
+      submitting.value = false;
     }
   }
 
   function reset() {
-    values.value = { ...initialValues }
-    errors.value = {}
-    touched.value = {}
+    values.value = { ...initialValues };
+    errors.value = {};
+    touched.value = {};
   }
 
   return {
@@ -175,34 +185,29 @@ export function useForm(initialValues, validationSchema) {
     touched,
     validate,
     submit,
-    reset
-  }
+    reset,
+  };
 }
 
 // Usage - now parameterizable and explicit
-const loginForm = useForm(
-  { email: '', password: '' },
-  loginValidationSchema
-)
+const loginForm = useForm({ email: '', password: '' }, loginValidationSchema);
 
-const registerForm = useForm(
-  { email: '', password: '', name: '' },
-  registerValidationSchema
-)
+const registerForm = useForm({ email: '', password: '', name: '' }, registerValidationSchema);
 ```
 
 ## Composition Over Mixins Benefits
 
-| Aspect | Mixins | Composables |
-|--------|--------|-------------|
-| Property origin | Unclear | Explicit import |
-| Naming conflicts | Silent overwrites | Explicit rename |
-| Parameters | Not possible | Fully supported |
-| Type inference | Poor | Excellent |
-| Reuse instances | One per component | Multiple allowed |
-| Tree-shaking | Not possible | Fully supported |
+| Aspect           | Mixins            | Composables      |
+| ---------------- | ----------------- | ---------------- |
+| Property origin  | Unclear           | Explicit import  |
+| Naming conflicts | Silent overwrites | Explicit rename  |
+| Parameters       | Not possible      | Fully supported  |
+| Type inference   | Poor              | Excellent        |
+| Reuse instances  | One per component | Multiple allowed |
+| Tree-shaking     | Not possible      | Fully supported  |
 
 ## Reference
+
 - [Composition API FAQ - Better Logic Reuse](https://vuejs.org/guide/extras/composition-api-faq.html#better-logic-reuse)
 - [Composables](https://vuejs.org/guide/reusability/composables.html)
 - [VueUse - Collection of Composables](https://vueuse.org/)

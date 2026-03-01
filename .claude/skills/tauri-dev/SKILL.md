@@ -215,6 +215,7 @@ async fn undo_last_action(
 ```
 
 Frontend invocation:
+
 ```typescript
 import { invoke } from '@tauri-apps/api/core';
 
@@ -245,10 +246,7 @@ Each capability is granted explicitly:
         {
           "identifier": "process-management",
           "description": "Manage MCP server child processes",
-          "permissions": [
-            "shell:allow-spawn",
-            "shell:allow-kill"
-          ]
+          "permissions": ["shell:allow-spawn", "shell:allow-kill"]
         },
         {
           "identifier": "clipboard-access",
@@ -274,6 +272,7 @@ Each capability is granted explicitly:
 ## Dependencies (Cargo.toml)
 
 Key crates:
+
 ```toml
 [dependencies]
 tauri = { version = "2", features = ["shell-open"] }

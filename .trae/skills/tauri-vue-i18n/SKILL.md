@@ -1,6 +1,6 @@
 ---
-name: "tauri-vue-i18n"
-description: "规范 Tauri + Vue 项目 i18n 的目录组织、语言切换与 i18n-ally 配置。用户要新增语言、迁移文案或接入 i18n-ally 时调用。"
+name: 'tauri-vue-i18n'
+description: '规范 Tauri + Vue 项目 i18n 的目录组织、语言切换与 i18n-ally 配置。用户要新增语言、迁移文案或接入 i18n-ally 时调用。'
 ---
 
 # Tauri + Vue i18n 规范与 i18n-ally
@@ -28,13 +28,13 @@ description: "规范 Tauri + Vue 项目 i18n 的目录组织、语言切换与 i
 ## 示例
 
 ```ts
-import { createI18n } from "vue-i18n";
-import zhCN from "./lang/zh-CN.json";
-import enUS from "./lang/en-US.json";
+import { createI18n } from 'vue-i18n';
+import zhCN from './lang/zh-CN.json';
+import enUS from './lang/en-US.json';
 
 const messages = {
-  "zh-CN": zhCN,
-  "en-US": enUS,
+  'zh-CN': zhCN,
+  'en-US': enUS,
 } as const;
 
 export type LocaleKey = keyof typeof messages;
@@ -45,8 +45,8 @@ export type LocaleKey = keyof typeof messages;
 export const createAppI18n = () =>
   createI18n({
     legacy: false,
-    locale: "zh-CN",
-    fallbackLocale: "zh-CN",
+    locale: 'zh-CN',
+    fallbackLocale: 'zh-CN',
     globalInjection: true,
     messages,
   });

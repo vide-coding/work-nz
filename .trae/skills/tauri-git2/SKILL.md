@@ -1,6 +1,6 @@
 ---
-name: "tauri-git2"
-description: "指导在 Tauri(Rust) 中集成 git2(libgit2)：clone/pull、鉴权、进度事件与错误处理。实现项目拉取/更新代码时调用。"
+name: 'tauri-git2'
+description: '指导在 Tauri(Rust) 中集成 git2(libgit2)：clone/pull、鉴权、进度事件与错误处理。实现项目拉取/更新代码时调用。'
 ---
 
 # Git 集成（git2 / libgit2）
@@ -69,4 +69,3 @@ pub fn build_fetch_options() -> FetchOptions<'static> {
 
 - 路径长度：仓库层级深时可能触发长路径问题；尽量把工作区放在较短路径（如 `D:\ws`）
 - 文件占用：IDE/索引器可能占用 `.git/index`；pull 失败需提示用户重试/关闭占用程序
-

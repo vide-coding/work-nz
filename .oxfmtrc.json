@@ -1,5 +1,5 @@
 {
-  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/oxlint/configuration_schema.json",
   "printWidth": 100,
   "tabWidth": 2,
   "useTabs": false,
@@ -22,6 +22,8 @@
     "dist/",
     "node_modules/",
     "src-tauri/target/",
-    "*.min.js"
+    "*.min.js",
+    "src/auto-imports.d.ts",
+    "src/components.d.ts"
   ]
 }

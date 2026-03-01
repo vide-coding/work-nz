@@ -23,18 +23,19 @@ This is a breaking change that requires updating all custom directives when migr
 
 ## Hook Name Mapping
 
-| Vue 2           | Vue 3          |
-|-----------------|----------------|
-| `bind`          | `beforeMount`  |
-| `inserted`      | `mounted`      |
-| `update`        | **removed**    |
-| `componentUpdated` | `updated`   |
-| `unbind`        | `unmounted`    |
-| (none)          | `created`      |
-| (none)          | `beforeUpdate` |
-| (none)          | `beforeUnmount`|
+| Vue 2              | Vue 3           |
+| ------------------ | --------------- |
+| `bind`             | `beforeMount`   |
+| `inserted`         | `mounted`       |
+| `update`           | **removed**     |
+| `componentUpdated` | `updated`       |
+| `unbind`           | `unmounted`     |
+| (none)             | `created`       |
+| (none)             | `beforeUpdate`  |
+| (none)             | `beforeUnmount` |
 
 **Vue 2 (old):**
+
 ```javascript
 // Vue 2 directive - WILL NOT WORK IN VUE 3
 Vue.directive('demo', {
@@ -52,11 +53,12 @@ Vue.directive('demo', {
   },
   unbind(el, binding, vnode) {
     // Called when directive is unbound from element
-  }
-})
+  },
+});
 ```
 
 **Vue 3 (new):**
+
 ```javascript
 // Vue 3 directive - Correct hook names
 app.directive('demo', {
@@ -81,87 +83,91 @@ app.directive('demo', {
   },
   unmounted(el, binding, vnode) {
     // Was: unbind
-  }
-})
+  },
+});
 ```
 
 ## Migration Examples
 
 ### Simple Focus Directive
+
 ```javascript
 // Vue 2
 Vue.directive('focus', {
   inserted(el) {
-    el.focus()
-  }
-})
+    el.focus();
+  },
+});
 
 // Vue 3
 app.directive('focus', {
   mounted(el) {
-    el.focus()
-  }
-})
+    el.focus();
+  },
+});
 ```
 
 ### Directive with Cleanup
+
 ```javascript
 // Vue 2
 Vue.directive('click-outside', {
   bind(el, binding) {
     el._handler = (e) => {
-      if (!el.contains(e.target)) binding.value(e)
-    }
-    document.addEventListener('click', el._handler)
+      if (!el.contains(e.target)) binding.value(e);
+    };
+    document.addEventListener('click', el._handler);
   },
   unbind(el) {
-    document.removeEventListener('click', el._handler)
-  }
-})
+    document.removeEventListener('click', el._handler);
+  },
+});
 
 // Vue 3
 app.directive('click-outside', {
-  beforeMount(el, binding) {  // or mounted
+  beforeMount(el, binding) {
+    // or mounted
     el._handler = (e) => {
-      if (!el.contains(e.target)) binding.value(e)
-    }
-    document.addEventListener('click', el._handler)
+      if (!el.contains(e.target)) binding.value(e);
+    };
+    document.addEventListener('click', el._handler);
   },
   unmounted(el) {
-    document.removeEventListener('click', el._handler)
-  }
-})
+    document.removeEventListener('click', el._handler);
+  },
+});
 ```
 
 ### Directive with Updates
+
 ```javascript
 // Vue 2 - using update hook
 Vue.directive('color', {
   bind(el, binding) {
-    el.style.color = binding.value
+    el.style.color = binding.value;
   },
   update(el, binding) {
     // Called on every VNode update
-    el.style.color = binding.value
-  }
-})
+    el.style.color = binding.value;
+  },
+});
 
 // Vue 3 - update removed, use function shorthand or updated
 app.directive('color', (el, binding) => {
   // Function shorthand: called for both mounted AND updated
-  el.style.color = binding.value
-})
+  el.style.color = binding.value;
+});
 
 // Or with object syntax
 app.directive('color', {
   mounted(el, binding) {
-    el.style.color = binding.value
+    el.style.color = binding.value;
   },
   updated(el, binding) {
     // Use updated instead of update
-    el.style.color = binding.value
-  }
-})
+    el.style.color = binding.value;
+  },
+});
 ```
 
 ## Why `update` Was Removed
@@ -175,12 +181,12 @@ In Vue 2, `update` was called on every VNode update (before children updated), w
 // Vue 3 - if you need both before and after
 app.directive('track-updates', {
   beforeUpdate(el, binding) {
-    console.log('Before update, old value:', binding.oldValue)
+    console.log('Before update, old value:', binding.oldValue);
   },
   updated(el, binding) {
-    console.log('After update, new value:', binding.value)
-  }
-})
+    console.log('After update, new value:', binding.value);
+  },
+});
 ```
 
 ## vnode Structure Changes
@@ -206,5 +212,6 @@ In Vue 3, the `vnode` and `prevVnode` arguments also have different structure:
 ```
 
 ## Reference
+
 - [Vue 3 Migration Guide - Custom Directives](https://v3-migration.vuejs.org/breaking-changes/custom-directives)
 - [Vue.js Custom Directives - Directive Hooks](https://vuejs.org/guide/reusability/custom-directives#directive-hooks)

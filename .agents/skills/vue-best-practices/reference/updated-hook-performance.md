@@ -22,33 +22,34 @@ Use `updated`/`onUpdated` sparingly for post-DOM-update operations that cannot b
 - [ ] Reserve updated for low-level DOM synchronization tasks
 
 **Incorrect:**
+
 ```javascript
 // WRONG: API call in updated - fires on EVERY re-render
 export default {
   data() {
-    return { items: [], lastUpdate: null }
+    return { items: [], lastUpdate: null };
   },
   updated() {
     // This runs after every single state change!
     fetch('/api/sync', {
       method: 'POST',
-      body: JSON.stringify(this.items)
-    })
-  }
-}
+      body: JSON.stringify(this.items),
+    });
+  },
+};
 ```
 
 ```javascript
 // WRONG: State mutation in updated - INFINITE LOOP
 export default {
   data() {
-    return { renderCount: 0 }
+    return { renderCount: 0 };
   },
   updated() {
     // This causes another update, which triggers updated again!
-    this.renderCount++ // INFINITE LOOP!
-  }
-}
+    this.renderCount++; // INFINITE LOOP!
+  },
+};
 ```
 
 ```javascript
@@ -56,64 +57,69 @@ export default {
 export default {
   updated() {
     // Expensive operation runs on every keystroke, every state change
-    this.processedData = this.heavyComputation(this.rawData)
-    this.analytics = this.calculateMetrics(this.allData)
-  }
-}
+    this.processedData = this.heavyComputation(this.rawData);
+    this.analytics = this.calculateMetrics(this.allData);
+  },
+};
 ```
 
 **Correct:**
+
 ```javascript
 // CORRECT: Use watcher for specific data changes
 export default {
   data() {
-    return { items: [] }
+    return { items: [] };
   },
   watch: {
     // Only fires when items actually changes
     items: {
       handler(newItems) {
-        this.syncToServer(newItems)
+        this.syncToServer(newItems);
       },
-      deep: true
-    }
+      deep: true,
+    },
   },
   methods: {
-    syncToServer: debounce(function(items) {
+    syncToServer: debounce(function (items) {
       fetch('/api/sync', {
         method: 'POST',
-        body: JSON.stringify(items)
-      })
-    }, 500)
-  }
-}
+        body: JSON.stringify(items),
+      });
+    }, 500),
+  },
+};
 ```
 
 ```vue
 <!-- CORRECT: Composition API with targeted watchers -->
 <script setup>
-import { ref, watch, onUpdated } from 'vue'
-import { useDebounceFn } from '@vueuse/core'
+import { ref, watch, onUpdated } from 'vue';
+import { useDebounceFn } from '@vueuse/core';
 
-const items = ref([])
-const scrollContainer = ref(null)
+const items = ref([]);
+const scrollContainer = ref(null);
 
 // Watch specific data - not all updates
-watch(items, (newItems) => {
-  syncToServer(newItems)
-}, { deep: true })
+watch(
+  items,
+  (newItems) => {
+    syncToServer(newItems);
+  },
+  { deep: true }
+);
 
 const syncToServer = useDebounceFn((items) => {
-  fetch('/api/sync', { method: 'POST', body: JSON.stringify(items) })
-}, 500)
+  fetch('/api/sync', { method: 'POST', body: JSON.stringify(items) });
+}, 500);
 
 // Only use onUpdated for DOM synchronization
 onUpdated(() => {
   // Scroll to bottom only if content changed height
   if (scrollContainer.value) {
-    scrollContainer.value.scrollTop = scrollContainer.value.scrollHeight
+    scrollContainer.value.scrollTop = scrollContainer.value.scrollHeight;
   }
-})
+});
 </script>
 ```
 
@@ -123,22 +129,22 @@ export default {
   data() {
     return {
       content: '',
-      lastSyncedContent: ''
-    }
+      lastSyncedContent: '',
+    };
   },
   updated() {
     // Only act if specific condition is met
     if (this.content !== this.lastSyncedContent) {
-      this.syncContent()
-      this.lastSyncedContent = this.content
+      this.syncContent();
+      this.lastSyncedContent = this.content;
     }
   },
   methods: {
-    syncContent: debounce(function() {
+    syncContent: debounce(function () {
       // Sync logic
-    }, 300)
-  }
-}
+    }, 300),
+  },
+};
 ```
 
 ## Valid Use Cases for Updated Hook
@@ -148,14 +154,14 @@ export default {
 export default {
   updated() {
     // Sync third-party library with Vue's DOM
-    this.thirdPartyWidget.refresh()
+    this.thirdPartyWidget.refresh();
 
     // Update scroll position after content change
     this.$nextTick(() => {
-      this.maintainScrollPosition()
-    })
-  }
-}
+      this.maintainScrollPosition();
+    });
+  },
+};
 ```
 
 ## Prefer Computed Properties for Derived Data
@@ -185,6 +191,7 @@ export default {
 ```
 
 ## Reference
+
 - [Vue.js Lifecycle Hooks](https://vuejs.org/guide/essentials/lifecycle.html)
 - [Vue.js Watchers](https://vuejs.org/guide/essentials/watchers.html)
 - [Vue.js Computed Properties](https://vuejs.org/guide/essentials/computed.html)

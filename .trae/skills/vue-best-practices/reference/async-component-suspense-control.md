@@ -12,15 +12,15 @@ This behavior causes confusion when developers configure loading and error state
 
 ```vue
 <script setup>
-import { defineAsyncComponent } from 'vue'
+import { defineAsyncComponent } from 'vue';
 
 // These options will be IGNORED if a parent Suspense exists
 const AsyncDashboard = defineAsyncComponent({
   loader: () => import('./Dashboard.vue'),
-  loadingComponent: LoadingSpinner,  // Won't show!
-  errorComponent: ErrorDisplay,       // Won't show!
-  timeout: 3000                        // Ignored!
-})
+  loadingComponent: LoadingSpinner, // Won't show!
+  errorComponent: ErrorDisplay, // Won't show!
+  timeout: 3000, // Ignored!
+});
 </script>
 
 <template>
@@ -33,7 +33,7 @@ const AsyncDashboard = defineAsyncComponent({
 
 ```vue
 <script setup>
-import { defineAsyncComponent } from 'vue'
+import { defineAsyncComponent } from 'vue';
 
 // Use suspensible: false to keep control of loading/error states
 const AsyncDashboard = defineAsyncComponent({
@@ -41,8 +41,8 @@ const AsyncDashboard = defineAsyncComponent({
   loadingComponent: LoadingSpinner,
   errorComponent: ErrorDisplay,
   timeout: 3000,
-  suspensible: false  // Component controls its own loading state
-})
+  suspensible: false, // Component controls its own loading state
+});
 </script>
 
 <template>
@@ -53,11 +53,13 @@ const AsyncDashboard = defineAsyncComponent({
 ## When to Use Each Approach
 
 **Keep suspensible (default)** when:
+
 - You want centralized loading/error handling at a layout level
 - The parent `<Suspense>` provides appropriate feedback
 - Multiple async components should show a unified loading state
 
 **Use `suspensible: false`** when:
+
 - You need component-specific loading indicators
 - The component should handle its own error states
 - You want fine-grained control over the UX

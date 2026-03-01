@@ -28,24 +28,30 @@ Vue's compiler analyzes templates and generates optimized render functions with:
 3. **Tree Flattening**: Only dynamic nodes are traversed during reconciliation
 
 **Incorrect:**
+
 ```vue
 <script setup>
-import { h, ref } from 'vue'
+import { h, ref } from 'vue';
 
-const count = ref(0)
-const items = ref(['a', 'b', 'c'])
+const count = ref(0);
+const items = ref(['a', 'b', 'c']);
 
 // BAD: Hand-written render function - no compile-time optimizations
 // Every render: all vnodes created anew, all nodes diffed
-const render = () => h('div', [
-  h('header', { class: 'static-header' }, 'My App'),  // Static but recreated every render
-  h('p', `Count: ${count.value}`),
-  h('ul', items.value.map(item => h('li', { key: item }, item)))
-])
+const render = () =>
+  h('div', [
+    h('header', { class: 'static-header' }, 'My App'), // Static but recreated every render
+    h('p', `Count: ${count.value}`),
+    h(
+      'ul',
+      items.value.map((item) => h('li', { key: item }, item))
+    ),
+  ]);
 </script>
 ```
 
 **Correct:**
+
 ```vue
 <template>
   <div>
@@ -63,16 +69,17 @@ const render = () => h('div', [
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref } from 'vue';
 
-const count = ref(0)
-const items = ref(['a', 'b', 'c'])
+const count = ref(0);
+const items = ref(['a', 'b', 'c']);
 </script>
 ```
 
 ## When Render Functions Are Appropriate
 
 Use render functions when:
+
 - Rendering logic is highly dynamic (dynamic component types based on data)
 - Building reusable library components with complex slot forwarding
 - Need programmatic control that templates cannot express
@@ -80,46 +87,48 @@ Use render functions when:
 ```js
 // ACCEPTABLE: Dynamic component type based on data
 function render() {
-  return h(props.level > 2 ? 'h3' : 'h' + props.level, slots.default?.())
+  return h(props.level > 2 ? 'h3' : 'h' + props.level, slots.default?.());
 }
 
 // ACCEPTABLE: Complex library component with dynamic children manipulation
 function render() {
-  const children = slots.default?.() || []
-  return h('div', children.filter(shouldRender).map(wrapChild))
+  const children = slots.default?.() || [];
+  return h('div', children.filter(shouldRender).map(wrapChild));
 }
 ```
 
 ## Compiler Optimizations You Lose
 
-| Optimization | With Templates | With Render Functions |
-|--------------|---------------|----------------------|
-| Static Hoisting | Automatic | Manual (you must do it) |
-| Patch Flags | Automatic | None |
-| Tree Flattening | Automatic | None |
-| SSR Hydration Optimization | Full | Partial |
-| Block-level fast paths | Yes | No |
+| Optimization               | With Templates | With Render Functions   |
+| -------------------------- | -------------- | ----------------------- |
+| Static Hoisting            | Automatic      | Manual (you must do it) |
+| Patch Flags                | Automatic      | None                    |
+| Tree Flattening            | Automatic      | None                    |
+| SSR Hydration Optimization | Full           | Partial                 |
+| Block-level fast paths     | Yes            | No                      |
 
 ## If You Must Use Render Functions
 
 ```js
-import { h, ref } from 'vue'
+import { h, ref } from 'vue';
 
 // Manually hoist static vnodes outside component
-const staticHeader = h('header', { class: 'static' }, 'Title')
+const staticHeader = h('header', { class: 'static' }, 'Title');
 
 export default {
   setup() {
-    const count = ref(0)
+    const count = ref(0);
 
-    return () => h('div', [
-      staticHeader,  // Reused, not recreated
-      h('p', `Count: ${count.value}`)
-    ])
-  }
-}
+    return () =>
+      h('div', [
+        staticHeader, // Reused, not recreated
+        h('p', `Count: ${count.value}`),
+      ]);
+  },
+};
 ```
 
 ## Reference
+
 - [Vue.js Rendering Mechanism - Templates vs Render Functions](https://vuejs.org/guide/extras/rendering-mechanism.html#templates-vs-render-functions)
 - [Vue.js Render Functions & JSX](https://vuejs.org/guide/extras/render-function.html)

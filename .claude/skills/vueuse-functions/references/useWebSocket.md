@@ -9,9 +9,9 @@ Reactive [WebSocket](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/
 ## Usage
 
 ```ts
-import { useWebSocket } from '@vueuse/core'
+import { useWebSocket } from '@vueuse/core';
 
-const { status, data, send, open, close } = useWebSocket('ws://websocketurl')
+const { status, data, send, open, close } = useWebSocket('ws://websocketurl');
 ```
 
 See the [Type Declarations](#type-declarations) for more options.
@@ -39,53 +39,53 @@ This will call `close()` automatically when the `beforeunload` event is triggere
 Reconnect on errors automatically (disabled by default).
 
 ```ts
-import { useWebSocket } from '@vueuse/core'
+import { useWebSocket } from '@vueuse/core';
 // ---cut---
 const { status, data, close } = useWebSocket('ws://websocketurl', {
   autoReconnect: true,
-})
+});
 ```
 
 Or with more controls over its behavior:
 
 ```ts
-import { useWebSocket } from '@vueuse/core'
+import { useWebSocket } from '@vueuse/core';
 // ---cut---
 const { status, data, close } = useWebSocket('ws://websocketurl', {
   autoReconnect: {
     retries: 3,
     delay: 1000,
     onFailed() {
-      alert('Failed to connect WebSocket after 3 retries')
+      alert('Failed to connect WebSocket after 3 retries');
     },
   },
-})
+});
 ```
 
 You can also pass a function to `delay` to calculate the delay based on the number of retries. This is useful for implementing exponential backoff:
 
 ```ts
-import { useWebSocket } from '@vueuse/core'
+import { useWebSocket } from '@vueuse/core';
 // ---cut---
 const { status, data, close } = useWebSocket('ws://websocketurl', {
   autoReconnect: {
     retries: 5,
     // Exponential backoff: 1s, 2s, 4s, 8s, 16s
-    delay: retries => Math.min(1000 * 2 ** (retries - 1), 30000),
+    delay: (retries) => Math.min(1000 * 2 ** (retries - 1), 30000),
   },
-})
+});
 ```
 
 ```ts
-import { useWebSocket } from '@vueuse/core'
+import { useWebSocket } from '@vueuse/core';
 // ---cut---
 const { status, data, close } = useWebSocket('ws://websocketurl', {
   autoReconnect: {
     retries: 5,
     // Linear backoff: 1s, 2s, 3s, 4s, 5s
-    delay: retries => retries * 1000,
+    delay: (retries) => retries * 1000,
   },
-})
+});
 ```
 
 Explicitly calling `close()` won't trigger the auto reconnection.
@@ -95,17 +95,17 @@ Explicitly calling `close()` won't trigger the auto reconnection.
 It's common practice to send a small message (heartbeat) for every given time passed to keep the connection active. In this function we provide a convenient helper to do it:
 
 ```ts
-import { useWebSocket } from '@vueuse/core'
+import { useWebSocket } from '@vueuse/core';
 // ---cut---
 const { status, data, close } = useWebSocket('ws://websocketurl', {
   heartbeat: true,
-})
+});
 ```
 
 Or with more controls:
 
 ```ts
-import { useWebSocket } from '@vueuse/core'
+import { useWebSocket } from '@vueuse/core';
 // ---cut---
 const { status, data, close } = useWebSocket('ws://websocketurl', {
   heartbeat: {
@@ -113,7 +113,7 @@ const { status, data, close } = useWebSocket('ws://websocketurl', {
     interval: 1000,
     pongTimeout: 1000,
   },
-})
+});
 ```
 
 ### Sub-protocols
@@ -121,23 +121,23 @@ const { status, data, close } = useWebSocket('ws://websocketurl', {
 List of one or more subprotocols to use, in this case SOAP and WAMP.
 
 ```ts
-import { useWebSocket } from '@vueuse/core'
+import { useWebSocket } from '@vueuse/core';
 // ---cut---
 const { status, data, send, open, close } = useWebSocket('ws://websocketurl', {
   protocols: ['soap'], // ['soap', 'wamp']
-})
+});
 ```
 
 ## Type Declarations
 
 ```ts
-export type WebSocketStatus = "OPEN" | "CONNECTING" | "CLOSED"
-export type WebSocketHeartbeatMessage = string | ArrayBuffer | Blob
+export type WebSocketStatus = 'OPEN' | 'CONNECTING' | 'CLOSED';
+export type WebSocketHeartbeatMessage = string | ArrayBuffer | Blob;
 export interface UseWebSocketOptions {
-  onConnected?: (ws: WebSocket) => void
-  onDisconnected?: (ws: WebSocket, event: CloseEvent) => void
-  onError?: (ws: WebSocket, event: Event) => void
-  onMessage?: (ws: WebSocket, event: MessageEvent) => void
+  onConnected?: (ws: WebSocket) => void;
+  onDisconnected?: (ws: WebSocket, event: CloseEvent) => void;
+  onError?: (ws: WebSocket, event: Event) => void;
+  onMessage?: (ws: WebSocket, event: MessageEvent) => void;
   /**
    * Send heartbeat for every x milliseconds passed
    *
@@ -151,24 +151,24 @@ export interface UseWebSocketOptions {
          *
          * @default 'ping'
          */
-        message?: MaybeRefOrGetter<WebSocketHeartbeatMessage>
+        message?: MaybeRefOrGetter<WebSocketHeartbeatMessage>;
         /**
          * Response message for the heartbeat, if undefined the message will be used
          */
-        responseMessage?: MaybeRefOrGetter<WebSocketHeartbeatMessage>
+        responseMessage?: MaybeRefOrGetter<WebSocketHeartbeatMessage>;
         /**
          * Interval, in milliseconds
          *
          * @default 1000
          */
-        interval?: number
+        interval?: number;
         /**
          * Heartbeat response timeout, in milliseconds
          *
          * @default 1000
          */
-        pongTimeout?: number
-      }
+        pongTimeout?: number;
+      };
   /**
    * Enabled auto reconnect
    *
@@ -184,7 +184,7 @@ export interface UseWebSocketOptions {
          *
          * @default -1
          */
-        retries?: number | ((retried: number) => boolean)
+        retries?: number | ((retried: number) => boolean);
         /**
          * Delay for reconnect, in milliseconds
          *
@@ -192,68 +192,68 @@ export interface UseWebSocketOptions {
          *
          * @default 1000
          */
-        delay?: number | ((retries: number) => number)
+        delay?: number | ((retries: number) => number);
         /**
          * On maximum retry times reached.
          */
-        onFailed?: Fn
-      }
+        onFailed?: Fn;
+      };
   /**
    * Immediately open the connection when calling this composable
    *
    * @default true
    */
-  immediate?: boolean
+  immediate?: boolean;
   /**
    * Automatically connect to the websocket when URL changes
    *
    * @default true
    */
-  autoConnect?: boolean
+  autoConnect?: boolean;
   /**
    * Automatically close a connection
    *
    * @default true
    */
-  autoClose?: boolean
+  autoClose?: boolean;
   /**
    * List of one or more sub-protocol strings
    *
    * @default []
    */
-  protocols?: string[]
+  protocols?: string[];
 }
 export interface UseWebSocketReturn<T> {
   /**
    * Reference to the latest data received via the websocket,
    * can be watched to respond to incoming messages
    */
-  data: Ref<T | null>
+  data: Ref<T | null>;
   /**
    * The current websocket status, can be only one of:
    * 'OPEN', 'CONNECTING', 'CLOSED'
    */
-  status: ShallowRef<WebSocketStatus>
+  status: ShallowRef<WebSocketStatus>;
   /**
    * Closes the websocket connection gracefully.
    */
-  close: WebSocket["close"]
+  close: WebSocket['close'];
   /**
    * Reopen the websocket connection.
    * If there the current one is active, will close it before opening a new one.
    */
-  open: Fn
+  open: Fn;
   /**
    * Sends data through the websocket connection.
    *
    * @param data
    * @param useBuffer when the socket is not yet open, store the data into the buffer and sent them one connected. Default to true.
    */
-  send: (data: string | ArrayBuffer | Blob, useBuffer?: boolean) => boolean
+  send: (data: string | ArrayBuffer | Blob, useBuffer?: boolean) => boolean;
   /**
    * Reference to the WebSocket instance.
    */
-  ws: Ref<WebSocket | undefined>
+  ws: Ref<WebSocket | undefined>;
 }
 /**
  * Reactive WebSocket client.
@@ -263,6 +263,6 @@ export interface UseWebSocketReturn<T> {
  */
 export declare function useWebSocket<Data = any>(
   url: MaybeRefOrGetter<string | URL | undefined>,
-  options?: UseWebSocketOptions,
-): UseWebSocketReturn<Data>
+  options?: UseWebSocketOptions
+): UseWebSocketReturn<Data>;
 ```

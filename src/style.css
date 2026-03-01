@@ -1,9 +1,9 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* CSS Variables for theming */
 :root {
-  --color-primary: #4F46E5;
-  --color-primary-hover: #4338CA;
+  --color-primary: #4f46e5;
+  --color-primary-hover: #4338ca;
   --color-bg: #ffffff;
   --color-bg-secondary: #f9fafb;
   --color-bg-tertiary: #f3f4f6;
@@ -27,14 +27,17 @@
 }
 
 /* Global styles */
-html, body, #app {
+html,
+body,
+#app {
   height: 100%;
   margin: 0;
   padding: 0;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--color-bg);
@@ -80,11 +83,14 @@ body {
 }
 
 /* Disable transition for elements that shouldn't animate */
-button, [role="button"] {
+button,
+[role='button'] {
   transition-property: background-color, border-color, color, transform;
 }
 
-input, textarea, select {
+input,
+textarea,
+select {
   transition-property: border-color, box-shadow;
 }
 
@@ -99,7 +105,8 @@ input, textarea, select {
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {

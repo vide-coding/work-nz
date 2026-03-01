@@ -12,37 +12,40 @@ Throttled watch.
 Similar to `watch`, but offering an extra option `throttle` which will be applied to the callback function.
 
 ```ts
-import { watchThrottled } from '@vueuse/core'
+import { watchThrottled } from '@vueuse/core';
 
 watchThrottled(
   source,
-  () => { console.log('changed!') },
-  { throttle: 500 },
-)
+  () => {
+    console.log('changed!');
+  },
+  { throttle: 500 }
+);
 ```
 
 It's essentially a shorthand for the following code:
 
 ```ts
-import { throttleFilter, watchWithFilter } from '@vueuse/core'
+import { throttleFilter, watchWithFilter } from '@vueuse/core';
 
 watchWithFilter(
   source,
-  () => { console.log('changed!') },
+  () => {
+    console.log('changed!');
+  },
   {
     eventFilter: throttleFilter(500),
-  },
-)
+  }
+);
 ```
 
 ## Type Declarations
 
 ```ts
-export interface WatchThrottledOptions<Immediate>
-  extends WatchOptions<Immediate> {
-  throttle?: MaybeRefOrGetter<number>
-  trailing?: boolean
-  leading?: boolean
+export interface WatchThrottledOptions<Immediate> extends WatchOptions<Immediate> {
+  throttle?: MaybeRefOrGetter<number>;
+  trailing?: boolean;
+  leading?: boolean;
 }
 export declare function watchThrottled<
   T extends Readonly<MultiWatchSources>,
@@ -50,24 +53,21 @@ export declare function watchThrottled<
 >(
   sources: [...T],
   cb: WatchCallback<MapSources<T>, MapOldSources<T, Immediate>>,
-  options?: WatchThrottledOptions<Immediate>,
-): WatchHandle
-export declare function watchThrottled<
-  T,
-  Immediate extends Readonly<boolean> = false,
->(
+  options?: WatchThrottledOptions<Immediate>
+): WatchHandle;
+export declare function watchThrottled<T, Immediate extends Readonly<boolean> = false>(
   source: WatchSource<T>,
   cb: WatchCallback<T, Immediate extends true ? T | undefined : T>,
-  options?: WatchThrottledOptions<Immediate>,
-): WatchHandle
+  options?: WatchThrottledOptions<Immediate>
+): WatchHandle;
 export declare function watchThrottled<
   T extends object,
   Immediate extends Readonly<boolean> = false,
 >(
   source: T,
   cb: WatchCallback<T, Immediate extends true ? T | undefined : T>,
-  options?: WatchThrottledOptions<Immediate>,
-): WatchHandle
+  options?: WatchThrottledOptions<Immediate>
+): WatchHandle;
 /** @deprecated use `watchThrottled` instead */
-export declare const throttledWatch: typeof watchThrottled
+export declare const throttledWatch: typeof watchThrottled;
 ```
