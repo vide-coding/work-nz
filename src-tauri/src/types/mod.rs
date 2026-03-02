@@ -136,6 +136,7 @@ pub struct Project {
     pub display: Option<ProjectDisplay>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ide_override: Option<IdeConfig>,
+    pub visible: bool,
     pub updated_at: String,
 }
 

@@ -63,6 +63,7 @@ export type Project = {
   projectPath: string
   display?: ProjectDisplay
   ideOverride?: IdeConfig
+  visible: boolean
   updatedAt: string
 }
 

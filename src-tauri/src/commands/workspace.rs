@@ -228,12 +228,17 @@ pub fn get_workspace_path() -> Option<String> {
 
 /// 更新工作区别名
 #[tauri::command]
-pub fn workspace_update_alias(path: String, alias: Option<String>) -> Result<WorkspaceInfo, String> {
+pub fn workspace_update_alias(
+    path: String,
+    alias: Option<String>,
+) -> Result<WorkspaceInfo, String> {
     let mut workspaces = load_recent_workspaces();
 
     // 查找并更新指定工作区的别名
     let updated_workspace = {
-        let workspace = workspaces.iter_mut().find(|w| w.path == path)
+        let workspace = workspaces
+            .iter_mut()
+            .find(|w| w.path == path)
             .ok_or_else(|| "工作区不存在".to_string())?;
         workspace.alias = alias;
         workspace.clone()

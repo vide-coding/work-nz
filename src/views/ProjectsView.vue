@@ -138,12 +138,12 @@ async function createProject() {
   }
 }
 
-async function deleteProject(project: Project) {
+async function hideProject(project: Project) {
   if (
     !confirm(
       locale.value === 'zh-CN'
-        ? '确定删除此项目吗？'
-        : 'Are you sure you want to delete this project?'
+        ? '确定隐藏此项目吗？隐藏后可在工作区数据文件中恢复。'
+        : 'Are you sure you want to hide this project? You can restore it from the workspace data file.'
     )
   ) {
     return
@@ -434,7 +434,7 @@ onMounted(async () => {
                     </span>
                     <button
                       class="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                      @click.stop="deleteProject(project)"
+                      @click.stop="hideProject(project)"
                     >
                       <Trash2 class="w-4 h-4" />
                     </button>

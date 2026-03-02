@@ -68,6 +68,10 @@ export const projectApi = {
   async delete(id: string): Promise<{ ok: boolean }> {
     return invoke('project_delete', { id })
   },
+
+  async show(id: string): Promise<Project> {
+    return invoke('project_show', { id })
+  },
 }
 
 // Git API

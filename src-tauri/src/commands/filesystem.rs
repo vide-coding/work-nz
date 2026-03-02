@@ -20,7 +20,8 @@ pub fn project_fs_tree(project_id: String, relative_root: String) -> Result<File
     }
 
     fn build_tree(path: &Path, relative_path: &str) -> FileNode {
-        let name = path.file_name()
+        let name = path
+            .file_name()
             .map(|n| n.to_string_lossy().to_string())
             .unwrap_or_else(|| "root".to_string());
 
@@ -29,7 +30,12 @@ pub fn project_fs_tree(project_id: String, relative_root: String) -> Result<File
                 .map(|entries| {
                     entries
                         .filter_map(|e| e.ok())
-                        .map(|e| build_tree(&e.path(), &format!("{}/{}", relative_path, e.file_name().to_string_lossy())))
+                        .map(|e| {
+                            build_tree(
+                                &e.path(),
+                                &format!("{}/{}", relative_path, e.file_name().to_string_lossy()),
+                            )
+                        })
                         .collect()
                 })
                 .unwrap_or_default();
@@ -62,7 +68,10 @@ pub fn fs_read_text(path: String) -> Result<serde_json::Value, String> {
 
 /// 创建目录
 #[tauri::command]
-pub fn fs_create_dir(project_id: String, relative_path: String) -> Result<serde_json::Value, String> {
+pub fn fs_create_dir(
+    project_id: String,
+    relative_path: String,
+) -> Result<serde_json::Value, String> {
     let project = project_get(project_id)?;
     let target_path = Path::new(&project.project_path).join(&relative_path);
 
@@ -89,7 +98,8 @@ pub fn fs_delete(path: String) -> Result<serde_json::Value, String> {
 #[tauri::command]
 pub fn fs_rename(old_path: String, new_name: String) -> Result<serde_json::Value, String> {
     let old = Path::new(&old_path);
-    let new = old.parent()
+    let new = old
+        .parent()
         .map(|p| p.join(&new_name))
         .ok_or("无法确定新路径")?;
 

@@ -24,14 +24,14 @@ pub struct ProjectUpdateInput {
     pub ide_override: Option<IdeConfig>,
 }
 
-/// 列出所有项目
+/// 列出所有项目（只返回可见项目）
 #[tauri::command]
 pub fn projects_list() -> Result<Vec<Project>, String> {
     let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
     let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
 
     let mut stmt = conn
-        .prepare("SELECT id, name, description, project_path, display_json, ide_override_json, updated_at FROM projects ORDER BY updated_at DESC")
+        .prepare("SELECT id, name, description, project_path, display_json, ide_override_json, visible, updated_at FROM projects WHERE visible = 1 ORDER BY updated_at DESC")
         .map_err(|e| format!("查询失败: {}", e))?;
 
     let projects = stmt
@@ -46,7 +46,8 @@ pub fn projects_list() -> Result<Vec<Project>, String> {
                 project_path: row.get(3)?,
                 display: display_json.and_then(|j| serde_json::from_str(&j).ok()),
                 ide_override: ide_override_json.and_then(|j| serde_json::from_str(&j).ok()),
-                updated_at: row.get(6)?,
+                visible: row.get(6)?,
+                updated_at: row.get(7)?,
             })
         })
         .map_err(|e| format!("查询失败: {}", e))?
@@ -75,18 +76,20 @@ pub fn project_create(input: ProjectCreateInput) -> Result<Project, String> {
 
     // 创建项目目录
     let project_path = Path::new(&workspace_path).join(&input.name);
-    
+
     // 检查目录是否已存在
     if project_path.exists() {
         return Err(format!("项目目录已存在: {}", project_path.display()));
     }
-    
+
     // 创建目录
     std::fs::create_dir_all(&project_path)
         .map_err(|e| format!("创建项目目录失败: {} - {}", project_path.display(), e))?;
 
     // 序列化 display
-    let display_json = input.display.as_ref()
+    let display_json = input
+        .display
+        .as_ref()
         .and_then(|d| serde_json::to_string(d).ok());
 
     // 获取数据库连接
@@ -95,14 +98,15 @@ pub fn project_create(input: ProjectCreateInput) -> Result<Project, String> {
 
     // 插入项目记录
     conn.execute(
-        "INSERT INTO projects (id, name, description, project_path, display_json, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        "INSERT INTO projects (id, name, description, project_path, display_json, visible, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
         params![
             id,
             input.name,
             input.description,
             project_path.to_string_lossy().to_string(),
             display_json,
+            1, // visible = 1 默认可见
             now,
             now
         ],
@@ -116,6 +120,7 @@ pub fn project_create(input: ProjectCreateInput) -> Result<Project, String> {
         project_path: project_path.to_string_lossy().to_string(),
         display: input.display,
         ide_override: None,
+        visible: true,
         updated_at: now,
     })
 }
@@ -127,7 +132,7 @@ pub fn project_get(id: String) -> Result<Project, String> {
     let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
 
     conn.query_row(
-        "SELECT id, name, description, project_path, display_json, ide_override_json, updated_at FROM projects WHERE id = ?1",
+        "SELECT id, name, description, project_path, display_json, ide_override_json, visible, updated_at FROM projects WHERE id = ?1",
         params![id],
         |row| {
             let display_json: Option<String> = row.get(4)?;
@@ -140,7 +145,8 @@ pub fn project_get(id: String) -> Result<Project, String> {
                 project_path: row.get(3)?,
                 display: display_json.and_then(|j| serde_json::from_str(&j).ok()),
                 ide_override: ide_override_json.and_then(|j| serde_json::from_str(&j).ok()),
-                updated_at: row.get(6)?,
+                visible: row.get(6)?,
+                updated_at: row.get(7)?,
             })
         },
     )
@@ -172,21 +178,26 @@ pub fn project_update(id: String, patch: ProjectUpdateInput) -> Result<Project, 
         project.ide_override = Some(ide_override);
     }
 
-    let display_json = project.display.as_ref()
+    let display_json = project
+        .display
+        .as_ref()
         .and_then(|d| serde_json::to_string(d).ok());
-    let ide_override_json = project.ide_override.as_ref()
+    let ide_override_json = project
+        .ide_override
+        .as_ref()
         .and_then(|i| serde_json::to_string(i).ok());
 
     conn.execute(
-        "UPDATE projects SET name = ?1, description = ?2, display_json = ?3, ide_override_json = ?4, updated_at = ?5 WHERE id = ?6",
+        "UPDATE projects SET name = ?1, description = ?2, display_json = ?3, ide_override_json = ?4, visible = ?5, updated_at = ?6 WHERE id = ?7",
         params![
             project.name,
             project.description,
             display_json,
             ide_override_json,
+            project.visible,
             now,
             id
-        ],
+        ]
     )
     .map_err(|e| format!("更新项目失败: {}", e))?;
 
@@ -194,21 +205,47 @@ pub fn project_update(id: String, patch: ProjectUpdateInput) -> Result<Project, 
     Ok(project)
 }
 
-/// 删除项目
+/// 删除项目（软删除 - 隐藏项目）
 #[tauri::command]
 pub fn project_delete(id: String) -> Result<serde_json::Value, String> {
     let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
     let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
 
-    // 先获取项目路径
-    let _project = project_get(id.clone())?;
+    // 验证项目存在
+    let exists: bool = conn
+        .query_row(
+            "SELECT COUNT(*) > 0 FROM projects WHERE id = ?1",
+            params![id],
+            |row| row.get(0),
+        )
+        .map_err(|e| format!("查询失败: {}", e))?;
 
-    // 删除数据库记录
-    conn.execute("DELETE FROM projects WHERE id = ?1", params![id])
-        .map_err(|e| format!("删除项目失败: {}", e))?;
+    if !exists {
+        return Err("项目不存在".to_string());
+    }
 
-    // 可选：删除项目目录（这里不删除，保留用户数据）
-    // std::fs::remove_dir_all(&project.project_path).ok();
+    // 软删除：将 visible 设置为 0
+    conn.execute("UPDATE projects SET visible = 0 WHERE id = ?1", params![id])
+        .map_err(|e| format!("隐藏项目失败: {}", e))?;
 
     Ok(serde_json::json!({ "ok": true }))
+}
+
+/// 显示项目（恢复隐藏的项目）
+#[tauri::command]
+pub fn project_show(id: String) -> Result<Project, String> {
+    let now = Utc::now().to_rfc3339();
+
+    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
+    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
+
+    // 更新 visible 为 1
+    conn.execute(
+        "UPDATE projects SET visible = 1, updated_at = ?1 WHERE id = ?2",
+        params![now, id],
+    )
+    .map_err(|e| format!("显示项目失败: {}", e))?;
+
+    // 返回更新后的项目
+    project_get(id)
 }

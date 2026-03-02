@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS projects (
   project_path TEXT NOT NULL,
   display_json TEXT,
   ide_override_json TEXT,
+  visible INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );

@@ -1,6 +1,6 @@
+mod commands;
 mod db;
 mod types;
-mod commands;
 
 use commands::*;
 
@@ -24,6 +24,7 @@ pub fn run() {
             project_get,
             project_update,
             project_delete,
+            project_show,
             // Git commands
             git_repo_list,
             git_repo_create,

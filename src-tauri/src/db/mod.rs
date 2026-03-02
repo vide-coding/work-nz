@@ -70,6 +70,30 @@ fn run_migrations(conn: &Connection) -> Result<()> {
         )?;
     }
 
+    // 迁移 3: 添加 visible 列到 projects 表
+    migrate_add_visible_column(conn)?;
+
+    Ok(())
+}
+
+/// 数据库迁移：为 projects 表添加 visible 列
+fn migrate_add_visible_column(conn: &Connection) -> Result<()> {
+    // 检查 visible 列是否存在
+    let mut stmt = conn.prepare("PRAGMA table_info(projects)")?;
+    let table_info: Vec<(String, String)> = stmt
+        .query_map([], |row| Ok((row.get(1)?, row.get(2)?)))?
+        .filter_map(|r| r.ok())
+        .collect();
+
+    let has_visible = table_info.iter().any(|(name, _)| name == "visible");
+
+    if !has_visible {
+        conn.execute(
+            "ALTER TABLE projects ADD COLUMN visible INTEGER NOT NULL DEFAULT 1",
+            [],
+        )?;
+    }
+
     Ok(())
 }
 
