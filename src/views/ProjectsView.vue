@@ -449,13 +449,6 @@ onMounted(async () => {
                     {{ $t('projects.open') }}
                     <ChevronRight class="w-4 h-4" />
                   </button>
-                  <button
-                    class="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                    @click.stop="openInIde(project)"
-                  >
-                    <ExternalLink class="w-4 h-4" />
-                    {{ $t('projects.openInIde') }}
-                  </button>
                 </div>
               </div>
             </div>
@@ -514,13 +507,6 @@ onMounted(async () => {
                 @click="router.push(`/projects/${selectedProject.id}`)"
               >
                 {{ $t('projects.enterWorkspace') }}
-              </button>
-              <button
-                class="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300"
-                @click="openInIde(selectedProject)"
-              >
-                <ExternalLink class="w-4 h-4" />
-                {{ $t('projects.openInIde') }}
               </button>
             </div>
           </div>
