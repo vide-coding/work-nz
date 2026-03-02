@@ -1,7 +1,9 @@
+use crate::commands::project::project_get;
 use crate::db::get_db;
 use crate::types::*;
 use chrono::Utc;
 use rusqlite::params;
+use std::fs;
 use std::path::Path;
 use std::process::Command;
 
@@ -46,16 +48,19 @@ pub fn dir_types_list() -> Result<Vec<DirectoryType>, String> {
 /// 创建自定义目录类型
 #[tauri::command]
 pub fn dir_type_create_custom(input: serde_json::Value) -> Result<DirectoryType, String> {
-    let name = input.get("name")
+    let name = input
+        .get("name")
         .and_then(|v| v.as_str())
         .ok_or("缺少名称")?
         .to_string();
 
-    let category = input.get("category")
+    let category = input
+        .get("category")
         .and_then(|v| v.as_str())
         .map(String::from);
 
-    let sort_order = input.get("sortOrder")
+    let sort_order = input
+        .get("sortOrder")
         .and_then(|v| v.as_i64())
         .unwrap_or(100) as i32;
 
@@ -98,17 +103,20 @@ pub fn dir_type_update(id: String, patch: serde_json::Value) -> Result<Directory
         )
         .map_err(|e| format!("目录类型不存在: {}", e))?;
 
-    let name = patch.get("name")
+    let name = patch
+        .get("name")
         .and_then(|v| v.as_str())
         .map(String::from)
         .unwrap_or(old_name);
 
-    let category = patch.get("category")
+    let category = patch
+        .get("category")
         .and_then(|v| v.as_str())
         .map(String::from)
         .or(old_category);
 
-    let sort_order = patch.get("sortOrder")
+    let sort_order = patch
+        .get("sortOrder")
         .and_then(|v| v.as_i64())
         .map(|v| v as i32)
         .unwrap_or(old_sort_order);
@@ -199,6 +207,14 @@ pub fn project_dir_create_or_update(
         .and_then(|v| v.as_str())
         .ok_or("缺少目录路径")?
         .to_string();
+
+    // 获取项目信息，创建物理目录
+    let project = project_get(project_id.clone())?;
+    let full_path = Path::new(&project.project_path).join(&relative_path);
+
+    // 创建物理目录（如果不存在）
+    fs::create_dir_all(&full_path)
+        .map_err(|e| format!("创建物理目录失败: {} - {}", full_path.display(), e))?;
 
     let now = Utc::now().to_rfc3339();
 
@@ -308,12 +324,16 @@ pub fn ide_list_supported() -> Result<Vec<IdeConfig>, String> {
                             if bin_path.exists() {
                                 if let Ok(bin_entries) = std::fs::read_dir(&bin_path) {
                                     for bin_entry in bin_entries.flatten() {
-                                        let bin_name = bin_entry.file_name().to_string_lossy().to_string();
+                                        let bin_name =
+                                            bin_entry.file_name().to_string_lossy().to_string();
                                         if bin_name.ends_with(".exe") && !bin_name.contains("64") {
                                             ides.push(IdeConfig {
                                                 kind: SupportedIdeKind::Jetbrains,
                                                 name: name.clone(),
-                                                exe_path: bin_entry.path().to_string_lossy().to_string(),
+                                                exe_path: bin_entry
+                                                    .path()
+                                                    .to_string_lossy()
+                                                    .to_string(),
                                                 args: None,
                                             });
                                             break;
@@ -357,7 +377,9 @@ pub fn ide_open_repo(repo_id: String, ide: Option<IdeConfig>) -> Result<serde_js
                 )
                 .ok();
 
-            match settings_json.and_then(|j| serde_json::from_str::<crate::types::WorkspaceSettings>(&j).ok()) {
+            match settings_json
+                .and_then(|j| serde_json::from_str::<crate::types::WorkspaceSettings>(&j).ok())
+            {
                 Some(s) => s.default_ide.ok_or("未配置默认 IDE")?,
                 None => return Err("未配置默认 IDE".to_string()),
             }
@@ -375,7 +397,9 @@ pub fn ide_open_repo(repo_id: String, ide: Option<IdeConfig>) -> Result<serde_js
 
         match cmd.spawn() {
             Ok(_) => Ok(serde_json::json!({ "ok": true })),
-            Err(e) => Ok(serde_json::json!({ "ok": false, "message": format!("启动 IDE 失败: {}", e) })),
+            Err(e) => {
+                Ok(serde_json::json!({ "ok": false, "message": format!("启动 IDE 失败: {}", e) }))
+            }
         }
     }
 

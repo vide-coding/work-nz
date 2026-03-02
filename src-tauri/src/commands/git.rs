@@ -4,6 +4,7 @@ use crate::types::*;
 use chrono::Utc;
 use git2::Repository;
 use rusqlite::params;
+use std::fs;
 use std::path::Path;
 
 /// 列出项目的 Git 仓库
@@ -58,7 +59,11 @@ pub fn git_repo_create(project_id: String, name: String) -> Result<GitRepository
         )
         .map_err(|e| format!("项目不存在: {}", e))?;
 
-    let repo_path = Path::new(&project_path).join(&name);
+    // 创建 code 目录（如果不存在）
+    let code_dir = Path::new(&project_path).join("code");
+    fs::create_dir_all(&code_dir).map_err(|e| format!("创建 code 目录失败: {}", e))?;
+
+    let repo_path = code_dir.join(&name);
 
     // 创建 Git 仓库
     Repository::init(&repo_path).map_err(|e| format!("创建 Git 仓库失败: {}", e))?;
@@ -111,7 +116,11 @@ pub fn git_repo_clone(project_id: String, input: GitCloneInput) -> Result<GitRep
         )
         .map_err(|e| format!("项目不存在: {}", e))?;
 
-    let repo_path = Path::new(&project_path).join(&input.target_dir_name);
+    // 创建 code 目录（如果不存在）
+    let code_dir = Path::new(&project_path).join("code");
+    fs::create_dir_all(&code_dir).map_err(|e| format!("创建 code 目录失败: {}", e))?;
+
+    let repo_path = code_dir.join(&input.target_dir_name);
 
     // 克隆仓库 - 使用简化方式
     let mut callbacks = git2::RemoteCallbacks::new();

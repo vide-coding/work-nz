@@ -1,7 +1,7 @@
-use rusqlite::{Connection, Result, params};
+use once_cell::sync::Lazy;
+use rusqlite::{params, Connection, Result};
 use std::path::Path;
 use std::sync::Mutex;
-use once_cell::sync::Lazy;
 
 pub mod schema;
 
@@ -21,12 +21,54 @@ pub fn init_db(workspace_path: &str) -> Result<()> {
     // 创建表
     conn.execute_batch(SCHEMA)?;
 
+    // 执行迁移
+    run_migrations(&conn)?;
+
     // 插入默认目录类型
     insert_default_directory_types(&conn)?;
 
     // 存储连接
     let mut db = DB.lock().unwrap();
     *db = Some(conn);
+
+    Ok(())
+}
+
+/// 执行数据库迁移
+fn run_migrations(conn: &Connection) -> Result<()> {
+    // 迁移 1: 添加 custom_name 列到 git_repositories 表
+    let has_custom_name = conn
+        .query_row(
+            "SELECT COUNT(*) FROM pragma_table_info('git_repositories') WHERE name = 'custom_name'",
+            [],
+            |row| row.get::<_, i32>(0),
+        )
+        .unwrap_or(0)
+        > 0;
+
+    if !has_custom_name {
+        conn.execute(
+            "ALTER TABLE git_repositories ADD COLUMN custom_name TEXT",
+            [],
+        )?;
+    }
+
+    // 迁移 2: 添加 description 列到 git_repositories 表（如果缺失）
+    let has_description = conn
+        .query_row(
+            "SELECT COUNT(*) FROM pragma_table_info('git_repositories') WHERE name = 'description'",
+            [],
+            |row| row.get::<_, i32>(0),
+        )
+        .unwrap_or(0)
+        > 0;
+
+    if !has_description {
+        conn.execute(
+            "ALTER TABLE git_repositories ADD COLUMN description TEXT",
+            [],
+        )?;
+    }
 
     Ok(())
 }
