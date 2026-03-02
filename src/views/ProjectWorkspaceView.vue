@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useLocale } from '../locales/useLocale'
 import {
   projectApi,
@@ -20,6 +21,7 @@ import type {
   ProjectDirectory,
   WorkspaceSettings,
   PreviewKind,
+  WorkspaceInfo,
 } from '../types'
 import {
   ArrowLeft,
@@ -65,6 +67,40 @@ const loading = ref(false)
 const error = ref('')
 const isEditing = ref(false)
 const editDescription = ref('')
+const currentWorkspace = ref<WorkspaceInfo | null>(null)
+
+// 获取工作区显示名称
+const workspaceDisplayName = computed(() => {
+  if (!currentWorkspace.value) return null
+  return (
+    currentWorkspace.value.alias ||
+    currentWorkspace.value.path.split(/[\\/]/).pop() ||
+    currentWorkspace.value.path
+  )
+})
+
+// 更新窗口标题
+async function updateWindowTitle(title: string | null) {
+  try {
+    const window = getCurrentWindow()
+    if (title) {
+      await window.setTitle(title)
+    } else {
+      await window.setTitle('Vibe Kanban')
+    }
+  } catch (e) {
+    console.error('Failed to update window title:', e)
+  }
+}
+
+// 监听当前工作区变化，更新窗口标题
+watch(
+  workspaceDisplayName,
+  (name) => {
+    updateWindowTitle(name)
+  },
+  { immediate: true }
+)
 
 // Git repos
 const repos = ref<GitRepository[]>([])
@@ -170,6 +206,14 @@ async function loadSettings() {
     applyTheme(settings.value.themeMode)
   } catch (e) {
     console.error('Failed to load settings:', e)
+  }
+}
+
+async function loadCurrentWorkspace() {
+  try {
+    currentWorkspace.value = await workspaceApi.getCurrent()
+  } catch (e) {
+    console.error('Failed to load current workspace:', e)
   }
 }
 
@@ -506,6 +550,7 @@ watch(currentNav, async (newNav) => {
 // Lifecycle
 onMounted(async () => {
   await loadSettings()
+  await loadCurrentWorkspace()
   await loadProject()
   await loadDirTypes()
   await loadProjectDirs()

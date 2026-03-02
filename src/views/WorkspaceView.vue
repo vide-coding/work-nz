@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { open } from '@tauri-apps/plugin-dialog'
+import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useLocale } from '../locales/useLocale'
 import { workspaceApi } from '../composables/useApi'
 import type { WorkspaceInfo, WorkspaceSettings } from '../types'
@@ -27,6 +28,43 @@ const showAliasDialog = ref(false)
 
 // Computed
 const canEnter = computed(() => currentWorkspace.value !== null)
+
+// 获取工作区显示名称
+const workspaceDisplayName = computed(() => {
+  if (!currentWorkspace.value) return null
+  return (
+    currentWorkspace.value.alias ||
+    currentWorkspace.value.path.split(/[\\/]/).pop() ||
+    currentWorkspace.value.path
+  )
+})
+
+// 更新窗口标题
+async function updateWindowTitle(title: string | null) {
+  try {
+    const window = getCurrentWindow()
+    if (title) {
+      await window.setTitle(title)
+    } else {
+      await window.setTitle('Vibe Kanban')
+    }
+  } catch (e) {
+    console.error('Failed to update window title:', e)
+  }
+}
+
+// 监听当前工作区变化，更新窗口标题
+watch(
+  currentWorkspace,
+  (ws) => {
+    if (ws) {
+      updateWindowTitle(workspaceDisplayName.value)
+    } else {
+      updateWindowTitle(null)
+    }
+  },
+  { immediate: true }
+)
 
 // Methods
 async function loadRecentWorkspaces() {
@@ -219,10 +257,10 @@ onMounted(async () => {
       <!-- Header -->
       <div class="text-center mb-6">
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          {{ $t('app.title') }}
+          {{ currentWorkspace ? workspaceDisplayName : $t('app.title') }}
         </h1>
         <p class="text-gray-500 dark:text-gray-400 text-sm">
-          {{ $t('workspace.description') }}
+          {{ currentWorkspace ? currentWorkspace.path : $t('workspace.description') }}
         </p>
       </div>
 

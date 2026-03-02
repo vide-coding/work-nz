@@ -18,6 +18,7 @@ pub fn run() {
             workspace_settings_update,
             workspace_update_alias,
             workspace_remove_from_recent,
+            workspace_get_current,
             // Project commands
             projects_list,
             project_create,

@@ -30,6 +30,10 @@ export const workspaceApi = {
     return invoke('workspace_list_recent')
   },
 
+  async getCurrent(): Promise<WorkspaceInfo | null> {
+    return invoke('workspace_get_current')
+  },
+
   async getSettings(): Promise<WorkspaceSettings> {
     return invoke('workspace_settings_get')
   },

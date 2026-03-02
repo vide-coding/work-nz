@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useLocale } from '../locales/useLocale'
 import { projectApi, ideApi, gitApi, workspaceApi } from '../composables/useApi'
-import type { Project, GitRepoStatus, WorkspaceSettings } from '../types'
+import type { Project, GitRepoStatus, WorkspaceSettings, WorkspaceInfo } from '../types'
 import {
   FolderPlus,
   Search,
@@ -40,6 +41,40 @@ const showCreateDialog = ref(false)
 const isCreatingProject = ref(false)
 const newProjectName = ref('')
 const newProjectDescription = ref('')
+const currentWorkspace = ref<WorkspaceInfo | null>(null)
+
+// 获取工作区显示名称
+const workspaceDisplayName = computed(() => {
+  if (!currentWorkspace.value) return null
+  return (
+    currentWorkspace.value.alias ||
+    currentWorkspace.value.path.split(/[\\/]/).pop() ||
+    currentWorkspace.value.path
+  )
+})
+
+// 更新窗口标题
+async function updateWindowTitle(title: string | null) {
+  try {
+    const window = getCurrentWindow()
+    if (title) {
+      await window.setTitle(title)
+    } else {
+      await window.setTitle('Vibe Kanban')
+    }
+  } catch (e) {
+    console.error('Failed to update window title:', e)
+  }
+}
+
+// 监听当前工作区变化，更新窗口标题
+watch(
+  workspaceDisplayName,
+  (name) => {
+    updateWindowTitle(name)
+  },
+  { immediate: true }
+)
 
 // Computed
 const filteredProjects = computed(() => {
@@ -86,6 +121,14 @@ async function loadSettings() {
     applyTheme(settings.value.themeMode)
   } catch (error) {
     console.error('Failed to load settings:', error)
+  }
+}
+
+async function loadCurrentWorkspace() {
+  try {
+    currentWorkspace.value = await workspaceApi.getCurrent()
+  } catch (error) {
+    console.error('Failed to load current workspace:', error)
   }
 }
 
@@ -228,6 +271,7 @@ function selectProject(project: Project) {
 // Lifecycle
 onMounted(async () => {
   await loadSettings()
+  await loadCurrentWorkspace()
   await loadProjects()
 })
 </script>
@@ -249,8 +293,8 @@ onMounted(async () => {
             {{ $t('projects.switchWorkspace') }}
           </button>
           <div class="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
-          <span class="text-sm text-gray-600 dark:text-gray-400">
-            {{ $t('projects.workspace') }}
+          <span class="text-sm font-medium text-gray-900 dark:text-white">
+            {{ workspaceDisplayName || $t('projects.workspace') }}
           </span>
         </div>
 

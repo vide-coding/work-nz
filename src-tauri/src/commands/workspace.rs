@@ -259,3 +259,42 @@ pub fn workspace_remove_from_recent(path: String) -> Result<(), String> {
     save_recent_workspaces(&workspaces);
     Ok(())
 }
+
+/// 获取当前工作区信息
+#[tauri::command]
+pub fn workspace_get_current() -> Result<Option<WorkspaceInfo>, String> {
+    let current_path = get_workspace_path();
+
+    match current_path {
+        Some(path) => {
+            // 从最近工作区列表中获取完整信息（包括别名）
+            let workspaces = load_recent_workspaces();
+            let ws = workspaces.into_iter().find(|w| w.path == path);
+
+            match ws {
+                Some(workspace) => {
+                    // 获取设置
+                    let settings = {
+                        let db_guard = get_db().ok();
+                        match db_guard
+                            .and_then(|g| g.as_ref().map(|c| get_workspace_settings_internal(c)))
+                        {
+                            Some(Some(s)) => Some(s),
+                            _ => None,
+                        }
+                    };
+
+                    Ok(Some(WorkspaceInfo {
+                        path: workspace.path,
+                        db_path: workspace.db_path,
+                        last_opened_at: workspace.last_opened_at,
+                        settings,
+                        alias: workspace.alias,
+                    }))
+                }
+                None => Ok(None),
+            }
+        }
+        None => Ok(None),
+    }
+}
