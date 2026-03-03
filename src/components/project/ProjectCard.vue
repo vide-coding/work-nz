@@ -1,0 +1,88 @@
+<script setup lang="ts">
+import { Trash2, ChevronRight } from 'lucide-vue-next'
+import type { Project, GitRepoStatus } from '@/types'
+
+const props = defineProps<{
+  project: Project
+  selected: boolean
+  status?: GitRepoStatus | null
+}>()
+
+const emit = defineEmits<{
+  select: []
+  open: []
+  hide: []
+}>()
+
+function formatDate(dateStr: string): string {
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diff = now.getTime() - date.getTime()
+  const minutes = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const days = Math.floor(diff / 86400000)
+
+  if (minutes < 1) return '刚刚'
+  if (minutes < 60) return `${minutes} 分钟前`
+  if (hours < 24) return `${hours} 小时前`
+  if (days < 7) return `${days} 天前`
+
+  return date.toLocaleDateString('zh-CN')
+}
+</script>
+
+<template>
+  <div
+    class="bg-white dark:bg-gray-800 rounded-xl border transition-all cursor-pointer"
+    :class="
+      selected
+        ? 'border-indigo-500 ring-2 ring-indigo-500/20'
+        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+    "
+    @click="emit('select')"
+  >
+    <div class="p-4">
+      <div class="flex items-start justify-between">
+        <div class="flex items-start gap-3">
+          <div
+            class="w-10 h-10 rounded-lg flex items-center justify-center text-white font-semibold"
+            :style="{
+              backgroundColor: project.display?.themeColor || '#4F46E5',
+            }"
+          >
+            {{ project.name.charAt(0).toUpperCase() }}
+          </div>
+          <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white">
+              {{ project.name }}
+            </h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
+              {{ project.description || '暂无描述' }}
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-gray-400 dark:text-gray-500">
+            {{ formatDate(project.updatedAt) }}
+          </span>
+          <button
+            class="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            @click.stop="emit('hide')"
+          >
+            <Trash2 class="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-4 flex items-center gap-3">
+        <button
+          class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors"
+          @click.stop="emit('open')"
+        >
+          打开
+          <ChevronRight class="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  </div>
+</template>
