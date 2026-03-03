@@ -532,6 +532,13 @@ function getFileIcon(node: FileNode) {
 
 // Watch navigation changes
 watch(currentNav, async (newNav) => {
+  // Close README preview when switching away from code tab
+  if (newNav !== 'code') {
+    selectedRepo.value = null
+    readmeContent.value = ''
+    previewKind.value = null
+  }
+
   if (newNav === 'intro') {
     await loadProject()
   } else if (newNav === 'code') {
