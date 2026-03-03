@@ -173,6 +173,7 @@ async function createProject() {
     projects.value.unshift(project)
     newProjectName.value = ''
     newProjectDescription.value = ''
+    showCreateDialog.value = false
     isCreatingProject.value = false
   } catch (error: any) {
     console.error('[createProject] Error:', error)
