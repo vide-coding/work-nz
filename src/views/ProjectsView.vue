@@ -3,13 +3,14 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useLocale } from '../locales/useLocale'
-import { projectApi, ideApi, gitApi, workspaceApi } from '../composables/useApi'
+import { projectApi, gitApi, workspaceApi } from '../composables/useApi'
 import type { Project, GitRepoStatus, WorkspaceSettings, WorkspaceInfo } from '../types'
 import { ArrowLeft, Folder, Loader2 } from 'lucide-vue-next'
 import ProjectCard from '../components/project/ProjectCard.vue'
 import ProjectPreview from '../components/project/ProjectPreview.vue'
 import ProjectToolbar from '../components/project/ProjectToolbar.vue'
 import ProjectCreateDialog from '../components/project/ProjectCreateDialog.vue'
+import ProjectEditDialog from '../components/project/ProjectEditDialog.vue'
 import ThemeToggle from '../components/common/ThemeToggle.vue'
 import LanguageSelector from '../components/common/LanguageSelector.vue'
 
@@ -28,6 +29,7 @@ const showPreview = ref(true)
 const settings = ref<WorkspaceSettings>({ themeMode: 'system' })
 const projectStatuses = ref<Record<string, GitRepoStatus>>({})
 const showCreateDialog = ref(false)
+const showEditDialog = ref(false)
 const isCreatingProject = ref(false)
 const currentWorkspace = ref<WorkspaceInfo | null>(null)
 
@@ -173,6 +175,37 @@ async function hideProject(project: Project) {
   }
 }
 
+async function handleEditProject(name: string, description: string) {
+  const project = selectedProject.value
+  if (!project) return
+
+  try {
+    loading.value = true
+    error.value = ''
+    const updated = await projectApi.update(project.id, {
+      name,
+      description: description || undefined,
+    })
+    const index = projects.value.findIndex((p) => p.id === project.id)
+    if (index !== -1) {
+      projects.value[index] = updated
+    }
+    if (selectedProject.value?.id === project.id) {
+      selectedProject.value = updated
+    }
+    showEditDialog.value = false
+  } catch (error: any) {
+    error.value = error.message || String(error)
+  } finally {
+    loading.value = false
+  }
+}
+
+function handleEditClick(project: Project) {
+  selectedProject.value = project
+  showEditDialog.value = true
+}
+
 function applyTheme(themeMode: string) {
   const root = document.documentElement
   if (themeMode === 'dark') {
@@ -286,6 +319,7 @@ onMounted(async () => {
               @select="selectProject(project)"
               @open="router.push(`/projects/${project.id}`)"
               @hide="hideProject(project)"
+              @edit="handleEditClick(project)"
             />
           </div>
         </div>
@@ -305,6 +339,13 @@ onMounted(async () => {
       :loading="isCreatingProject"
       :error="error"
       @create="handleCreateProject"
+    />
+
+    <!-- Edit Project Dialog -->
+    <ProjectEditDialog
+      v-model="showEditDialog"
+      :project="selectedProject"
+      @save="handleEditProject"
     />
   </div>
 </template>

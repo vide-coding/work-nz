@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Trash2, ChevronRight } from 'lucide-vue-next'
+import { Trash2, ChevronRight, Pen } from 'lucide-vue-next'
 import type { Project, GitRepoStatus } from '@/types'
 
 const props = defineProps<{
@@ -12,6 +12,7 @@ const emit = defineEmits<{
   select: []
   open: []
   hide: []
+  edit: []
 }>()
 
 function formatDate(dateStr: string): string {
@@ -66,8 +67,16 @@ function formatDate(dateStr: string): string {
             {{ formatDate(project.updatedAt) }}
           </span>
           <button
-            class="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            class="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+            @click.stop="emit('edit')"
+            title="编辑项目"
+          >
+            <Pen class="w-4 h-4" />
+          </button>
+          <button
+            class="p-1.5 rounded-lg text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
             @click.stop="emit('hide')"
+            title="隐藏项目"
           >
             <Trash2 class="w-4 h-4" />
           </button>

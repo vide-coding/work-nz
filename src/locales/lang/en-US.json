@@ -90,5 +90,12 @@
     "projectNamePlaceholder": "Enter project name",
     "description": "Description",
     "descriptionPlaceholder": "Enter project description (optional)"
+  },
+  "projectEdit": {
+    "title": "Edit Project",
+    "name": "Project Name",
+    "namePlaceholder": "Enter project name",
+    "description": "Description",
+    "descriptionPlaceholder": "Enter project description (optional)"
   }
 }
