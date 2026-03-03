@@ -234,16 +234,10 @@ onMounted(async () => {
 
         <!-- Right: Actions -->
         <div class="flex items-center gap-3">
-          <ThemeToggle
-            :model-value="settings.themeMode"
-            @update:model-value="updateTheme"
-          />
-          <LanguageSelector
-            :model-value="locale"
-            @update:model-value="changeLocale"
-          />
+          <ThemeToggle :model-value="settings.themeMode" @update:model-value="updateTheme" />
+          <LanguageSelector :model-value="locale" @update:model-value="changeLocale" />
           <button
-            class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors text-sm font-medium"
+            class="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors text-sm font-medium"
             @click="showCreateDialog = true"
           >
             {{ $t('projects.newProject') }}

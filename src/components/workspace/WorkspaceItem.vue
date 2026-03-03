@@ -27,11 +27,7 @@ function formatDate(dateStr: string): string {
 }
 
 const displayName = computed(() => {
-  return (
-    props.workspace.alias ||
-    props.workspace.path.split(/[\\/]/).pop() ||
-    props.workspace.path
-  )
+  return props.workspace.alias || props.workspace.path.split(/[\\/]/).pop() || props.workspace.path
 })
 </script>
 
@@ -48,11 +44,7 @@ const displayName = computed(() => {
     <div class="min-w-0 flex-1">
       <p
         class="text-sm font-medium truncate"
-        :class="
-          selected
-            ? 'text-indigo-900 dark:text-indigo-200'
-            : 'text-gray-900 dark:text-white'
-        "
+        :class="selected ? 'text-indigo-900 dark:text-indigo-200' : 'text-gray-900 dark:text-white'"
       >
         {{ displayName }}
       </p>
@@ -75,9 +67,7 @@ const displayName = computed(() => {
         <MoreVertical
           class="w-4 h-4"
           :class="
-            selected
-              ? 'text-indigo-700 dark:text-indigo-300'
-              : 'text-gray-600 dark:text-gray-400'
+            selected ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-600 dark:text-gray-400'
           "
         />
       </button>

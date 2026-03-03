@@ -9,6 +9,7 @@
 3. **ProjectWorkspaceView.vue** (约 1330 行) - 包含项目介绍、代码管理、资源目录、文件浏览等功能
 
 这些问题导致：
+
 - 代码难以维护和阅读
 - 组件职责不清晰
 - 复用性差
@@ -28,11 +29,13 @@
 ## 范围
 
 ### 需要重构的文件
+
 - `src/views/WorkspaceView.vue`
 - `src/views/ProjectsView.vue`
 - `src/views/ProjectWorkspaceView.vue`
 
 ### 新增组件
+
 - 布局组件：`AppLayout.vue`
 - 公共组件：
   - `ThemeToggle.vue` (主题切换)
@@ -45,6 +48,7 @@
   - `Dialog/Base.vue` (对话框基础组件)
 
 ### 保持不变的文件
+
 - `src/components/SettingsBar.vue` (已有良好组件)
 - `src/components/MarkdownRenderer.vue` (已有良好组件)
 - `src/composables/*` (逻辑已良好分离)

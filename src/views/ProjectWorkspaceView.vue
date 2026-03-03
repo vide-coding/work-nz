@@ -48,6 +48,8 @@ import {
   X,
   GitPullRequest,
 } from 'lucide-vue-next'
+import ThemeToggle from '../components/common/ThemeToggle.vue'
+import LanguageSelector from '../components/common/LanguageSelector.vue'
 
 const props = defineProps<{
   id: string
@@ -570,7 +572,7 @@ onMounted(async () => {
   <div class="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
     <!-- Top Bar -->
     <header
-      class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-3"
+      class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4"
     >
       <div class="flex items-center justify-between">
         <!-- Breadcrumb -->
@@ -591,87 +593,9 @@ onMounted(async () => {
         <!-- Right Actions -->
         <div class="flex items-center gap-3">
           <!-- Theme -->
-          <div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-            <button
-              class="p-1.5 rounded-md transition-colors"
-              :class="
-                settings.themeMode === 'light'
-                  ? 'bg-white dark:bg-gray-600 shadow-sm'
-                  : 'hover:bg-gray-200 dark:hover:bg-gray-600'
-              "
-              @click="updateTheme('light')"
-            >
-              <svg
-                class="w-4 h-4 text-gray-600 dark:text-gray-300"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
-                />
-              </svg>
-            </button>
-            <button
-              class="p-1.5 rounded-md transition-colors"
-              :class="
-                settings.themeMode === 'dark'
-                  ? 'bg-white dark:bg-gray-600 shadow-sm'
-                  : 'hover:bg-gray-200 dark:hover:bg-gray-600'
-              "
-              @click="updateTheme('dark')"
-            >
-              <svg
-                class="w-4 h-4 text-gray-600 dark:text-gray-300"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
-                />
-              </svg>
-            </button>
-            <button
-              class="p-1.5 rounded-md transition-colors"
-              :class="
-                settings.themeMode === 'system'
-                  ? 'bg-white dark:bg-gray-600 shadow-sm'
-                  : 'hover:bg-gray-200 dark:hover:bg-gray-600'
-              "
-              @click="updateTheme('system')"
-            >
-              <svg
-                class="w-4 h-4 text-gray-600 dark:text-gray-300"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                />
-              </svg>
-            </button>
-          </div>
-
+          <ThemeToggle :model-value="settings.themeMode" @update:model-value="updateTheme" />
           <!-- Language -->
-          <select
-            v-model="locale"
-            class="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-700 dark:text-gray-300"
-            @change="changeLocale(locale as 'zh-CN' | 'en-US')"
-          >
-            <option value="zh-CN">中文</option>
-            <option value="en-US">EN</option>
-          </select>
+          <LanguageSelector :model-value="locale" @update:model-value="changeLocale" />
         </div>
       </div>
     </header>

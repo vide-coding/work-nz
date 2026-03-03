@@ -2,12 +2,15 @@
 import { computed } from 'vue'
 import { Moon, Sun, Monitor } from 'lucide-vue-next'
 
-const props = withDefaults(defineProps<{
-  modelValue: 'light' | 'dark' | 'system'
-  variant?: 'button' | 'icon' | 'select'
-}>(), {
-  variant: 'button'
-})
+const props = withDefaults(
+  defineProps<{
+    modelValue: 'light' | 'dark' | 'system'
+    variant?: 'button' | 'icon' | 'select'
+  }>(),
+  {
+    variant: 'button',
+  }
+)
 
 const emit = defineEmits<{
   'update:modelValue': [theme: 'light' | 'dark' | 'system']

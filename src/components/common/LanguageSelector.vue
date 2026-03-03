@@ -1,12 +1,16 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { Globe } from 'lucide-vue-next'
 
-const props = withDefaults(defineProps<{
-  modelValue: 'zh-CN' | 'en-US'
-  variant?: 'button' | 'select'
-}>(), {
-  variant: 'button'
-})
+const props = withDefaults(
+  defineProps<{
+    modelValue: 'zh-CN' | 'en-US'
+    variant?: 'button' | 'select'
+  }>(),
+  {
+    variant: 'button',
+  }
+)
 
 const emit = defineEmits<{
   'update:modelValue': [locale: 'zh-CN' | 'en-US']
@@ -45,6 +49,6 @@ function selectLanguage(locale: 'zh-CN' | 'en-US') {
     @change="selectLanguage(($event.target as HTMLSelectElement).value as 'zh-CN' | 'en-US')"
   >
     <option value="zh-CN">中文</option>
-    <option value="en-US">English</option>
+    <option value="en-US">EN</option>
   </select>
 </template>

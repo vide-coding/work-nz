@@ -1,19 +1,22 @@
 <script setup lang="ts">
 import { X } from 'lucide-vue-next'
 
-const props = withDefaults(defineProps<{
-  modelValue: boolean
-  title?: string
-  width?: string
-  showClose?: boolean
-}>(), {
-  width: 'max-w-md',
-  showClose: true
-})
+const props = withDefaults(
+  defineProps<{
+    modelValue: boolean
+    title?: string
+    width?: string
+    showClose?: boolean
+  }>(),
+  {
+    width: 'max-w-md',
+    showClose: true,
+  }
+)
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
-  'close': []
+  close: []
 }>()
 
 function handleClose() {
@@ -35,7 +38,7 @@ function handleEscapeKey(event: KeyboardEvent) {
 
 // Listen for escape key
 defineExpose({
-  handleClose
+  handleClose,
 })
 </script>
 
@@ -62,7 +65,10 @@ defineExpose({
           @click.stop
         >
           <!-- Header -->
-          <div v-if="title || showClose" class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <div
+            v-if="title || showClose"
+            class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700"
+          >
             <h3 v-if="title" class="text-lg font-semibold text-gray-900 dark:text-white">
               {{ title }}
             </h3>
@@ -81,7 +87,10 @@ defineExpose({
           </div>
 
           <!-- Footer -->
-          <div v-if="$slots.footer" class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 flex justify-end gap-3 rounded-b-xl">
+          <div
+            v-if="$slots.footer"
+            class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 flex justify-end gap-3 rounded-b-xl"
+          >
             <slot name="footer" />
           </div>
         </div>

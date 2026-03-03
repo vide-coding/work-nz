@@ -209,14 +209,8 @@ onMounted(async () => {
   >
     <!-- Settings Bar -->
     <div class="absolute top-8 right-8 flex items-center gap-2">
-      <ThemeToggle
-        :model-value="settings.themeMode"
-        @update:model-value="onUpdateTheme"
-      />
-      <LanguageSelector
-        :model-value="locale"
-        @update:model-value="changeLocale"
-      />
+      <ThemeToggle :model-value="settings.themeMode" @update:model-value="onUpdateTheme" />
+      <LanguageSelector :model-value="locale" @update:model-value="changeLocale" />
     </div>
 
     <div class="w-full max-w-xl">

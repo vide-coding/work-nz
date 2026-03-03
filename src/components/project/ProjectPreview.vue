@@ -28,12 +28,17 @@ function formatDate(dateStr: string): string {
 </script>
 
 <template>
-  <div class="w-80 border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-auto">
+  <div
+    class="w-80 border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-auto"
+  >
     <div v-if="loading" class="flex items-center justify-center h-full">
       <div class="text-gray-500 dark:text-gray-400">加载中...</div>
     </div>
 
-    <div v-else-if="!project" class="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
+    <div
+      v-else-if="!project"
+      class="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400"
+    >
       <p>选择项目查看详情</p>
     </div>
 

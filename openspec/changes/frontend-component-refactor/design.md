@@ -43,16 +43,9 @@ src/
 **职责**: 提供统一的页面布局结构
 
 ```vue
-props:
-  - variant: 'default' | 'with-sidebar' | 'with-preview'
-  - showHeader: boolean
-  - showFooter: boolean
-
-slots:
-  - header (optional)
-  - sidebar (optional)
-  - default (main content)
-  - preview (optional)
+props: - variant: 'default' | 'with-sidebar' | 'with-preview' - showHeader: boolean - showFooter:
+boolean slots: - header (optional) - sidebar (optional) - default (main content) - preview
+(optional)
 ```
 
 ### 2. ThemeToggle (公共组件)
@@ -60,12 +53,8 @@ slots:
 **职责**: 主题切换按钮，支持 light/dark/system 模式
 
 ```vue
-props:
-  - modelValue: 'light' | 'dark' | 'system'
-  - variant: 'button' | 'icon' | 'select'
-
-emits:
-  - update:modelValue
+props: - modelValue: 'light' | 'dark' | 'system' - variant: 'button' | 'icon' | 'select' emits: -
+update:modelValue
 ```
 
 ### 3. LanguageSelector (公共组件)
@@ -73,12 +62,7 @@ emits:
 **职责**: 语言选择器
 
 ```vue
-props:
-  - modelValue: 'zh-CN' | 'en-US'
-  - variant: 'button' | 'select'
-
-emits:
-  - update:modelValue
+props: - modelValue: 'zh-CN' | 'en-US' - variant: 'button' | 'select' emits: - update:modelValue
 ```
 
 ### 4. WorkspaceItem (工作区组件)
@@ -86,16 +70,8 @@ emits:
 **职责**: 单个工作区项的展示和操作
 
 ```vue
-props:
-  - workspace: WorkspaceInfo
-  - selected: boolean
-  - activeMenu: string | null
-
-emits:
-  - select
-  - rename
-  - delete
-  - toggle-menu
+props: - workspace: WorkspaceInfo - selected: boolean - activeMenu: string | null emits: - select -
+rename - delete - toggle-menu
 ```
 
 ### 5. ProjectCard (项目组件)
@@ -103,15 +79,8 @@ emits:
 **职责**: 项目卡片展示
 
 ```vue
-props:
-  - project: Project
-  - selected: boolean
-  - status: GitRepoStatus | null
-
-emits:
-  - select
-  - open
-  - hide
+props: - project: Project - selected: boolean - status: GitRepoStatus | null emits: - select - open
+- hide
 ```
 
 ### 6. ProjectPreview (项目预览组件)
@@ -119,12 +88,7 @@ emits:
 **职责**: 项目详情预览面板
 
 ```vue
-props:
-  - project: Project | null
-  - loading: boolean
-
-emits:
-  - open-workspace
+props: - project: Project | null - loading: boolean emits: - open-workspace
 ```
 
 ### 7. RepoCard (仓库组件)
@@ -132,16 +96,8 @@ emits:
 **职责**: Git 仓库卡片展示
 
 ```vue
-props:
-  - repo: GitRepository
-  - status: GitRepoStatus | null
-
-emits:
-  - pull
-  - open
-  - edit
-  - delete
-  - view-readme
+props: - repo: GitRepository - status: GitRepoStatus | null emits: - pull - open - edit - delete -
+view-readme
 ```
 
 ### 8. FileTree (文件树组件)
@@ -149,15 +105,8 @@ emits:
 **职责**: 文件和目录的树形展示
 
 ```vue
-props:
-  - nodes: FileNode[]
-  - viewMode: 'grid' | 'list'
-  - selectedFile: FileNode | null
-  - loading: boolean
-
-emits:
-  - select
-  - navigate
+props: - nodes: FileNode[] - viewMode: 'grid' | 'list' - selectedFile: FileNode | null - loading:
+boolean emits: - select - navigate
 ```
 
 ### 9. BaseDialog (对话框基础组件)
@@ -165,15 +114,8 @@ emits:
 **职责**: 统一的对话框样式和交互
 
 ```vue
-props:
-  - modelValue: boolean
-  - title: string
-  - width: string
-  - showClose: boolean
-
-emits:
-  - update:modelValue
-  - close
+props: - modelValue: boolean - title: string - width: string - showClose: boolean emits: -
+update:modelValue - close
 ```
 
 ## 重构策略
@@ -181,6 +123,7 @@ emits:
 ### WorkspaceView 重构
 
 **拆分后结构**:
+
 ```
 WorkspaceView.vue (约 80 行)
 ├── WorkspaceItem.vue (复用)
@@ -192,6 +135,7 @@ WorkspaceView.vue (约 80 行)
 ### ProjectsView 重构
 
 **拆分后结构**:
+
 ```
 ProjectsView.vue (约 100 行)
 ├── ProjectCard.vue (复用)
@@ -205,6 +149,7 @@ ProjectsView.vue (约 100 行)
 ### ProjectWorkspaceView 重构
 
 **拆分后结构**:
+
 ```
 ProjectWorkspaceView.vue (约 150 行)
 ├── RepoCard.vue (复用)
@@ -226,6 +171,7 @@ ProjectWorkspaceView.vue (约 150 行)
 ### Composables 复用
 
 现有 composables 已良好分离，重构时保持使用：
+
 - `useApi.ts` - API 调用
 - `useLocale.ts` - 国际化
 
@@ -246,7 +192,7 @@ ProjectWorkspaceView.vue (约 150 行)
 ## 组件大小目标
 
 | 组件类型 | 最大行数 |
-|----------|----------|
+| -------- | -------- |
 | 页面组件 | 150 行   |
 | 业务组件 | 200 行   |
 | 公共组件 | 100 行   |

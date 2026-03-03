@@ -3,6 +3,7 @@
 ## 阶段 1: 创建公共基础组件 (优先级：高)
 
 ### 任务 1.1: 创建 BaseDialog 对话框基础组件
+
 - **文件**: `src/components/common/BaseDialog.vue`
 - **描述**: 统一的对话框基础组件，提供标题、关闭按钮、内容插槽
 - **预计耗时**: 30 分钟
@@ -14,6 +15,7 @@
   - [x] 包含默认和 footer 插槽
 
 ### 任务 1.2: 创建 ThemeToggle 组件
+
 - **文件**: `src/components/common/ThemeToggle.vue`
 - **描述**: 主题切换组件，支持 light/dark/system 模式
 - **预计耗时**: 30 分钟
@@ -24,6 +26,7 @@
   - [x] 支持 button 和 icon 两种变体
 
 ### 任务 1.3: 创建 LanguageSelector 组件
+
 - **文件**: `src/components/common/LanguageSelector.vue`
 - **描述**: 语言选择组件
 - **预计耗时**: 30 分钟
@@ -35,6 +38,7 @@
 ## 阶段 2: 创建工作区相关组件 (优先级：高)
 
 ### 任务 2.1: 创建 WorkspaceItem 组件
+
 - **文件**: `src/components/workspace/WorkspaceItem.vue`
 - **描述**: 单个工作区项的展示和操作
 - **预计耗时**: 45 分钟
@@ -46,6 +50,7 @@
   - [x] 点击选择工作区
 
 ### 任务 2.2: 创建 WorkspaceAliasDialog 组件
+
 - **文件**: `src/components/workspace/WorkspaceAliasDialog.vue`
 - **描述**: 设置工作区别名的对话框
 - **预计耗时**: 30 分钟
@@ -56,6 +61,7 @@
   - [x] 支持回车键保存
 
 ### 任务 2.3: 重构 WorkspaceView.vue
+
 - **文件**: `src/views/WorkspaceView.vue`
 - **描述**: 使用新组件重构工作区视图
 - **预计耗时**: 60 分钟
@@ -70,6 +76,7 @@
 ## 阶段 3: 创建项目相关组件 (优先级：高)
 
 ### 任务 3.1: 创建 ProjectCard 组件
+
 - **文件**: `src/components/project/ProjectCard.vue`
 - **描述**: 项目卡片展示组件
 - **预计耗时**: 45 分钟
@@ -81,6 +88,7 @@
   - [x] 点击进入项目
 
 ### 任务 3.2: 创建 ProjectPreview 组件
+
 - **文件**: `src/components/project/ProjectPreview.vue`
 - **描述**: 项目详情预览面板
 - **预计耗时**: 45 分钟
@@ -92,6 +100,7 @@
   - [x] 支持 loading 状态
 
 ### 任务 3.3: 创建 ProjectToolbar 组件
+
 - **文件**: `src/components/project/ProjectToolbar.vue`
 - **描述**: 项目列表工具栏（搜索、排序、切换预览）
 - **预计耗时**: 45 分钟
@@ -102,6 +111,7 @@
   - [x] 支持 v-model 绑定搜索词和排序状态
 
 ### 任务 3.4: 创建 ProjectCreateDialog 组件
+
 - **文件**: `src/components/project/ProjectCreateDialog.vue`
 - **描述**: 创建项目对话框
 - **预计耗时**: 45 分钟
@@ -113,6 +123,7 @@
   - [x] 显示错误信息
 
 ### 任务 3.5: 重构 ProjectsView.vue
+
 - **文件**: `src/views/ProjectsView.vue`
 - **描述**: 使用新组件重构项目列表视图
 - **预计耗时**: 60 分钟
@@ -127,6 +138,7 @@
 ## 阶段 4: 创建仓库相关组件 (优先级：中)
 
 ### 任务 4.1: 创建 RepoCard 组件
+
 - **文件**: `src/components/repo/RepoCard.vue`
 - **描述**: Git 仓库卡片展示组件
 - **预计耗时**: 60 分钟
@@ -137,6 +149,7 @@
   - [ ] 支持自定义名称显示
 
 ### 任务 4.2: 创建 RepoCloneDialog 组件
+
 - **文件**: `src/components/repo/RepoCloneDialog.vue`
 - **描述**: 克隆仓库对话框
 - **预计耗时**: 45 分钟
@@ -148,6 +161,7 @@
   - [ ] 支持克隆和取消操作
 
 ### 任务 4.3: 创建 RepoEditDialog 组件
+
 - **文件**: `src/components/repo/RepoEditDialog.vue`
 - **描述**: 编辑仓库信息对话框
 - **预计耗时**: 45 分钟
@@ -160,6 +174,7 @@
 ## 阶段 5: 创建文件树相关组件 (优先级：中)
 
 ### 任务 5.1: 创建 FileTree 组件
+
 - **文件**: `src/components/filetree/FileTree.vue`
 - **描述**: 文件树/网格/列表展示组件
 - **预计耗时**: 60 分钟
@@ -171,6 +186,7 @@
   - [ ] 支持 loading 和空状态
 
 ### 任务 5.2: 创建 FilePreview 组件
+
 - **文件**: `src/components/filetree/FilePreview.vue`
 - **描述**: 文件预览面板
 - **预计耗时**: 45 分钟
@@ -182,6 +198,7 @@
   - [ ] 支持无预览提示
 
 ### 任务 5.3: 创建 FileToolbar 组件
+
 - **文件**: `src/components/filetree/FileToolbar.vue`
 - **描述**: 文件浏览器工具栏
 - **预计耗时**: 45 分钟
@@ -195,6 +212,7 @@
 ## 阶段 6: 重构 ProjectWorkspaceView (优先级：中)
 
 ### 任务 6.1: 重构 ProjectWorkspaceView.vue
+
 - **文件**: `src/views/ProjectWorkspaceView.vue`
 - **描述**: 使用新组件重构项目工作区视图
 - **预计耗时**: 90 分钟
@@ -211,6 +229,7 @@
 ## 阶段 7: 测试和优化 (优先级：低)
 
 ### 任务 7.1: 功能回归测试
+
 - **描述**: 验证所有功能正常工作
 - **预计耗时**: 60 分钟
 - **验收标准**:
@@ -221,6 +240,7 @@
   - [ ] 语言切换正常
 
 ### 任务 7.2: 代码优化
+
 - **描述**: 优化代码质量和性能
 - **预计耗时**: 30 分钟
 - **验收标准**:
@@ -230,6 +250,7 @@
   - [ ] 确保 TypeScript 类型正确
 
 ### 任务 7.3: 构建验证
+
 - **描述**: 验证项目构建通过
 - **预计耗时**: 15 分钟
 - **验收标准**:

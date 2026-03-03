@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import { Search, SortAsc, SortDesc, PanelRightClose, PanelRightOpen } from 'lucide-vue-next'
 
-const props = withDefaults(defineProps<{
-  searchQuery: string
-  sortBy: 'updatedAt' | 'name'
-  sortOrder: 'asc' | 'desc'
-  showPreview: boolean
-}>(), {
-  searchQuery: '',
-  sortBy: 'updatedAt',
-  sortOrder: 'desc',
-  showPreview: true
-})
+const props = withDefaults(
+  defineProps<{
+    searchQuery: string
+    sortBy: 'updatedAt' | 'name'
+    sortOrder: 'asc' | 'desc'
+    showPreview: boolean
+  }>(),
+  {
+    searchQuery: '',
+    sortBy: 'updatedAt',
+    sortOrder: 'desc',
+    showPreview: true,
+  }
+)
 
 const emit = defineEmits<{
   'update:searchQuery': [query: string]
@@ -35,9 +38,7 @@ function togglePreview() {
 </script>
 
 <template>
-  <div
-    class="px-6 py-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700"
-  >
+  <div class="px-6 py-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
     <div class="flex items-center gap-4">
       <!-- Search -->
       <div class="flex-1 relative">
