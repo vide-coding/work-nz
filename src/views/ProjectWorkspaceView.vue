@@ -238,6 +238,11 @@ async function loadProjectDirs() {
 
 async function loadRepos() {
   try {
+    // 进入代码仓库页时，自动扫描并同步不存在的目录
+    await dirTypeApi.syncAuto(projectId.value)
+    // 重新加载项目目录列表
+    await loadProjectDirs()
+
     repos.value = await gitApi.repoList(projectId.value)
     // Load status for each repo
     const statuses: Record<string, GitRepoStatus> = {}

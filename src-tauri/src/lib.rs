@@ -37,14 +37,7 @@ pub fn run() {
             git_repo_status_check,
             git_status_watch_start,
             git_status_watch_stop,
-            git_repo_list,
-            git_repo_create,
-            git_repo_clone,
-            git_repo_pull,
-            git_repo_status_get,
-            git_repo_status_check,
-            git_status_watch_start,
-            git_status_watch_stop,
+            git_repo_scan,
             // Filesystem commands
             project_fs_tree,
             fs_read_text,
@@ -57,6 +50,7 @@ pub fn run() {
             dir_type_update,
             project_dirs_list,
             project_dir_create_or_update,
+            project_dirs_sync_auto,
             preview_detect,
             // IDE commands
             ide_list_supported,

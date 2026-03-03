@@ -1,3 +1,4 @@
+use crate::commands::project::project_get;
 use crate::commands::workspace::get_workspace_path;
 use crate::db::get_db;
 use crate::types::*;
@@ -448,4 +449,97 @@ pub fn git_status_watch_start(_repo_id: Option<String>) -> Result<serde_json::Va
 pub fn git_status_watch_stop(_repo_id: Option<String>) -> Result<serde_json::Value, String> {
     // TODO: 实现后台监听停止
     Ok(serde_json::json!({ "ok": true }))
+}
+
+/// 扫描 code 目录下的 Git 仓库并自动导入数据库
+#[tauri::command]
+pub fn git_repo_scan(project_id: String) -> Result<serde_json::Value, String> {
+    let project = project_get(project_id.clone())?;
+    let project_path = Path::new(&project.project_path);
+    let code_dir = project_path.join("code");
+
+    // 如果 code 目录不存在，直接返回
+    if !code_dir.exists() || !code_dir.is_dir() {
+        return Ok(serde_json::json!({ "ok": true, "scanned": Vec::<String>::new() }));
+    }
+
+    let db_guard = get_db().map_err(|e| format!("获取数据库失败：{}", e))?;
+    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
+
+    // 获取已有的仓库路径列表
+    let mut stmt = conn
+        .prepare("SELECT path FROM git_repositories WHERE project_id = ?1")
+        .map_err(|e| format!("查询仓库失败：{}", e))?;
+
+    let existing_paths: std::collections::HashSet<String> = stmt
+        .query_map(params![project_id], |row| Ok(row.get(0)?))
+        .map_err(|e| format!("读取仓库失败：{}", e))?
+        .filter_map(|r| r.ok())
+        .collect();
+
+    let mut scanned = Vec::new();
+    let now = Utc::now().to_rfc3339();
+
+    // 遍历 code 目录下的所有子目录
+    let entries = fs::read_dir(&code_dir).map_err(|e| format!("读取目录失败：{}", e))?;
+
+    for entry in entries.filter_map(|e| e.ok()) {
+        let path = entry.path();
+        if !path.is_dir() {
+            continue;
+        }
+
+        let path_str = path.to_string_lossy().to_string();
+
+        // 检查是否已存在于数据库中
+        if existing_paths.contains(&path_str) {
+            continue;
+        }
+
+        // 检查是否是 Git 仓库
+        if !path.join(".git").exists() {
+            continue;
+        }
+
+        // 尝试打开 Git 仓库获取信息
+        let repo = match Repository::open(&path) {
+            Ok(r) => r,
+            Err(_) => continue,
+        };
+
+        // 获取仓库名称（使用目录名）
+        let name = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("unknown")
+            .to_string();
+
+        // 获取 remote URL
+        let remote_url = repo
+            .find_remote("origin")
+            .ok()
+            .and_then(|r| r.url().map(String::from));
+
+        // 获取当前分支
+        let branch = repo
+            .head()
+            .ok()
+            .and_then(|h| h.shorthand().map(String::from));
+
+        // 插入数据库
+        let id = uuid::Uuid::new_v4().to_string();
+        conn.execute(
+            "INSERT INTO git_repositories (id, project_id, name, path, remote_url, branch, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            params![id, project_id, name, path_str, remote_url, branch, now, now],
+        )
+        .map_err(|e| format!("保存仓库失败：{}", e))?;
+
+        scanned.push(name);
+    }
+
+    Ok(serde_json::json!({
+        "ok": true,
+        "scanned": scanned
+    }))
 }

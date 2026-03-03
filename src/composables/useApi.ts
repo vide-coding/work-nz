@@ -108,6 +108,10 @@ export const gitApi = {
     return invoke('git_repo_pull', { repoId })
   },
 
+  async scan(projectId: string): Promise<{ ok: boolean; scanned: string[] }> {
+    return invoke('git_repo_scan', { projectId })
+  },
+
   async repoStatusGet(repoId: string): Promise<GitRepoStatus> {
     return invoke('git_repo_status_get', { repoId })
   },
@@ -171,6 +175,10 @@ export const dirTypeApi = {
     input: ProjectDirCreateInput
   ): Promise<ProjectDirectory> {
     return invoke('project_dir_create_or_update', { projectId, input })
+  },
+
+  async syncAuto(projectId: string): Promise<{ ok: boolean; synced: string[] }> {
+    return invoke('project_dirs_sync_auto', { projectId })
   },
 }
 

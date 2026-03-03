@@ -1,3 +1,4 @@
+use crate::commands::git::git_repo_scan;
 use crate::commands::project::project_get;
 use crate::db::get_db;
 use crate::types::*;
@@ -407,4 +408,95 @@ pub fn ide_open_repo(repo_id: String, ide: Option<IdeConfig>) -> Result<serde_js
     {
         Ok(serde_json::json!({ "ok": false, "message": "不支持的平台" }))
     }
+}
+
+/// 自动扫描并同步项目目录到数据库
+/// 当进入代码仓库页时，如果文件目录中有数据库中不存在的目录，自动导入到数据库中
+#[tauri::command]
+pub fn project_dirs_sync_auto(project_id: String) -> Result<serde_json::Value, String> {
+    // 扫描 Git 仓库
+    let git_scanned: Vec<String> = match git_repo_scan(project_id.clone()) {
+        Ok(json) => {
+            json.get("scanned")
+                .and_then(|s| s.as_array())
+                .map(|a| a.iter().filter_map(|v| v.as_str().map(String::from)).collect())
+                .unwrap_or_default()
+        }
+        Err(_) => Vec::new(),
+    };
+
+    let project = project_get(project_id.clone())?;
+    let project_path = Path::new(&project.project_path);
+
+    let db_guard = get_db().map_err(|e| format!("获取数据库失败：{}", e))?;
+    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
+
+    // 获取所有已有的目录类型
+    let mut stmt = conn
+        .prepare("SELECT id, kind FROM directory_types ORDER BY sort_order")
+        .map_err(|e| format!("查询目录类型失败：{}", e))?;
+
+    let dir_types: Vec<(String, String)> = stmt
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
+        .map_err(|e| format!("读取目录类型失败：{}", e))?
+        .filter_map(|r| r.ok())
+        .collect();
+
+    // 获取项目中已绑定的目录
+    let mut stmt = conn
+        .prepare("SELECT dir_type_id, relative_path FROM project_directories WHERE project_id = ?1")
+        .map_err(|e| format!("查询项目目录失败：{}", e))?;
+
+    let existing_dirs: std::collections::HashMap<String, String> = stmt
+        .query_map(params![project_id], |row| Ok((row.get(0)?, row.get(1)?)))
+        .map_err(|e| format!("读取项目目录失败：{}", e))?
+        .filter_map(|r| r.ok())
+        .collect();
+
+    let mut synced = Vec::new();
+    let now = Utc::now().to_rfc3339();
+
+    // 遍历每个目录类型，检查是否需要自动创建绑定
+    for (dir_type_id, kind) in dir_types {
+        // 只处理内置类型（code, docs, ui_design, project_planning）
+        if !["code", "docs", "ui_design", "project_planning"].contains(&kind.as_str()) {
+            continue;
+        }
+
+        // 如果已经绑定，跳过
+        if existing_dirs.contains_key(&dir_type_id) {
+            continue;
+        }
+
+        // 构建默认的目录路径（如 code, docs, ui_designs, project_plannings）
+        let default_dir_name = match kind.as_str() {
+            "code" => "code",
+            "docs" => "docs",
+            "ui_design" => "ui_designs",
+            "project_planning" => "project_plannings",
+            _ => continue,
+        };
+
+        let full_path = project_path.join(default_dir_name);
+
+        // 检查物理目录是否存在
+        if full_path.exists() && full_path.is_dir() {
+            // 目录存在但数据库中不存在，自动创建绑定
+            let id = uuid::Uuid::new_v4().to_string();
+            conn.execute(
+                "INSERT INTO project_directories (id, project_id, dir_type_id, relative_path, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                params![id, project_id, dir_type_id, default_dir_name, now, now],
+            )
+            .map_err(|e| format!("创建目录绑定失败：{}", e))?;
+
+            synced.push(default_dir_name.to_string());
+        }
+    }
+
+    Ok(serde_json::json!({
+        "ok": true,
+        "scanned": git_scanned,
+        "synced": synced
+    }))
 }
