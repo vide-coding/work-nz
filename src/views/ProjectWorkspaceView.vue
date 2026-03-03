@@ -12,6 +12,7 @@ import {
   workspaceApi,
   previewApi,
 } from '../composables/useApi'
+import MarkdownRenderer from '../components/MarkdownRenderer.vue'
 import type {
   Project,
   GitRepository,
@@ -1160,10 +1161,16 @@ onMounted(async () => {
                   </p>
                 </div>
 
+                <!-- Markdown Preview -->
                 <div
-                  v-else-if="previewKind === 'markdown' || previewKind === 'text'"
+                  v-else-if="previewKind === 'markdown'"
                   class="prose dark:prose-invert max-w-none"
                 >
+                  <MarkdownRenderer :content="fileContent" :base-path="currentDirPath" />
+                </div>
+
+                <!-- Text Preview -->
+                <div v-else-if="previewKind === 'text'" class="prose dark:prose-invert max-w-none">
                   <pre
                     class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-mono bg-gray-50 dark:bg-gray-900 p-4 rounded-lg overflow-auto max-h-96"
                     >{{ fileContent }}</pre
@@ -1207,10 +1214,7 @@ onMounted(async () => {
             <Loader2 class="w-6 h-6 text-indigo-600 animate-spin" />
           </div>
           <div v-else-if="readmeContent" class="prose dark:prose-invert max-w-none">
-            <pre
-              class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-mono bg-gray-50 dark:bg-gray-900 p-4 rounded-lg overflow-auto"
-              >{{ readmeContent }}</pre
-            >
+            <MarkdownRenderer :content="readmeContent" :base-path="selectedRepo?.path" />
           </div>
           <div v-else class="text-center py-8 text-gray-500 dark:text-gray-400">
             <FileText class="w-12 h-12 mx-auto mb-4 opacity-50" />
