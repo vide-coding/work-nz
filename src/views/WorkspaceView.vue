@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { open } from '@tauri-apps/plugin-dialog'
 import { getCurrentWindow } from '@tauri-apps/api/window'
@@ -16,7 +16,8 @@ const { locale, changeLocale } = useLocale()
 
 // State
 const recentWorkspaces = ref<WorkspaceInfo[]>([])
-const currentWorkspace = ref<WorkspaceInfo | null>(null)
+const currentWorkspace = ref<WorkspaceInfo | null>(null) // 已进入的工作区（会更新标题）
+const selectedWorkspacePath = ref<string | null>(null) // 当前选中的工作区路径（不更新标题）
 const loading = ref(false)
 const error = ref('')
 const settings = ref<WorkspaceSettings>({
@@ -29,7 +30,7 @@ const editingWorkspace = ref<WorkspaceInfo | null>(null)
 const showAliasDialog = ref(false)
 
 // Computed
-const canEnter = computed(() => currentWorkspace.value !== null)
+const canEnter = computed(() => selectedWorkspacePath.value !== null)
 
 const workspaceDisplayName = computed(() => {
   if (!currentWorkspace.value) return null
@@ -40,7 +41,7 @@ const workspaceDisplayName = computed(() => {
   )
 })
 
-// Update window title
+// Update window title - only called when actually entering workspace
 async function updateWindowTitle(title: string | null) {
   try {
     const window = getCurrentWindow()
@@ -49,14 +50,6 @@ async function updateWindowTitle(title: string | null) {
     console.error('Failed to update window title:', e)
   }
 }
-
-watch(
-  currentWorkspace,
-  (ws) => {
-    updateWindowTitle(ws ? workspaceDisplayName.value : null)
-  },
-  { immediate: true }
-)
 
 // Methods
 async function loadRecentWorkspaces() {
@@ -116,7 +109,9 @@ async function selectFolder() {
     })
 
     if (selected) {
-      currentWorkspace.value = await workspaceApi.initOrOpen(selected as string)
+      const workspace = await workspaceApi.initOrOpen(selected as string)
+      selectedWorkspacePath.value = workspace.path
+      // 不设置 currentWorkspace，只有点击"进入"按钮时才设置
       await loadRecentWorkspaces()
     }
   } catch (error: any) {
@@ -127,20 +122,19 @@ async function selectFolder() {
 }
 
 async function openRecentWorkspace(workspace: WorkspaceInfo) {
-  try {
-    loading.value = true
-    error.value = ''
-    currentWorkspace.value = await workspaceApi.initOrOpen(workspace.path)
-    await loadRecentWorkspaces()
-  } catch (error: any) {
-    error.value = error.message || String(error)
-  } finally {
-    loading.value = false
-  }
+  // 只选择工作区，不更新最近工作区顺序
+  // 只在点击"进入"按钮时才调用 initOrOpen 并更新顺序
+  selectedWorkspacePath.value = workspace.path
 }
 
 async function enter() {
-  if (currentWorkspace.value) {
+  if (selectedWorkspacePath.value) {
+    // 真正进入工作区时，调用 initOrOpen 来更新最近工作区顺序
+    const workspace = await workspaceApi.initOrOpen(selectedWorkspacePath.value)
+    currentWorkspace.value = workspace
+    await loadRecentWorkspaces()
+    // 只在进入工作区时才更新窗口标题
+    updateWindowTitle(workspaceDisplayName.value)
     router.push('/projects')
   }
 }
@@ -168,7 +162,8 @@ async function saveAlias(alias: string | undefined) {
   try {
     await workspaceApi.updateAlias(editingWorkspace.value.path, alias)
     await loadRecentWorkspaces()
-    if (currentWorkspace.value?.path === editingWorkspace.value?.path) {
+    // 如果正在进入工作区，更新 currentWorkspace 的别名
+    if (currentWorkspace.value?.path === editingWorkspace.value.path) {
       currentWorkspace.value = { ...currentWorkspace.value, alias }
     }
   } catch (err: any) {
@@ -184,6 +179,10 @@ async function deleteWorkspace(workspace: WorkspaceInfo, event: Event) {
   try {
     await workspaceApi.removeFromRecent(workspace.path)
     await loadRecentWorkspaces()
+    if (selectedWorkspacePath === workspace.path) {
+      selectedWorkspacePath.value = null
+    }
+    // 如果正在进入工作区，清空 currentWorkspace
     if (currentWorkspace.value?.path === workspace.path) {
       currentWorkspace.value = null
     }
@@ -199,6 +198,7 @@ onMounted(async () => {
   await loadRecentWorkspaces()
   await loadSettings()
   applyTheme(settings.value.themeMode)
+  updateWindowTitle(null) // Set default title
   document.addEventListener('click', closeMenu)
 })
 </script>
@@ -242,7 +242,7 @@ onMounted(async () => {
               v-for="ws in recentWorkspaces"
               :key="ws.path"
               :workspace="ws"
-              :selected="currentWorkspace?.path === ws.path"
+              :selected="selectedWorkspacePath === ws.path"
               :active-menu="activeMenuPath"
               @select="openRecentWorkspace(ws)"
               @toggle-menu="toggleMenu(ws.path, $event)"
