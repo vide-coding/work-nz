@@ -45,20 +45,21 @@ pub fn git_repo_list(project_id: String) -> Result<Vec<GitRepository>, String> {
 
 /// 创建新的本地 Git 仓库
 #[tauri::command]
-pub fn git_repo_create(project_id: String, name: String) -> Result<GitRepository, String> {
+pub async fn git_repo_create(project_id: String, name: String) -> Result<GitRepository, String> {
     let _workspace_path = get_workspace_path().ok_or("未打开工作区")?;
 
-    // 获取项目路径
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
+    // 获取项目路径 - 在单独作用域中释放数据库连接
+    let project_path: String = {
+        let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
+        let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
 
-    let project_path: String = conn
-        .query_row(
+        conn.query_row(
             "SELECT project_path FROM projects WHERE id = ?1",
             params![project_id],
             |row| row.get(0),
         )
-        .map_err(|e| format!("项目不存在: {}", e))?;
+        .map_err(|e| format!("项目不存在: {}", e))?
+    };
 
     // 创建 code 目录（如果不存在）
     let code_dir = Path::new(&project_path).join("code");
@@ -66,25 +67,36 @@ pub fn git_repo_create(project_id: String, name: String) -> Result<GitRepository
 
     let repo_path = code_dir.join(&name);
 
-    // 创建 Git 仓库
-    Repository::init(&repo_path).map_err(|e| format!("创建 Git 仓库失败: {}", e))?;
+    // 创建 Git 仓库 - 在阻塞线程中执行
+    let repo_path_clone = repo_path.clone();
+    tokio::task::spawn_blocking(move || {
+        Repository::init(&repo_path_clone).map_err(|e| format!("创建 Git 仓库失败: {}", e))
+    })
+    .await
+    .map_err(|e| format!("任务执行失败: {}", e))??;
 
     let id = uuid::Uuid::new_v4().to_string();
     let now = Utc::now().to_rfc3339();
 
-    conn.execute(
-        "INSERT INTO git_repositories (id, project_id, name, path, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-        params![
-            id,
-            project_id,
-            name,
-            repo_path.to_string_lossy().to_string(),
-            now,
-            now
-        ],
-    )
-    .map_err(|e| format!("保存仓库失败: {}", e))?;
+    // 数据库操作 - 在单独作用域中释放连接
+    {
+        let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
+        let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
+
+        conn.execute(
+            "INSERT INTO git_repositories (id, project_id, name, path, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            params![
+                id,
+                project_id,
+                name,
+                repo_path.to_string_lossy().to_string(),
+                now,
+                now
+            ],
+        )
+        .map_err(|e| format!("保存仓库失败: {}", e))?;
+    }
 
     Ok(GitRepository {
         id,
@@ -102,88 +114,111 @@ pub fn git_repo_create(project_id: String, name: String) -> Result<GitRepository
 
 /// 从 URL 克隆 Git 仓库
 #[tauri::command]
-pub fn git_repo_clone(project_id: String, input: GitCloneInput) -> Result<GitRepository, String> {
+pub async fn git_repo_clone(project_id: String, input: GitCloneInput) -> Result<GitRepository, String> {
     let _workspace_path = get_workspace_path().ok_or("未打开工作区")?;
 
-    // 获取项目路径
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
+    // 获取项目路径 - 在单独作用域中释放数据库连接
+    let project_path: String = {
+        let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
+        let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
 
-    let project_path: String = conn
-        .query_row(
+        conn.query_row(
             "SELECT project_path FROM projects WHERE id = ?1",
             params![project_id],
             |row| row.get(0),
         )
-        .map_err(|e| format!("项目不存在: {}", e))?;
+        .map_err(|e| format!("项目不存在: {}", e))?
+    };
 
     // 创建 code 目录（如果不存在）
     let code_dir = Path::new(&project_path).join("code");
     fs::create_dir_all(&code_dir).map_err(|e| format!("创建 code 目录失败: {}", e))?;
 
     let repo_path = code_dir.join(&input.target_dir_name);
+    let remote_url = input.remote_url.clone();
 
-    // 克隆仓库 - 使用简化方式
-    let mut callbacks = git2::RemoteCallbacks::new();
-    callbacks.credentials(|_url, _username_from_url, _allowed_types| git2::Cred::default());
+    // 克隆仓库 - 在阻塞线程中执行
+    let repo_path_clone = repo_path.clone();
+    let remote_url_clone = remote_url.clone();
+    tokio::task::spawn_blocking(move || {
+        // 克隆仓库 - 使用简化方式
+        let mut callbacks = git2::RemoteCallbacks::new();
+        callbacks.credentials(|_url, _username_from_url, _allowed_types| git2::Cred::default());
 
-    let mut fetch_opts = git2::FetchOptions::new();
-    fetch_opts.remote_callbacks(callbacks);
+        let mut fetch_opts = git2::FetchOptions::new();
+        fetch_opts.remote_callbacks(callbacks);
 
-    // 构建回调并克隆
-    match Repository::clone(&input.remote_url, &repo_path) {
-        Ok(_) => {}
-        Err(e) => {
-            // 如果克隆失败，尝试使用 checkout
-            if repo_path.exists() {
-                // 目录已存在，尝试打开
-                let _ = Repository::open(&repo_path);
-            } else {
-                return Err(format!("克隆仓库失败: {}", e));
+        // 构建回调并克隆
+        match Repository::clone(&remote_url_clone, &repo_path_clone) {
+            Ok(_) => {}
+            Err(e) => {
+                // 如果克隆失败，尝试使用 checkout
+                if repo_path_clone.exists() {
+                    // 目录已存在，尝试打开
+                    let _ = Repository::open(&repo_path_clone);
+                } else {
+                    return Err(format!("克隆仓库失败: {}", e));
+                }
             }
         }
-    }
+        Ok(())
+    })
+    .await
+    .map_err(|e| format!("任务执行失败: {}", e))??;
 
     // 获取分支信息
-    let repo = Repository::open(&repo_path).map_err(|e| format!("打开仓库失败: {}", e))?;
-    let head = repo.head().ok();
-    let branch_name = head.as_ref().and_then(|h| h.shorthand().map(String::from));
+    let repo_path_clone = repo_path.clone();
+    let (branch_name, remote_url_result) = tokio::task::spawn_blocking(move || {
+        let repo = Repository::open(&repo_path_clone).map_err(|e| format!("打开仓库失败: {}", e))?;
+        let head = repo.head().ok();
+        let branch = head.as_ref().and_then(|h| h.shorthand().map(String::from));
 
-    // 获取远程 URL
-    let remote_url = repo.remotes().ok().and_then(|r| {
-        r.iter().next().flatten().and_then(|name| {
-            repo.find_remote(name)
-                .ok()
-                .and_then(|remote| remote.url().map(String::from))
-        })
-    });
+        // 获取远程 URL
+        let remote = repo.remotes().ok().and_then(|r| {
+            r.iter().next().flatten().and_then(|name| {
+                repo.find_remote(name)
+                    .ok()
+                    .and_then(|remote| remote.url().map(String::from))
+            })
+        });
+
+        Ok::<(Option<String>, Option<String>), String>((branch, remote))
+    })
+    .await
+    .map_err(|e| format!("任务执行失败: {}", e))??;
 
     let id = uuid::Uuid::new_v4().to_string();
     let now = Utc::now().to_rfc3339();
 
-    conn.execute(
-        "INSERT INTO git_repositories (id, project_id, name, path, remote_url, branch, last_sync_at, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
-        params![
-            id,
-            project_id,
-            input.target_dir_name,
-            repo_path.to_string_lossy().to_string(),
-            remote_url,
-            branch_name,
-            now,
-            now,
-            now
-        ],
-    )
-    .map_err(|e| format!("保存仓库失败: {}", e))?;
+    // 数据库操作 - 在单独作用域中释放连接
+    {
+        let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
+        let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
+
+        conn.execute(
+            "INSERT INTO git_repositories (id, project_id, name, path, remote_url, branch, last_sync_at, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            params![
+                id,
+                project_id,
+                input.target_dir_name,
+                repo_path.to_string_lossy().to_string(),
+                remote_url_result,
+                branch_name,
+                now,
+                now,
+                now
+            ],
+        )
+        .map_err(|e| format!("保存仓库失败: {}", e))?;
+    }
 
     Ok(GitRepository {
         id,
         project_id,
         name: input.target_dir_name,
         path: repo_path.to_string_lossy().to_string(),
-        remote_url,
+        remote_url: remote_url_result,
         branch: branch_name,
         custom_name: None,
         description: None,
