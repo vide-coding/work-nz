@@ -22,8 +22,6 @@ const projects = ref<Project[]>([])
 const loading = ref(false)
 const error = ref('')
 const searchQuery = ref('')
-const sortBy = ref<'updatedAt' | 'name'>('updatedAt')
-const sortOrder = ref<'asc' | 'desc'>('desc')
 const selectedProject = ref<Project | null>(null)
 const showPreview = ref(true)
 const settings = ref<WorkspaceSettings>({ themeMode: 'system' })
@@ -53,13 +51,11 @@ const filteredProjects = computed(() => {
     )
   }
 
+  // Sort by update time descending (newest first)
   result.sort((a, b) => {
-    if (sortBy.value === 'name') {
-      return sortOrder.value === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name)
-    }
     const dateA = new Date(a.updatedAt).getTime()
     const dateB = new Date(b.updatedAt).getTime()
-    return sortOrder.value === 'asc' ? dateA - dateB : dateB - dateA
+    return dateB - dateA
   })
 
   return result
@@ -284,12 +280,7 @@ onMounted(async () => {
       <!-- Project List -->
       <div class="flex-1 flex flex-col overflow-hidden">
         <!-- Toolbar -->
-        <ProjectToolbar
-          v-model:search-query="searchQuery"
-          v-model:sort-by="sortBy"
-          v-model:sort-order="sortOrder"
-          v-model:show-preview="showPreview"
-        />
+        <ProjectToolbar v-model:search-query="searchQuery" v-model:show-preview="showPreview" />
 
         <!-- List -->
         <div class="flex-1 overflow-auto p-6">

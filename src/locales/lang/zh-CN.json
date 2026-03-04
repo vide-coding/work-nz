@@ -80,8 +80,6 @@
     "workspace": "工作区",
     "newProject": "新建项目",
     "searchPlaceholder": "搜索项目...",
-    "sortByUpdate": "更新时间",
-    "sortByName": "名称",
     "empty": "暂无项目",
     "emptyHint": "点击上方按钮创建新项目",
     "open": "打开",

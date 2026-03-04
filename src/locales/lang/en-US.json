@@ -75,8 +75,6 @@
     "workspace": "Workspace",
     "newProject": "New Project",
     "searchPlaceholder": "Search projects...",
-    "sortByUpdate": "Update Time",
-    "sortByName": "Name",
     "empty": "No projects yet",
     "emptyHint": "Click the button above to create a new project",
     "open": "Open",
