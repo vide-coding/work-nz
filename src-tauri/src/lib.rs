@@ -19,6 +19,9 @@ pub fn run() {
             workspace_update_alias,
             workspace_remove_from_recent,
             workspace_get_current,
+            // Global settings commands
+            global_settings_get,
+            global_settings_update,
             // Project commands
             projects_list,
             project_create,

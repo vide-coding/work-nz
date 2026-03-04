@@ -8,6 +8,7 @@ const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   themeMode: 'system',
   language: 'zh-CN',
   fontSize: 'medium',
+  defaultIde: undefined,
 }
 
 // Global settings state
@@ -97,13 +98,16 @@ function getWorkspaceOverride(): WorkspaceSettingsOverride {
     return {
       useGlobalTheme: true,
       useGlobalLanguage: true,
+      useGlobalIde: true,
     }
   }
 
   return {
     useGlobalTheme: !workspace.themeMode || workspace.themeMode === global.themeMode,
     useGlobalLanguage: true, // Language is always from global for now
+    useGlobalIde: !workspace.defaultIde,
     themeMode: workspace.themeMode,
+    defaultIde: workspace.defaultIde,
   }
 }
 

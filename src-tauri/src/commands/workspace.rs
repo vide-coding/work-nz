@@ -13,6 +13,10 @@ fn get_recent_workspaces_file() -> Option<std::path::PathBuf> {
     get_app_config_dir().map(|p| p.join("recent_workspaces.json"))
 }
 
+fn get_global_settings_file() -> Option<std::path::PathBuf> {
+    get_app_config_dir().map(|p| p.join("settings.json"))
+}
+
 fn load_recent_workspaces() -> Vec<WorkspaceInfo> {
     let file_path = match get_recent_workspaces_file() {
         Some(p) => p,
@@ -297,4 +301,102 @@ pub fn workspace_get_current() -> Result<Option<WorkspaceInfo>, String> {
         }
         None => Ok(None),
     }
+}
+
+// ==================== Global Settings ====================
+
+/// 全局设置结构（与前端 GlobalSettings 对应）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GlobalSettings {
+    pub theme_mode: ThemeMode,
+    pub language: String,
+    pub font_size: String,
+    pub default_ide: Option<IdeConfig>,
+}
+
+impl Default for GlobalSettings {
+    fn default() -> Self {
+        GlobalSettings {
+            theme_mode: ThemeMode::System,
+            language: "zh-CN".to_string(),
+            font_size: "medium".to_string(),
+            default_ide: None,
+        }
+    }
+}
+
+fn load_global_settings() -> GlobalSettings {
+    let file_path = match get_global_settings_file() {
+        Some(p) => p,
+        None => return GlobalSettings::default(),
+    };
+
+    if !file_path.exists() {
+        return GlobalSettings::default();
+    }
+
+    match fs::read_to_string(&file_path) {
+        Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
+        Err(_) => GlobalSettings::default(),
+    }
+}
+
+fn save_global_settings(settings: &GlobalSettings) -> Result<(), String> {
+    let file_path = match get_global_settings_file() {
+        Some(p) => p,
+        None => return Err("无法获取配置目录".to_string()),
+    };
+
+    if let Some(parent) = file_path.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+
+    let content = serde_json::to_string_pretty(settings)
+        .map_err(|e| format!("序列化设置失败: {}", e))?;
+
+    fs::write(&file_path, content).map_err(|e| format!("保存设置失败: {}", e))?;
+
+    Ok(())
+}
+
+/// 获取全局设置
+#[tauri::command]
+pub fn global_settings_get() -> Result<GlobalSettings, String> {
+    Ok(load_global_settings())
+}
+
+/// 更新全局设置
+#[tauri::command]
+pub fn global_settings_update(patch: serde_json::Value) -> Result<GlobalSettings, String> {
+    let mut settings = load_global_settings();
+
+    if let Some(obj) = patch.as_object() {
+        if let Some(theme_mode) = obj.get("themeMode").or(obj.get("theme_mode")) {
+            if let Some(mode_str) = theme_mode.as_str() {
+                settings.theme_mode = match mode_str {
+                    "light" => ThemeMode::Light,
+                    "dark" => ThemeMode::Dark,
+                    "custom" => ThemeMode::Custom,
+                    _ => ThemeMode::System,
+                };
+            }
+        }
+        if let Some(language) = obj.get("language") {
+            if let Some(lang_str) = language.as_str() {
+                settings.language = lang_str.to_string();
+            }
+        }
+        if let Some(font_size) = obj.get("fontSize").or(obj.get("font_size")) {
+            if let Some(size_str) = font_size.as_str() {
+                settings.font_size = size_str.to_string();
+            }
+        }
+        if let Some(default_ide) = obj.get("defaultIde").or(obj.get("default_ide")) {
+            settings.default_ide = serde_json::from_value(default_ide.clone()).ok();
+        }
+    }
+
+    save_global_settings(&settings)?;
+    Ok(settings)
 }

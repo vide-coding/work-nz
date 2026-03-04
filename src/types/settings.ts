@@ -1,5 +1,7 @@
 // Global settings types for app configuration
 
+import type { IdeConfig } from './index'
+
 export type LanguageCode = 'zh-CN' | 'en-US'
 
 export type FontSize = 'small' | 'medium' | 'large'
@@ -12,6 +14,7 @@ export type GlobalSettings = {
   themeMode: 'light' | 'dark' | 'system'
   language: LanguageCode
   fontSize: FontSize
+  defaultIde?: IdeConfig
 }
 
 /**
@@ -21,8 +24,10 @@ export type GlobalSettings = {
 export type WorkspaceSettingsOverride = {
   useGlobalTheme: boolean
   useGlobalLanguage: boolean
+  useGlobalIde: boolean
   themeMode?: 'light' | 'dark' | 'system'
   language?: LanguageCode
+  defaultIde?: IdeConfig
 }
 
 /**

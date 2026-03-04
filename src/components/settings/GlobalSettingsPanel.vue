@@ -4,8 +4,10 @@ import { useI18n } from 'vue-i18n'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import LanguageSelector from '@/components/common/LanguageSelector.vue'
 import SettingItem from './SettingItem.vue'
+import IdeSelector from './IdeSelector.vue'
 import { useSettings } from '@/composables/useSettings'
 import type { ThemeMode, LanguageCode, FontSize } from '@/types/settings'
+import type { IdeConfig } from '@/types'
 
 const { t, locale } = useI18n()
 const { globalSettings, loadGlobalSettings, updateGlobalSettings, resetGlobalSettings } =
@@ -19,6 +21,7 @@ const saveMessage = ref('')
 const localTheme = ref<ThemeMode>('system')
 const localLanguage = ref<LanguageCode>('zh-CN')
 const localFontSize = ref<FontSize>('medium')
+const localDefaultIde = ref<IdeConfig | undefined>(undefined)
 
 onMounted(async () => {
   await loadGlobalSettings()
@@ -26,6 +29,7 @@ onMounted(async () => {
     localTheme.value = globalSettings.value.themeMode
     localLanguage.value = globalSettings.value.language
     localFontSize.value = globalSettings.value.fontSize
+    localDefaultIde.value = globalSettings.value.defaultIde
   }
   isLoading.value = false
 })
@@ -56,6 +60,14 @@ watch(localFontSize, async (newFontSize) => {
   showSaveMessage()
 })
 
+// Watch for IDE changes
+watch(localDefaultIde, async (newIde) => {
+  isSaving.value = true
+  await updateGlobalSettings({ defaultIde: newIde })
+  isSaving.value = false
+  showSaveMessage()
+})
+
 function applyTheme(theme: ThemeMode) {
   const root = document.documentElement
 
@@ -81,6 +93,7 @@ async function handleReset() {
     localTheme.value = defaults.themeMode
     localLanguage.value = defaults.language
     localFontSize.value = defaults.fontSize
+    localDefaultIde.value = defaults.defaultIde
 
     applyTheme(defaults.themeMode)
     locale.value = defaults.language
@@ -160,6 +173,26 @@ async function handleReset() {
               <option value="medium">{{ t('settings.fontSizeMedium') }}</option>
               <option value="large">{{ t('settings.fontSizeLarge') }}</option>
             </select>
+          </SettingItem>
+        </div>
+      </div>
+
+      <!-- IDE Section -->
+      <div class="mb-8">
+        <h3
+          class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4"
+        >
+          {{ t('settings.ide') }}
+        </h3>
+
+        <div
+          class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-4"
+        >
+          <SettingItem
+            :label="t('settings.defaultIde')"
+            :description="t('settings.defaultIdeDescription')"
+          >
+            <IdeSelector v-model="localDefaultIde" :disabled="isSaving" />
           </SettingItem>
         </div>
       </div>
