@@ -4,6 +4,9 @@ import type { IdeConfig } from './index'
 
 export type LanguageCode = 'zh-CN' | 'en-US'
 
+// Re-export ThemeMode from index for convenience
+export type { ThemeMode } from './index'
+
 export type FontSize = 'small' | 'medium' | 'large'
 
 /**

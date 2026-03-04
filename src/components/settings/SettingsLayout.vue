@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { useRouter, useRoute } from 'vue-router'
-import { Settings, Globe, FolderKanban, ArrowLeft } from 'lucide-vue-next'
+import { Globe, FolderKanban, ArrowLeft } from 'lucide-vue-next'
 import { computed } from 'vue'
 
 const { t } = useI18n()

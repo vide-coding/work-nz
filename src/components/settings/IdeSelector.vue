@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { FolderOpen, Plus, Trash2, Edit2, Check, X } from 'lucide-vue-next'
+import { Plus, Trash2, Edit2, Check, X } from 'lucide-vue-next'
 import { ideApi } from '@/composables/useApi'
 import type { IdeConfig, SupportedIdeKind } from '@/types'
 
@@ -125,14 +125,6 @@ function getIdeColor(kind: SupportedIdeKind): string {
     default:
       return 'bg-gray-500'
   }
-}
-
-// 获取IDE显示名称
-function getIdeDisplayName(ide: IdeConfig): string {
-  if (ide.kind === 'custom') {
-    return ide.name || t('settings.customIde')
-  }
-  return ide.name
 }
 
 onMounted(() => {

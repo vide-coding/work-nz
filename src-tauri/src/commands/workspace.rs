@@ -2,6 +2,7 @@ use crate::db::get_db;
 use crate::types::*;
 use chrono::Utc;
 use rusqlite::params;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
 
@@ -352,8 +353,8 @@ fn save_global_settings(settings: &GlobalSettings) -> Result<(), String> {
         let _ = fs::create_dir_all(parent);
     }
 
-    let content = serde_json::to_string_pretty(settings)
-        .map_err(|e| format!("序列化设置失败: {}", e))?;
+    let content =
+        serde_json::to_string_pretty(settings).map_err(|e| format!("序列化设置失败: {}", e))?;
 
     fs::write(&file_path, content).map_err(|e| format!("保存设置失败: {}", e))?;
 

@@ -41,6 +41,15 @@ const router = useRouter()
 const route = useRoute()
 const { locale, changeLocale } = useLocale()
 
+// Type-safe theme mode for ThemeToggle
+const themeMode = computed(() => {
+  const mode = settings.value.themeMode
+  return mode === 'custom' ? 'system' : mode
+})
+
+// Type-safe locale for LanguageSelector
+const currentLocale = computed(() => locale.value as 'zh-CN' | 'en-US')
+
 // Navigation
 type NavItem = 'intro' | 'code' | 'docs' | 'ui_design' | 'project_planning' | string
 const currentNav = ref<NavItem>('intro')

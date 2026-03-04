@@ -17,6 +17,15 @@ import LanguageSelector from '@/components/common/LanguageSelector.vue'
 const router = useRouter()
 const { locale, changeLocale } = useLocale()
 
+// Type-safe theme mode for ThemeToggle
+const themeMode = computed(() => {
+  const mode = settings.value.themeMode
+  return mode === 'custom' ? 'system' : mode
+})
+
+// Type-safe locale for LanguageSelector
+const currentLocale = computed(() => locale.value as 'zh-CN' | 'en-US')
+
 // State
 const projects = ref<Project[]>([])
 const loading = ref(false)
@@ -274,8 +283,8 @@ onMounted(async () => {
           >
             <Settings class="w-5 h-5 text-gray-600 dark:text-gray-300" />
           </button>
-          <ThemeToggle :model-value="settings.themeMode" @update:model-value="updateTheme" />
-          <LanguageSelector :model-value="locale" @update:model-value="changeLocale" />
+          <ThemeToggle :model-value="themeMode" @update:model-value="updateTheme" />
+          <LanguageSelector :model-value="currentLocale" @update:model-value="changeLocale" />
           <button
             class="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors text-sm font-medium"
             @click="showCreateDialog = true"

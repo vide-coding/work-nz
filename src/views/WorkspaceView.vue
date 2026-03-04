@@ -15,6 +15,15 @@ import { Settings } from 'lucide-vue-next'
 const router = useRouter()
 const { locale, changeLocale } = useLocale()
 
+// Type-safe theme mode for ThemeToggle
+const themeMode = computed(() => {
+  const mode = settings.value.themeMode
+  return mode === 'custom' ? 'system' : mode
+})
+
+// Type-safe locale for LanguageSelector
+const currentLocale = computed(() => locale.value as 'zh-CN' | 'en-US')
+
 // State
 const recentWorkspaces = ref<WorkspaceInfo[]>([])
 const currentWorkspace = ref<WorkspaceInfo | null>(null) // 已进入的工作区（会更新标题）
@@ -184,7 +193,7 @@ async function deleteWorkspace(workspace: WorkspaceInfo, event: Event) {
   try {
     await workspaceApi.removeFromRecent(workspace.path)
     await loadRecentWorkspaces()
-    if (selectedWorkspacePath === workspace.path) {
+    if (selectedWorkspacePath.value === workspace.path) {
       selectedWorkspacePath.value = null
     }
     // 如果正在进入工作区，清空 currentWorkspace
@@ -221,8 +230,8 @@ onMounted(async () => {
       >
         <Settings class="w-5 h-5 text-gray-600 dark:text-gray-300" />
       </button>
-      <ThemeToggle :model-value="settings.themeMode" @update:model-value="onUpdateTheme" />
-      <LanguageSelector :model-value="locale" @update:model-value="changeLocale" />
+      <ThemeToggle :model-value="themeMode" @update:model-value="onUpdateTheme" />
+      <LanguageSelector :model-value="currentLocale" @update:model-value="changeLocale" />
     </div>
 
     <div class="w-full max-w-xl">

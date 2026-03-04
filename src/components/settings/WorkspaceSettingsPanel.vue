@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { FolderOpen } from 'lucide-vue-next'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import SettingItem from './SettingItem.vue'
 import { useSettings } from '@/composables/useSettings'
 import { workspaceApi } from '@/composables/useApi'
-import type { ThemeMode } from '@/types/settings'
 
 const { t } = useI18n()
 const {
@@ -23,7 +22,7 @@ const currentWorkspace = ref<{ path: string; alias?: string } | null>(null)
 
 // Local state
 const localUseGlobalTheme = ref(true)
-const localTheme = ref<ThemeMode>('system')
+const localTheme = ref<'light' | 'dark' | 'system'>('system')
 
 onMounted(async () => {
   await loadGlobalSettings()
@@ -42,20 +41,16 @@ onMounted(async () => {
   // Initialize local state from workspace settings
   if (workspaceSettings.value?.themeMode) {
     localUseGlobalTheme.value = false
-    localTheme.value = workspaceSettings.value.themeMode
+    // workspaceSettings.themeMode may include 'custom', convert to valid theme
+    const wsTheme = workspaceSettings.value.themeMode
+    localTheme.value = (wsTheme === 'custom' ? 'system' : wsTheme) as 'light' | 'dark' | 'system'
   } else {
     localUseGlobalTheme.value = true
+    // globalSettings.themeMode is already 'light' | 'dark' | 'system'
     localTheme.value = globalSettings.value.themeMode
   }
 
   isLoading.value = false
-})
-
-const effectiveTheme = computed(() => {
-  if (localUseGlobalTheme.value) {
-    return globalSettings.value.themeMode
-  }
-  return localTheme.value
 })
 
 async function handleThemeOverrideChange(override: boolean) {
@@ -73,7 +68,7 @@ async function handleThemeOverrideChange(override: boolean) {
   isSaving.value = false
 }
 
-async function handleThemeChange(theme: ThemeMode) {
+async function handleThemeChange(theme: 'light' | 'dark' | 'system') {
   if (!localUseGlobalTheme.value) {
     isSaving.value = true
     await updateWorkspaceSettings({ themeMode: theme })

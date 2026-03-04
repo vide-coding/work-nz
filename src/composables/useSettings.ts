@@ -106,7 +106,11 @@ function getWorkspaceOverride(): WorkspaceSettingsOverride {
     useGlobalTheme: !workspace.themeMode || workspace.themeMode === global.themeMode,
     useGlobalLanguage: true, // Language is always from global for now
     useGlobalIde: !workspace.defaultIde,
-    themeMode: workspace.themeMode,
+    themeMode: (workspace.themeMode === 'custom' ? 'system' : workspace.themeMode) as
+      | 'light'
+      | 'dark'
+      | 'system'
+      | undefined,
     defaultIde: workspace.defaultIde,
   }
 }
@@ -117,7 +121,10 @@ function getWorkspaceOverride(): WorkspaceSettingsOverride {
 function getEffectiveTheme(): GlobalSettings['themeMode'] {
   const workspace = workspaceSettingsState.value
   if (workspace?.themeMode && workspace.themeMode !== 'system') {
-    return workspace.themeMode
+    return (workspace.themeMode === 'custom' ? 'system' : workspace.themeMode) as
+      | 'light'
+      | 'dark'
+      | 'system'
   }
   return globalSettingsState.value.themeMode
 }

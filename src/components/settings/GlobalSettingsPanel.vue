@@ -6,7 +6,7 @@ import LanguageSelector from '@/components/common/LanguageSelector.vue'
 import SettingItem from './SettingItem.vue'
 import IdeSelector from './IdeSelector.vue'
 import { useSettings } from '@/composables/useSettings'
-import type { ThemeMode, LanguageCode, FontSize } from '@/types/settings'
+import type { LanguageCode, FontSize } from '@/types/settings'
 import type { IdeConfig } from '@/types'
 
 const { t, locale } = useI18n()
@@ -18,7 +18,8 @@ const isSaving = ref(false)
 const saveMessage = ref('')
 
 // Local state for two-way binding
-const localTheme = ref<ThemeMode>('system')
+// Use 'light' | 'dark' | 'system' to match ThemeToggle and GlobalSettings type
+const localTheme = ref<'light' | 'dark' | 'system'>('system')
 const localLanguage = ref<LanguageCode>('zh-CN')
 const localFontSize = ref<FontSize>('medium')
 const localDefaultIde = ref<IdeConfig | undefined>(undefined)
@@ -26,10 +27,16 @@ const localDefaultIde = ref<IdeConfig | undefined>(undefined)
 onMounted(async () => {
   await loadGlobalSettings()
   if (globalSettings.value) {
-    localTheme.value = globalSettings.value.themeMode
+    localTheme.value = globalSettings.value.themeMode as 'light' | 'dark' | 'system'
     localLanguage.value = globalSettings.value.language
     localFontSize.value = globalSettings.value.fontSize
+    // Create a mutable copy of IdeConfig to avoid readonly issues
     localDefaultIde.value = globalSettings.value.defaultIde
+      ? {
+          ...globalSettings.value.defaultIde,
+          args: [...(globalSettings.value.defaultIde.args || [])],
+        }
+      : undefined
   }
   isLoading.value = false
 })
@@ -68,7 +75,7 @@ watch(localDefaultIde, async (newIde) => {
   showSaveMessage()
 })
 
-function applyTheme(theme: ThemeMode) {
+function applyTheme(theme: 'light' | 'dark' | 'system') {
   const root = document.documentElement
 
   if (theme === 'system') {
