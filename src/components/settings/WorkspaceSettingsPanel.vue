@@ -2,11 +2,11 @@
 import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { FolderOpen } from 'lucide-vue-next'
-import ThemeToggle from '../common/ThemeToggle.vue'
+import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import SettingItem from './SettingItem.vue'
-import { useSettings } from '../../composables/useSettings'
-import { workspaceApi } from '../../composables/useApi'
-import type { ThemeMode } from '../../types/settings'
+import { useSettings } from '@/composables/useSettings'
+import { workspaceApi } from '@/composables/useApi'
+import type { ThemeMode } from '@/types/settings'
 
 const { t } = useI18n()
 const {

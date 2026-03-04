@@ -2,7 +2,7 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { getCurrentWindow } from '@tauri-apps/api/window'
-import { useLocale } from '../locales/useLocale'
+import { useLocale } from '@/locales/useLocale'
 import {
   projectApi,
   gitApi,
@@ -11,8 +11,8 @@ import {
   ideApi,
   workspaceApi,
   previewApi,
-} from '../composables/useApi'
-import MarkdownRenderer from '../components/MarkdownRenderer.vue'
+} from '@/composables/useApi'
+import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
 import type {
   Project,
   GitRepository,
@@ -23,7 +23,7 @@ import type {
   WorkspaceSettings,
   PreviewKind,
   WorkspaceInfo,
-} from '../types'
+} from '@/types'
 import {
   ArrowLeft,
   Home,
@@ -50,8 +50,8 @@ import {
   Search,
   Settings,
 } from 'lucide-vue-next'
-import ThemeToggle from '../components/common/ThemeToggle.vue'
-import LanguageSelector from '../components/common/LanguageSelector.vue'
+import ThemeToggle from '@/components/common/ThemeToggle.vue'
+import LanguageSelector from '@/components/common/LanguageSelector.vue'
 
 const props = defineProps<{
   id: string

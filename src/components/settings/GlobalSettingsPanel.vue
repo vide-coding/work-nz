@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import ThemeToggle from '../common/ThemeToggle.vue'
-import LanguageSelector from '../common/LanguageSelector.vue'
+import ThemeToggle from '@/components/common/ThemeToggle.vue'
+import LanguageSelector from '@/components/common/LanguageSelector.vue'
 import SettingItem from './SettingItem.vue'
-import { useSettings } from '../../composables/useSettings'
-import type { ThemeMode, LanguageCode, FontSize } from '../../types/settings'
+import { useSettings } from '@/composables/useSettings'
+import type { ThemeMode, LanguageCode, FontSize } from '@/types/settings'
 
 const { t, locale } = useI18n()
 const { globalSettings, loadGlobalSettings, updateGlobalSettings, resetGlobalSettings } =

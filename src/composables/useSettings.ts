@@ -1,7 +1,7 @@
 import { ref, readonly } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
-import type { GlobalSettings, WorkspaceSettingsOverride } from '../types/settings'
-import type { WorkspaceSettings } from '../types'
+import type { GlobalSettings, WorkspaceSettingsOverride } from '@/types/settings'
+import type { WorkspaceSettings } from '@/types'
 import { workspaceApi } from './useApi'
 
 const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {

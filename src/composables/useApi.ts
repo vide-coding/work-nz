@@ -18,7 +18,7 @@ import type {
   PreviewKind,
   IdeConfig,
   FsResult,
-} from '../types'
+} from '@/types'
 
 // Workspace API
 export const workspaceApi = {

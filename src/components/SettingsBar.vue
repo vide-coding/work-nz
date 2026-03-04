@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useLocale } from '../locales/useLocale'
+import { useLocale } from '@/locales/useLocale'
 import { Palette, Globe } from 'lucide-vue-next'
 
 const props = defineProps<{

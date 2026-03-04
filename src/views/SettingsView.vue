@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { RouterView } from 'vue-router'
-import SettingsLayout from '../components/settings/SettingsLayout.vue'
-import { useSettings } from '../composables/useSettings'
+import SettingsLayout from '@/components/settings/SettingsLayout.vue'
+import { useSettings } from '@/composables/useSettings'
 
 const { loadGlobalSettings } = useSettings()
 
