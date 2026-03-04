@@ -12,7 +12,6 @@ import {
   workspaceApi,
   previewApi,
 } from '@/composables/useApi'
-import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
 import type {
   Project,
   GitRepository,
@@ -24,34 +23,15 @@ import type {
   PreviewKind,
   WorkspaceInfo,
 } from '@/types'
-import {
-  ArrowLeft,
-  Home,
-  Code,
-  FileText,
-  Image,
-  Map,
-  Folder,
-  GitBranch,
-  ExternalLink,
-  Trash2,
-  ChevronRight,
-  Grid,
-  List,
-  FolderPlus,
-  Loader2,
-  Edit3,
-  Save,
-  File,
-  Image as ImageIcon,
-  FileCode,
-  X,
-  GitPullRequest,
-  Search,
-  Settings,
-} from 'lucide-vue-next'
-import ThemeToggle from '@/components/common/ThemeToggle.vue'
-import LanguageSelector from '@/components/common/LanguageSelector.vue'
+import { Home, Code, FileText, Image, Map, Folder } from 'lucide-vue-next'
+
+// Components
+import WorkspaceHeader from '@/components/workspace/WorkspaceHeader.vue'
+import WorkspaceSidebar from '@/components/workspace/WorkspaceSidebar.vue'
+import ProjectIntro from '@/components/workspace/ProjectIntro.vue'
+import CodeRepositories from '@/components/workspace/CodeRepositories.vue'
+import FileBrowser from '@/components/workspace/FileBrowser.vue'
+import ReadmePreview from '@/components/workspace/ReadmePreview.vue'
 
 const props = defineProps<{
   id: string
@@ -110,21 +90,6 @@ watch(
 // Git repos
 const repos = ref<GitRepository[]>([])
 const repoStatuses = ref<Record<string, GitRepoStatus>>({})
-const showCloneDialog = ref(false)
-const isCloning = ref(false)
-const cloneUrl = ref('')
-const cloneTargetDir = ref('')
-const cloneRepoName = ref('')
-
-// Repo search
-const repoSearchQuery = ref('')
-
-// Repo edit dialog
-const showEditRepoDialog = ref(false)
-const editingRepo = ref<GitRepository | null>(null)
-const editRepoName = ref('')
-const editRepoDescription = ref('')
-const isUpdatingRepo = ref(false)
 
 // Repo README preview
 const selectedRepo = ref<GitRepository | null>(null)
@@ -148,6 +113,23 @@ const isLoadingPreview = ref(false)
 // Create folder dialog
 const isCreatingFolder = ref(false)
 const newFolderName = ref('')
+
+// Clone dialog
+const showCloneDialog = ref(false)
+const isCloning = ref(false)
+const cloneUrl = ref('')
+const cloneTargetDir = ref('')
+const cloneRepoName = ref('')
+
+// Edit repo dialog
+const showEditRepoDialog = ref(false)
+const editingRepo = ref<GitRepository | null>(null)
+const editRepoName = ref('')
+const editRepoDescription = ref('')
+const isUpdatingRepo = ref(false)
+
+// Repo search
+const repoSearchQuery = ref('')
 
 // Initialize project ID from props
 const projectId = computed(() => props.id || (route.params.id as string))
@@ -180,36 +162,12 @@ const currentDirType = computed(() => {
   return dirTypes.value.find((t) => t.id === currentNav.value || t.kind === currentNav.value)
 })
 
-// Filtered repos based on search query
-const filteredRepos = computed(() => {
-  if (!repoSearchQuery.value.trim()) {
-    return repos.value
-  }
-  const query = repoSearchQuery.value.toLowerCase().trim()
-  return repos.value.filter((repo) => {
-    // Search in name (directory name)
-    if (repo.name.toLowerCase().includes(query)) {
-      return true
-    }
-    // Search in description
-    if (repo.description && repo.description.toLowerCase().includes(query)) {
-      return true
-    }
-    return false
-  })
-})
-
 const boundDirs = computed(() => {
   return projectDirs.value.filter((pd) => {
     const dt = dirTypes.value.find((d) => d.id === pd.dirTypeId)
     return dt && (dt.kind === currentNav.value || dt.id === currentNav.value)
   })
 })
-
-// Get display name for repo
-function getRepoDisplayName(repo: GitRepository): string {
-  return repo.name
-}
 
 // Methods
 async function loadProject() {
@@ -330,15 +288,6 @@ async function cloneRepo() {
   }
 }
 
-// Open edit repo dialog
-function openEditRepoDialog(repo: GitRepository) {
-  editingRepo.value = repo
-  editRepoName.value = repo.name || ''
-  editRepoDescription.value = repo.description || ''
-  showEditRepoDialog.value = true
-}
-
-// Update repo info
 async function updateRepo() {
   if (!editingRepo.value) return
 
@@ -568,12 +517,79 @@ function goToSettings() {
   router.push('/settings/workspace')
 }
 
-function getFileIcon(node: FileNode) {
-  if (node.kind === 'dir') return Folder
-  const ext = node.name.split('.').pop()?.toLowerCase()
-  if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'].includes(ext || '')) return ImageIcon
-  if (['md', 'txt', 'json', 'js', 'ts', 'vue', 'css', 'html'].includes(ext || '')) return FileCode
-  return File
+// Header events
+function handleGoBack() {
+  router.push('/projects')
+}
+
+function handleGoToSettings() {
+  goToSettings()
+}
+
+function handleUpdateTheme(themeMode: 'light' | 'dark' | 'system' | 'custom') {
+  updateTheme(themeMode)
+}
+
+function handleUpdateLocale(newLocale: string) {
+  changeLocale(newLocale)
+}
+
+// Sidebar events
+function handleNavigate(id: string) {
+  currentNav.value = id
+}
+
+// ProjectIntro events
+function handleStartEdit() {
+  isEditing.value = true
+}
+
+function handleCancelEdit() {
+  isEditing.value = false
+}
+
+function handleSaveProject() {
+  updateProject()
+}
+
+function handleUpdateDescription(value: string) {
+  editDescription.value = value
+}
+
+// FileBrowser events
+function handleNavigateToParent() {
+  navigateToParent()
+}
+
+function handleSelectFile(node: FileNode) {
+  selectFile(node)
+}
+
+function handleCreateFolder() {
+  createFolder()
+}
+
+function handleUpdateViewMode(mode: 'grid' | 'list') {
+  viewMode.value = mode
+}
+
+function handleBindDirectory() {
+  bindDirectory()
+}
+
+function handleUpdateNewFolderName(value: string) {
+  newFolderName.value = value
+}
+
+function handleCloseCreateFolderDialog() {
+  isCreatingFolder.value = false
+}
+
+function handleConfirmCreateFolder() {
+  isCreatingFolder.value = true
+  if (newFolderName.value.trim()) {
+    createFolder()
+  }
 }
 
 // Watch navigation changes
@@ -614,759 +630,93 @@ onMounted(async () => {
 
 <template>
   <div class="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-    <!-- Top Bar -->
-    <header
-      class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4"
-    >
-      <div class="flex items-center justify-between">
-        <!-- Breadcrumb -->
-        <div class="flex items-center gap-2">
-          <button
-            class="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            @click="router.push('/projects')"
-          >
-            <ArrowLeft class="w-4 h-4" />
-            {{ $t('projects.title') }}
-          </button>
-          <ChevronRight class="w-4 h-4 text-gray-400" />
-          <span class="text-sm font-medium text-gray-900 dark:text-white">
-            {{ project?.name || $t('workspace.projectWorkspace') }}
-          </span>
-        </div>
-
-        <!-- Right Actions -->
-        <div class="flex items-center gap-3">
-          <!-- Settings -->
-          <button
-            @click="goToSettings"
-            class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            :title="$t('settings.title')"
-          >
-            <Settings class="w-5 h-5 text-gray-600 dark:text-gray-300" />
-          </button>
-          <!-- Theme -->
-          <ThemeToggle :model-value="settings.themeMode" @update:model-value="updateTheme" />
-          <!-- Language -->
-          <LanguageSelector :model-value="locale" @update:model-value="changeLocale" />
-        </div>
-      </div>
-    </header>
+    <!-- Header -->
+    <WorkspaceHeader
+      :project="project"
+      :settings="settings"
+      :workspace-info="currentWorkspace"
+      :locale="locale"
+      @go-back="handleGoBack"
+      @go-to-settings="handleGoToSettings"
+      @update-theme="handleUpdateTheme"
+      @update-locale="handleUpdateLocale"
+    />
 
     <!-- Main Content -->
     <div class="flex-1 flex overflow-hidden">
       <!-- Sidebar -->
-      <aside
-        class="w-56 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-auto"
-      >
-        <nav class="p-4 space-y-1">
-          <button
-            v-for="item in navItems"
-            :key="item.id"
-            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left"
-            :class="
-              currentNav === item.id
-                ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
-                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-            "
-            @click="currentNav = item.id"
-          >
-            <component :is="item.icon" class="w-5 h-5" />
-            <span class="text-sm font-medium">{{ $t(item.labelKey) }}</span>
-          </button>
-        </nav>
-      </aside>
+      <WorkspaceSidebar
+        :current-nav="currentNav"
+        :nav-items="navItems"
+        @navigate="handleNavigate"
+      />
 
       <!-- Content Area -->
       <main class="flex-1 overflow-auto">
         <!-- Project Introduction -->
-        <div v-if="currentNav === 'intro'" class="p-6">
-          <div class="max-w-4xl mx-auto">
-            <!-- Header -->
-            <div class="flex items-start justify-between mb-6">
-              <div class="flex items-center gap-4">
-                <div
-                  class="w-16 h-16 rounded-xl flex items-center justify-center text-white text-2xl font-bold"
-                  :style="{
-                    backgroundColor: project?.display?.themeColor || '#4F46E5',
-                  }"
-                >
-                  {{ project?.name?.charAt(0).toUpperCase() }}
-                </div>
-                <div>
-                  <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-                    {{ project?.name }}
-                  </h1>
-                  <p v-if="!isEditing" class="text-gray-600 dark:text-gray-400 mt-1">
-                    {{ project?.description || $t('projects.noDescription') }}
-                  </p>
-                </div>
-              </div>
-
-              <button
-                v-if="!isEditing"
-                class="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                @click="isEditing = true"
-              >
-                <Edit3 class="w-4 h-4" />
-                {{ $t('common.edit') }}
-              </button>
-            </div>
-
-            <!-- Edit Mode -->
-            <div v-if="isEditing" class="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-              <textarea
-                v-model="editDescription"
-                rows="4"
-                class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 resize-none"
-                :placeholder="$t('projects.descriptionPlaceholder')"
-              ></textarea>
-              <div class="flex justify-end gap-2 mt-3">
-                <button
-                  class="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-                  @click="isEditing = false"
-                >
-                  {{ $t('common.cancel') }}
-                </button>
-                <button
-                  class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
-                  @click="updateProject"
-                >
-                  <Save class="w-4 h-4" />
-                  {{ $t('common.save') }}
-                </button>
-              </div>
-            </div>
-
-            <!-- Stats Cards -->
-            <div class="grid grid-cols-3 gap-4">
-              <!-- Code Stats -->
-              <div
-                class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700"
-              >
-                <div class="flex items-center gap-3 mb-4">
-                  <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                    <Code class="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <span class="font-medium text-gray-900 dark:text-white">{{
-                    $t('workspace.codeOverview')
-                  }}</span>
-                </div>
-                <p class="text-3xl font-bold text-gray-900 dark:text-white">
-                  {{ repos.length }}
-                </p>
-                <p class="text-sm text-gray-500 dark:text-gray-400">
-                  {{ $t('workspace.repositories') }}
-                </p>
-              </div>
-
-              <!-- Docs Stats -->
-              <div
-                class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700"
-              >
-                <div class="flex items-center gap-3 mb-4">
-                  <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                    <FileText class="w-5 h-5 text-green-600 dark:text-green-400" />
-                  </div>
-                  <span class="font-medium text-gray-900 dark:text-white">{{
-                    $t('workspace.docsOverview')
-                  }}</span>
-                </div>
-                <p class="text-3xl font-bold text-gray-900 dark:text-white">
-                  {{
-                    projectDirs.filter((pd) =>
-                      dirTypes.find((d) => d.id === pd.dirTypeId && d.kind === 'docs')
-                    ).length
-                  }}
-                </p>
-                <p class="text-sm text-gray-500 dark:text-gray-400">
-                  {{ $t('workspace.directories') }}
-                </p>
-              </div>
-
-              <!-- UI Design Stats -->
-              <div
-                class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700"
-              >
-                <div class="flex items-center gap-3 mb-4">
-                  <div class="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                    <Image class="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                  </div>
-                  <span class="font-medium text-gray-900 dark:text-white">{{
-                    $t('workspace.designOverview')
-                  }}</span>
-                </div>
-                <p class="text-3xl font-bold text-gray-900 dark:text-white">
-                  {{
-                    projectDirs.filter((pd) =>
-                      dirTypes.find((d) => d.id === pd.dirTypeId && d.kind === 'ui_design')
-                    ).length
-                  }}
-                </p>
-                <p class="text-sm text-gray-500 dark:text-gray-400">
-                  {{ $t('workspace.directories') }}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ProjectIntro
+          v-if="currentNav === 'intro'"
+          :project="project"
+          :repos="repos"
+          :project-dirs="projectDirs"
+          :dir-types="dirTypes"
+          :is-editing="isEditing"
+          :edit-description="editDescription"
+          @start-edit="handleStartEdit"
+          @cancel-edit="handleCancelEdit"
+          @save-project="handleSaveProject"
+          @update-description="handleUpdateDescription"
+        />
 
         <!-- Code Management -->
-        <div v-else-if="currentNav === 'code'" class="p-6">
-          <div class="max-w-4xl mx-auto">
-            <!-- Header -->
-            <div class="flex items-center justify-between mb-6">
-              <h2 class="text-xl font-bold text-gray-900 dark:text-white">
-                {{ $t('workspace.codeRepositories') }}
-              </h2>
-              <button
-                class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
-                @click="showCloneDialog = true"
-              >
-                <GitBranch class="w-4 h-4" />
-                {{ $t('workspace.cloneNewRepo') }}
-              </button>
-            </div>
-
-            <!-- Search Bar -->
-            <div class="mb-4 relative">
-              <div class="relative">
-                <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  v-model="repoSearchQuery"
-                  type="text"
-                  class="w-full pl-10 pr-10 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  :placeholder="$t('workspace.searchRepos')"
-                />
-                <button
-                  v-if="repoSearchQuery"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
-                  @click="repoSearchQuery = ''"
-                >
-                  <X class="w-4 h-4 text-gray-400" />
-                </button>
-              </div>
-            </div>
-
-            <!-- Repo List -->
-            <div
-              v-if="repos.length === 0"
-              class="text-center py-12 text-gray-500 dark:text-gray-400"
-            >
-              <GitBranch class="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>{{ $t('workspace.noRepos') }}</p>
-              <p class="text-sm mt-2">{{ $t('workspace.noReposHint') }}</p>
-            </div>
-
-            <div
-              v-else-if="filteredRepos.length === 0"
-              class="text-center py-12 text-gray-500 dark:text-gray-400"
-            >
-              <Search class="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>{{ $t('workspace.noReposFound') }}</p>
-            </div>
-
-            <div v-else class="space-y-4">
-              <div
-                v-for="repo in filteredRepos"
-                :key="repo.id"
-                class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700"
-              >
-                <div class="flex items-start justify-between">
-                  <div class="flex items-start gap-3">
-                    <div class="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                      <GitBranch class="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                    </div>
-                    <div>
-                      <h3 class="font-medium text-gray-900 dark:text-white">
-                        {{ getRepoDisplayName(repo) }}
-                      </h3>
-                      <p
-                        v-if="repo.description"
-                        class="text-sm text-gray-500 dark:text-gray-400 mt-1"
-                      >
-                        {{ repo.description }}
-                      </p>
-                      <p class="text-sm text-gray-500 dark:text-gray-400">
-                        {{ repo.path }}
-                      </p>
-                      <div class="flex items-center gap-3 mt-2">
-                        <span
-                          v-if="repo.branch"
-                          class="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded"
-                        >
-                          {{ repo.branch }}
-                        </span>
-                        <span
-                          v-if="repoStatuses[repo.id]?.dirty"
-                          class="text-xs px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 rounded"
-                        >
-                          {{ $t('workspace.dirty') }}
-                        </span>
-                        <span
-                          v-if="(repoStatuses[repo.id]?.behind || 0) > 0"
-                          class="text-xs px-2 py-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded"
-                        >
-                          {{
-                            $t('workspace.behind', {
-                              n: repoStatuses[repo.id]?.behind,
-                            })
-                          }}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="flex items-center gap-2">
-                    <button
-                      class="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                      @click="loadRepoReadme(repo)"
-                      :title="$t('workspace.readme')"
-                    >
-                      <FileText class="w-4 h-4" />
-                    </button>
-                    <button
-                      class="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                      @click="pullRepo(repo)"
-                      :title="$t('workspace.pull')"
-                    >
-                      <GitPullRequest class="w-4 h-4" />
-                    </button>
-                    <button
-                      class="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                      @click="openInIde(repo)"
-                      :title="$t('workspace.openInIde')"
-                    >
-                      <ExternalLink class="w-4 h-4" />
-                    </button>
-                    <button
-                      class="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                      @click="openEditRepoDialog(repo)"
-                      :title="$t('common.edit')"
-                    >
-                      <Edit3 class="w-4 h-4" />
-                    </button>
-                    <button
-                      class="p-2 text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                      @click="deleteRepo(repo)"
-                      :title="$t('common.delete')"
-                    >
-                      <Trash2 class="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Clone Dialog -->
-          <div
-            v-if="showCloneDialog"
-            class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-            @click.self="showCloneDialog = false"
-          >
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md mx-4">
-              <div class="p-6">
-                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
-                  {{ $t('workspace.cloneRepo') }}
-                </h3>
-
-                <div class="space-y-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      {{ $t('workspace.repoUrl') }}
-                    </label>
-                    <input
-                      v-model="cloneUrl"
-                      type="text"
-                      class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                      placeholder="https://github.com/..."
-                    />
-                  </div>
-
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      {{ $t('workspace.targetDir') }}
-                    </label>
-                    <input
-                      v-model="cloneTargetDir"
-                      type="text"
-                      class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                      placeholder="my-repo"
-                    />
-                  </div>
-
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      {{ $t('workspace.repoName') }}
-                    </label>
-                    <input
-                      v-model="cloneRepoName"
-                      type="text"
-                      class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                      :placeholder="cloneTargetDir || $t('workspace.repoNamePlaceholder')"
-                    />
-                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      {{ $t('workspace.repoNameHint') }}
-                    </p>
-                  </div>
-
-                  <div
-                    v-if="error"
-                    class="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
-                  >
-                    <p class="text-sm text-red-600 dark:text-red-400">
-                      {{ error }}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div
-                class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 flex justify-end gap-3 rounded-b-xl"
-              >
-                <button
-                  class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-                  @click="showCloneDialog = false"
-                >
-                  {{ $t('common.cancel') }}
-                </button>
-                <button
-                  class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors disabled:opacity-50"
-                  @click="cloneRepo"
-                  :disabled="!cloneUrl.trim() || !cloneTargetDir.trim() || isCloning"
-                >
-                  {{ isCloning ? $t('common.cloning') : $t('workspace.clone') }}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <CodeRepositories
+          v-else-if="currentNav === 'code'"
+          :repos="repos"
+          :repo-statuses="repoStatuses"
+          :error="error"
+          @clone-repo="cloneRepo"
+          @update-repo="updateRepo"
+          @pull-repo="pullRepo"
+          @open-in-ide="openInIde"
+          @delete-repo="deleteRepo"
+          @load-readme="loadRepoReadme"
+        />
 
         <!-- Resource Directory (Docs, UI Design, Project Planning) -->
-        <div v-else class="flex flex-col h-full">
-          <!-- Toolbar -->
-          <div
-            class="px-6 py-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between"
-          >
-            <div class="flex items-center gap-4">
-              <!-- Bind directory if not bound -->
-              <button
-                v-if="boundDirs.length === 0"
-                class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
-                @click="bindDirectory"
-              >
-                <FolderPlus class="w-4 h-4" />
-                {{ $t('workspace.bindDirectory') }}
-              </button>
-
-              <!-- Current path -->
-              <div v-if="currentDirPath" class="flex items-center gap-2">
-                <button
-                  class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  @click="navigateToParent"
-                >
-                  <ArrowLeft class="w-4 h-4 text-gray-500" />
-                </button>
-                <span class="text-sm text-gray-600 dark:text-gray-400">{{ currentDirPath }}</span>
-              </div>
-            </div>
-
-            <div class="flex items-center gap-2">
-              <button
-                class="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                @click="isCreatingFolder = true"
-                :title="$t('workspace.newFolder')"
-              >
-                <FolderPlus class="w-5 h-5" />
-              </button>
-              <div class="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-                <button
-                  class="p-1.5 rounded-md transition-colors"
-                  :class="viewMode === 'grid' ? 'bg-white dark:bg-gray-600 shadow-sm' : ''"
-                  @click="viewMode = 'grid'"
-                >
-                  <Grid class="w-4 h-4 text-gray-600 dark:text-gray-300" />
-                </button>
-                <button
-                  class="p-1.5 rounded-md transition-colors"
-                  :class="viewMode === 'list' ? 'bg-white dark:bg-gray-600 shadow-sm' : ''"
-                  @click="viewMode = 'list'"
-                >
-                  <List class="w-4 h-4 text-gray-600 dark:text-gray-300" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- File Browser -->
-          <div class="flex-1 flex overflow-hidden">
-            <!-- File List -->
-            <div class="flex-1 overflow-auto p-6">
-              <div v-if="isLoadingTree" class="flex items-center justify-center h-full">
-                <Loader2 class="w-8 h-8 text-indigo-600 animate-spin" />
-              </div>
-
-              <div
-                v-else-if="fileTree.length === 0"
-                class="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400"
-              >
-                <Folder class="w-16 h-16 mb-4 opacity-50" />
-                <p class="text-lg">{{ $t('workspace.emptyDirectory') }}</p>
-                <button
-                  class="mt-4 flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
-                  @click="isCreatingFolder = true"
-                >
-                  <FolderPlus class="w-4 h-4" />
-                  {{ $t('workspace.createFolder') }}
-                </button>
-              </div>
-
-              <!-- Grid View -->
-              <div v-else-if="viewMode === 'grid'" class="grid grid-cols-4 gap-4">
-                <div
-                  v-for="node in fileTree"
-                  :key="node.path"
-                  class="flex flex-col items-center p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-indigo-500 dark:hover:border-indigo-500 cursor-pointer transition-colors"
-                  @click="selectFile(node)"
-                >
-                  <component :is="getFileIcon(node)" class="w-12 h-12 text-gray-400 mb-2" />
-                  <span class="text-sm text-gray-900 dark:text-white text-center truncate w-full">{{
-                    node.name
-                  }}</span>
-                </div>
-              </div>
-
-              <!-- List View -->
-              <div v-else class="space-y-1">
-                <div
-                  v-for="node in fileTree"
-                  :key="node.path"
-                  class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors"
-                  @click="selectFile(node)"
-                >
-                  <component :is="getFileIcon(node)" class="w-5 h-5 text-gray-400" />
-                  <span class="text-sm text-gray-900 dark:text-white flex-1">{{ node.name }}</span>
-                  <span class="text-xs text-gray-500">{{
-                    node.kind === 'dir' ? $t('workspace.folder') : $t('workspace.file')
-                  }}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Preview Panel -->
-            <aside
-              v-if="selectedFile"
-              class="w-80 border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-auto"
-            >
-              <div class="p-4">
-                <div class="flex items-center gap-3 mb-4">
-                  <component :is="getFileIcon(selectedFile)" class="w-8 h-8 text-gray-400" />
-                  <div class="flex-1 min-w-0">
-                    <p class="font-medium text-gray-900 dark:text-white truncate">
-                      {{ selectedFile.name }}
-                    </p>
-                    <p class="text-xs text-gray-500">
-                      {{
-                        selectedFile.kind === 'dir' ? $t('workspace.folder') : $t('workspace.file')
-                      }}
-                    </p>
-                  </div>
-                </div>
-
-                <!-- Preview Content -->
-                <div v-if="isLoadingPreview" class="flex items-center justify-center py-8">
-                  <Loader2 class="w-6 h-6 text-indigo-600 animate-spin" />
-                </div>
-
-                <div
-                  v-else-if="previewKind === 'image'"
-                  class="bg-gray-100 dark:bg-gray-700 rounded-lg p-4"
-                >
-                  <p class="text-sm text-gray-500 text-center">
-                    {{ $t('workspace.imagePreview') }}
-                  </p>
-                </div>
-
-                <!-- Markdown Preview -->
-                <div
-                  v-else-if="previewKind === 'markdown'"
-                  class="prose dark:prose-invert max-w-none"
-                >
-                  <MarkdownRenderer :content="fileContent" :base-path="currentDirPath" />
-                </div>
-
-                <!-- Text Preview -->
-                <div v-else-if="previewKind === 'text'" class="prose dark:prose-invert max-w-none">
-                  <pre
-                    class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-mono bg-gray-50 dark:bg-gray-900 p-4 rounded-lg overflow-auto max-h-96"
-                    >{{ fileContent }}</pre
-                  >
-                </div>
-
-                <div v-else class="text-center py-8 text-gray-500 dark:text-gray-400">
-                  <p>{{ $t('workspace.noPreview') }}</p>
-                </div>
-              </div>
-            </aside>
-          </div>
-        </div>
+        <FileBrowser
+          v-else
+          :current-dir-path="currentDirPath"
+          :file-tree="fileTree"
+          :view-mode="viewMode"
+          :selected-file="selectedFile"
+          :file-content="fileContent"
+          :preview-kind="previewKind"
+          :is-loading-tree="isLoadingTree"
+          :is-loading-preview="isLoadingPreview"
+          :bound-dirs="boundDirs"
+          :dir-types="dirTypes"
+          :current-nav="currentNav"
+          :new-folder-name="newFolderName"
+          :is-creating-folder="isCreatingFolder"
+          @navigate-to-parent="handleNavigateToParent"
+          @select-file="handleSelectFile"
+          @create-folder="handleCreateFolder"
+          @update-view-mode="handleUpdateViewMode"
+          @bind-directory="handleBindDirectory"
+          @update-new-folder-name="handleUpdateNewFolderName"
+          @close-create-folder-dialog="handleCloseCreateFolderDialog"
+          @confirm-create-folder="handleConfirmCreateFolder"
+        />
       </main>
 
       <!-- README Preview Sidebar -->
-      <aside
+      <ReadmePreview
         v-if="selectedRepo"
-        class="w-96 border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-auto"
-      >
-        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <FileText class="w-5 h-5 text-gray-500" />
-              <span class="font-medium text-gray-900 dark:text-white"> README </span>
-            </div>
-            <button
-              class="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              @click="closeReadmePreview"
-            >
-              <X class="w-5 h-5 text-gray-500" />
-            </button>
-          </div>
-          <p class="text-sm text-gray-500 mt-1">
-            {{ selectedRepo.name }}
-          </p>
-        </div>
-
-        <div class="p-4">
-          <div v-if="isLoadingReadme" class="flex items-center justify-center py-8">
-            <Loader2 class="w-6 h-6 text-indigo-600 animate-spin" />
-          </div>
-          <div v-else-if="readmeContent" class="prose dark:prose-invert max-w-none">
-            <MarkdownRenderer :content="readmeContent" :base-path="selectedRepo?.path" />
-          </div>
-          <div v-else class="text-center py-8 text-gray-500 dark:text-gray-400">
-            <FileText class="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p>No README found</p>
-          </div>
-        </div>
-      </aside>
-    </div>
-
-    <!-- Create Folder Dialog -->
-    <div
-      v-if="isCreatingFolder"
-      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-      @click.self="isCreatingFolder = false"
-    >
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-sm mx-4">
-        <div class="p-6">
-          <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
-            {{ $t('workspace.createFolder') }}
-          </h3>
-          <input
-            v-model="newFolderName"
-            type="text"
-            class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-            :placeholder="$t('workspace.folderName')"
-            @keyup.enter="createFolder"
-          />
-        </div>
-        <div class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 flex justify-end gap-3 rounded-b-xl">
-          <button
-            class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-            @click="isCreatingFolder = false"
-          >
-            {{ $t('common.cancel') }}
-          </button>
-          <button
-            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
-            @click="createFolder"
-            :disabled="!newFolderName.trim()"
-          >
-            {{ $t('common.create') }}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Edit Repo Dialog -->
-    <div
-      v-if="showEditRepoDialog"
-      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-      @click.self="showEditRepoDialog = false"
-    >
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md mx-4">
-        <div class="p-6">
-          <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
-            {{ $t('workspace.editRepo') }}
-          </h3>
-
-          <div class="space-y-4">
-            <!-- Git URL (Read-only) -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {{ $t('workspace.repoUrl') }}
-              </label>
-              <input
-                :value="editingRepo?.remoteUrl || '-'"
-                type="text"
-                readonly
-                class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-500 dark:text-gray-400 cursor-not-allowed"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {{ $t('workspace.repoName') }}
-              </label>
-              <input
-                v-model="editRepoName"
-                type="text"
-                class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                :placeholder="$t('workspace.repoNamePlaceholder')"
-              />
-              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                {{ $t('workspace.repoNameEditHint') }}
-              </p>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {{ $t('workspace.description') }}
-              </label>
-              <textarea
-                v-model="editRepoDescription"
-                rows="3"
-                class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 resize-none"
-                :placeholder="$t('workspace.descriptionPlaceholder')"
-              ></textarea>
-            </div>
-
-            <div
-              v-if="error"
-              class="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
-            >
-              <p class="text-sm text-red-600 dark:text-red-400">
-                {{ error }}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 flex justify-end gap-3 rounded-b-xl">
-          <button
-            class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-            @click="showEditRepoDialog = false"
-          >
-            {{ $t('common.cancel') }}
-          </button>
-          <button
-            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors disabled:opacity-50"
-            @click="updateRepo"
-            :disabled="isUpdatingRepo"
-          >
-            {{ $t('common.save') }}
-          </button>
-        </div>
-      </div>
+        :selected-repo="selectedRepo"
+        :readme-content="readmeContent"
+        :is-loading-readme="isLoadingReadme"
+        @close="closeReadmePreview"
+      />
     </div>
   </div>
 </template>
