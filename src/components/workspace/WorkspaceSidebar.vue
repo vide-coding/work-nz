@@ -14,6 +14,10 @@ const props = defineProps<{
   navItems: NavItem[]
 }>()
 
+const emit = defineEmits<{
+  navigate: [id: string]
+}>()
+
 function navigate(id: string) {
   emit('navigate', id)
 }
