@@ -48,6 +48,7 @@ import {
   X,
   GitPullRequest,
   Search,
+  Settings,
 } from 'lucide-vue-next'
 import ThemeToggle from '../components/common/ThemeToggle.vue'
 import LanguageSelector from '../components/common/LanguageSelector.vue'
@@ -556,6 +557,10 @@ async function updateTheme(themeMode: 'light' | 'dark' | 'system' | 'custom') {
   }
 }
 
+function goToSettings() {
+  router.push('/settings/workspace')
+}
+
 function getFileIcon(node: FileNode) {
   if (node.kind === 'dir') return Folder
   const ext = node.name.split('.').pop()?.toLowerCase()
@@ -624,6 +629,14 @@ onMounted(async () => {
 
         <!-- Right Actions -->
         <div class="flex items-center gap-3">
+          <!-- Settings -->
+          <button
+            @click="goToSettings"
+            class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            :title="$t('settings.title')"
+          >
+            <Settings class="w-5 h-5 text-gray-600 dark:text-gray-300" />
+          </button>
           <!-- Theme -->
           <ThemeToggle :model-value="settings.themeMode" @update:model-value="updateTheme" />
           <!-- Language -->

@@ -97,5 +97,31 @@
     "namePlaceholder": "Enter project name",
     "description": "Description",
     "descriptionPlaceholder": "Enter project description (optional)"
+  },
+  "settings": {
+    "title": "Settings",
+    "global": "Global Settings",
+    "workspace": "Workspace Settings",
+    "theme": "Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System",
+    "language": "Language",
+    "languageZh": "Chinese",
+    "languageEn": "English",
+    "fontSize": "Font Size",
+    "fontSizeSmall": "Small",
+    "fontSizeMedium": "Medium",
+    "fontSizeLarge": "Large",
+    "reset": "Reset",
+    "resetConfirm": "Are you sure you want to reset to default values?",
+    "saved": "Settings saved",
+    "resetSuccess": "Reset to default values",
+    "currentWorkspace": "Current Workspace",
+    "noWorkspace": "No workspace selected",
+    "inheritGlobal": "Inherit global settings",
+    "override": "Override global settings",
+    "appearance": "Appearance",
+    "general": "General"
   }
 }

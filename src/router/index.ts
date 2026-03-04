@@ -23,6 +23,27 @@ const router = createRouter({
       component: () => import('../views/ProjectWorkspaceView.vue'),
       props: true,
     },
+    {
+      path: '/settings',
+      name: 'settings',
+      component: () => import('../views/SettingsView.vue'),
+      children: [
+        {
+          path: '',
+          redirect: '/settings/global',
+        },
+        {
+          path: 'global',
+          name: 'settings-global',
+          component: () => import('../components/settings/GlobalSettingsPanel.vue'),
+        },
+        {
+          path: 'workspace',
+          name: 'settings-workspace',
+          component: () => import('../components/settings/WorkspaceSettingsPanel.vue'),
+        },
+      ],
+    },
   ],
 })
 

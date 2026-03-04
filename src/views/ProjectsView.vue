@@ -5,7 +5,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useLocale } from '../locales/useLocale'
 import { projectApi, gitApi, workspaceApi } from '../composables/useApi'
 import type { Project, GitRepoStatus, WorkspaceSettings, WorkspaceInfo } from '../types'
-import { ArrowLeft, Folder, Loader2 } from 'lucide-vue-next'
+import { ArrowLeft, Folder, Loader2, Settings } from 'lucide-vue-next'
 import ProjectCard from '../components/project/ProjectCard.vue'
 import ProjectPreview from '../components/project/ProjectPreview.vue'
 import ProjectToolbar from '../components/project/ProjectToolbar.vue'
@@ -226,6 +226,10 @@ async function updateTheme(themeMode: 'light' | 'dark' | 'system') {
   }
 }
 
+function goToSettings() {
+  router.push('/settings/workspace')
+}
+
 function selectProject(project: Project) {
   selectedProject.value = project
   loadProjectDetails(project)
@@ -263,6 +267,13 @@ onMounted(async () => {
 
         <!-- Right: Actions -->
         <div class="flex items-center gap-3">
+          <button
+            @click="goToSettings"
+            class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            :title="$t('settings.title')"
+          >
+            <Settings class="w-5 h-5 text-gray-600 dark:text-gray-300" />
+          </button>
           <ThemeToggle :model-value="settings.themeMode" @update:model-value="updateTheme" />
           <LanguageSelector :model-value="locale" @update:model-value="changeLocale" />
           <button

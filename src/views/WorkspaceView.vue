@@ -10,6 +10,7 @@ import WorkspaceItem from '../components/workspace/WorkspaceItem.vue'
 import WorkspaceAliasDialog from '../components/workspace/WorkspaceAliasDialog.vue'
 import ThemeToggle from '../components/common/ThemeToggle.vue'
 import LanguageSelector from '../components/common/LanguageSelector.vue'
+import { Settings } from 'lucide-vue-next'
 
 const router = useRouter()
 const { locale, changeLocale } = useLocale()
@@ -81,6 +82,10 @@ async function updateTheme(themeMode: string) {
   } catch (error) {
     console.error('Failed to update theme:', error)
   }
+}
+
+function goToSettings() {
+  router.push('/settings/global')
 }
 
 function applyTheme(themeMode: string) {
@@ -209,6 +214,13 @@ onMounted(async () => {
   >
     <!-- Settings Bar -->
     <div class="absolute top-8 right-8 flex items-center gap-2">
+      <button
+        @click="goToSettings"
+        class="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+        :title="$t('settings.title')"
+      >
+        <Settings class="w-5 h-5 text-gray-600 dark:text-gray-300" />
+      </button>
       <ThemeToggle :model-value="settings.themeMode" @update:model-value="onUpdateTheme" />
       <LanguageSelector :model-value="locale" @update:model-value="changeLocale" />
     </div>

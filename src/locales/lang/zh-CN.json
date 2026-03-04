@@ -102,5 +102,31 @@
     "namePlaceholder": "输入项目名称",
     "description": "项目描述",
     "descriptionPlaceholder": "输入项目描述（可选）"
+  },
+  "settings": {
+    "title": "设置",
+    "global": "全局设置",
+    "workspace": "工作区设置",
+    "theme": "主题",
+    "themeLight": "浅色",
+    "themeDark": "深色",
+    "themeSystem": "跟随系统",
+    "language": "语言",
+    "languageZh": "中文",
+    "languageEn": "英文",
+    "fontSize": "字体大小",
+    "fontSizeSmall": "小",
+    "fontSizeMedium": "中",
+    "fontSizeLarge": "大",
+    "reset": "重置",
+    "resetConfirm": "确定要重置为默认值吗？",
+    "saved": "设置已保存",
+    "resetSuccess": "已重置为默认值",
+    "currentWorkspace": "当前工作区",
+    "noWorkspace": "未选择工作区",
+    "inheritGlobal": "继承全局设置",
+    "override": "覆盖全局设置",
+    "appearance": "外观",
+    "general": "通用"
   }
 }
