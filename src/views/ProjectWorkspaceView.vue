@@ -47,6 +47,7 @@ import {
   FileCode,
   X,
   GitPullRequest,
+  Search,
 } from 'lucide-vue-next'
 import ThemeToggle from '../components/common/ThemeToggle.vue'
 import LanguageSelector from '../components/common/LanguageSelector.vue'
@@ -113,6 +114,9 @@ const isCloning = ref(false)
 const cloneUrl = ref('')
 const cloneTargetDir = ref('')
 
+// Repo search
+const repoSearchQuery = ref('')
+
 // Repo edit dialog
 const showEditRepoDialog = ref(false)
 const editingRepo = ref<GitRepository | null>(null)
@@ -172,6 +176,29 @@ const navItems = computed(() => {
 // Computed
 const currentDirType = computed(() => {
   return dirTypes.value.find((t) => t.id === currentNav.value || t.kind === currentNav.value)
+})
+
+// Filtered repos based on search query
+const filteredRepos = computed(() => {
+  if (!repoSearchQuery.value.trim()) {
+    return repos.value
+  }
+  const query = repoSearchQuery.value.toLowerCase().trim()
+  return repos.value.filter((repo) => {
+    // Search in customName (alias)
+    if (repo.customName && repo.customName.toLowerCase().includes(query)) {
+      return true
+    }
+    // Search in name (directory name)
+    if (repo.name.toLowerCase().includes(query)) {
+      return true
+    }
+    // Search in description
+    if (repo.description && repo.description.toLowerCase().includes(query)) {
+      return true
+    }
+    return false
+  })
 })
 
 const boundDirs = computed(() => {
@@ -780,6 +807,26 @@ onMounted(async () => {
               </button>
             </div>
 
+            <!-- Search Bar -->
+            <div class="mb-4 relative">
+              <div class="relative">
+                <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  v-model="repoSearchQuery"
+                  type="text"
+                  class="w-full pl-10 pr-10 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  :placeholder="$t('workspace.searchRepos')"
+                />
+                <button
+                  v-if="repoSearchQuery"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
+                  @click="repoSearchQuery = ''"
+                >
+                  <X class="w-4 h-4 text-gray-400" />
+                </button>
+              </div>
+            </div>
+
             <!-- Repo List -->
             <div
               v-if="repos.length === 0"
@@ -790,9 +837,17 @@ onMounted(async () => {
               <p class="text-sm mt-2">{{ $t('workspace.noReposHint') }}</p>
             </div>
 
+            <div
+              v-else-if="filteredRepos.length === 0"
+              class="text-center py-12 text-gray-500 dark:text-gray-400"
+            >
+              <Search class="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p>{{ $t('workspace.noReposFound') }}</p>
+            </div>
+
             <div v-else class="space-y-4">
               <div
-                v-for="repo in repos"
+                v-for="repo in filteredRepos"
                 :key="repo.id"
                 class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700"
               >

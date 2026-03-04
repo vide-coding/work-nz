@@ -72,7 +72,9 @@
     "folder": "文件夹",
     "file": "文件",
     "imagePreview": "图片预览",
-    "noPreview": "不支持预览"
+    "noPreview": "不支持预览",
+    "searchRepos": "搜索仓库（别名/目录名）...",
+    "noReposFound": "未找到匹配的仓库"
   },
   "projects": {
     "title": "项目总览",

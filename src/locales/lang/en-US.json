@@ -67,7 +67,9 @@
     "folder": "Folder",
     "file": "File",
     "imagePreview": "Image Preview",
-    "noPreview": "Preview not supported"
+    "noPreview": "Preview not supported",
+    "searchRepos": "Search repositories (alias/name)...",
+    "noReposFound": "No matching repositories found"
   },
   "projects": {
     "title": "Projects",
