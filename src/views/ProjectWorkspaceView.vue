@@ -114,6 +114,7 @@ const showCloneDialog = ref(false)
 const isCloning = ref(false)
 const cloneUrl = ref('')
 const cloneTargetDir = ref('')
+const cloneRepoName = ref('')
 
 // Repo search
 const repoSearchQuery = ref('')
@@ -121,7 +122,7 @@ const repoSearchQuery = ref('')
 // Repo edit dialog
 const showEditRepoDialog = ref(false)
 const editingRepo = ref<GitRepository | null>(null)
-const editCustomName = ref('')
+const editRepoName = ref('')
 const editRepoDescription = ref('')
 const isUpdatingRepo = ref(false)
 
@@ -186,10 +187,6 @@ const filteredRepos = computed(() => {
   }
   const query = repoSearchQuery.value.toLowerCase().trim()
   return repos.value.filter((repo) => {
-    // Search in customName (alias)
-    if (repo.customName && repo.customName.toLowerCase().includes(query)) {
-      return true
-    }
     // Search in name (directory name)
     if (repo.name.toLowerCase().includes(query)) {
       return true
@@ -209,11 +206,8 @@ const boundDirs = computed(() => {
   })
 })
 
-// Get display name for repo (customName + name)
+// Get display name for repo
 function getRepoDisplayName(repo: GitRepository): string {
-  if (repo.customName) {
-    return `${repo.customName}（${repo.name}）`
-  }
   return repo.name
 }
 
@@ -295,10 +289,21 @@ watch(cloneUrl, async (newUrl) => {
       const name = await gitApi.extractRepoName(newUrl)
       if (name) {
         cloneTargetDir.value = name
+        // Also set repo name if empty
+        if (!cloneRepoName.value) {
+          cloneRepoName.value = name
+        }
       }
     } catch (e) {
       console.error('Failed to extract repo name:', e)
     }
+  }
+})
+
+// Auto update repo name when target dir changes (if repo name is empty)
+watch(cloneTargetDir, (newDir) => {
+  if (newDir && !cloneRepoName.value) {
+    cloneRepoName.value = newDir
   }
 })
 
@@ -311,10 +316,12 @@ async function cloneRepo() {
     const repo = await gitApi.repoClone(projectId.value, {
       remoteUrl: cloneUrl.value.trim(),
       targetDirName: cloneTargetDir.value.trim(),
+      name: cloneRepoName.value.trim() || undefined,
     })
     repos.value.push(repo)
     cloneUrl.value = ''
     cloneTargetDir.value = ''
+    cloneRepoName.value = ''
     showCloneDialog.value = false
   } catch (e: any) {
     error.value = e.message || String(e)
@@ -326,7 +333,7 @@ async function cloneRepo() {
 // Open edit repo dialog
 function openEditRepoDialog(repo: GitRepository) {
   editingRepo.value = repo
-  editCustomName.value = repo.customName || ''
+  editRepoName.value = repo.name || ''
   editRepoDescription.value = repo.description || ''
   showEditRepoDialog.value = true
 }
@@ -340,7 +347,7 @@ async function updateRepo() {
     error.value = ''
     const updated = await gitApi.repoUpdate(
       editingRepo.value.id,
-      editCustomName.value.trim() || undefined,
+      editRepoName.value.trim() || undefined,
       editRepoDescription.value.trim() || undefined
     )
 
@@ -988,6 +995,21 @@ onMounted(async () => {
                     />
                   </div>
 
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      {{ $t('workspace.repoName') }}
+                    </label>
+                    <input
+                      v-model="cloneRepoName"
+                      type="text"
+                      class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                      :placeholder="cloneTargetDir || $t('workspace.repoNamePlaceholder')"
+                    />
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      {{ $t('workspace.repoNameHint') }}
+                    </p>
+                  </div>
+
                   <div
                     v-if="error"
                     class="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
@@ -1278,16 +1300,32 @@ onMounted(async () => {
           </h3>
 
           <div class="space-y-4">
+            <!-- Git URL (Read-only) -->
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {{ $t('workspace.customName') }}
+                {{ $t('workspace.repoUrl') }}
               </label>
               <input
-                v-model="editCustomName"
+                :value="editingRepo?.remoteUrl || '-'"
+                type="text"
+                readonly
+                class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-500 dark:text-gray-400 cursor-not-allowed"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {{ $t('workspace.repoName') }}
+              </label>
+              <input
+                v-model="editRepoName"
                 type="text"
                 class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                :placeholder="$t('workspace.customNamePlaceholder')"
+                :placeholder="$t('workspace.repoNamePlaceholder')"
               />
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {{ $t('workspace.repoNameEditHint') }}
+              </p>
             </div>
 
             <div>

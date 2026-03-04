@@ -37,7 +37,6 @@ export type GitRepository = {
   path: string
   remoteUrl?: string
   branch?: string
-  customName?: string
   description?: string
   lastSyncAt?: string
   lastStatusCheckedAt?: string
@@ -78,6 +77,7 @@ export type GitCloneInput = {
   remoteUrl: string
   targetDirName: string
   branch?: string
+  name?: string
 }
 
 export type GitPullResult = {

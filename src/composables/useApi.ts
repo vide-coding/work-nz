@@ -92,12 +92,8 @@ export const gitApi = {
     return invoke('git_repo_clone', { projectId, input })
   },
 
-  async repoUpdate(
-    repoId: string,
-    customName?: string,
-    description?: string
-  ): Promise<GitRepository> {
-    return invoke('git_repo_update', { repoId, customName, description })
+  async repoUpdate(repoId: string, name?: string, description?: string): Promise<GitRepository> {
+    return invoke('git_repo_update', { repoId, name, description })
   },
 
   async extractRepoName(remoteUrl: string): Promise<string> {

@@ -89,8 +89,6 @@ pub struct GitRepository {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub branch: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub custom_name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub last_sync_at: Option<String>,
@@ -159,6 +157,8 @@ pub struct GitCloneInput {
     pub target_dir_name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub branch: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
 }
 
 /// Git 拉取结果

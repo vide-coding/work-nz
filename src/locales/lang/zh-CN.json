@@ -74,7 +74,14 @@
     "imagePreview": "图片预览",
     "noPreview": "不支持预览",
     "searchRepos": "搜索仓库（别名/目录名）...",
-    "noReposFound": "未找到匹配的仓库"
+    "noReposFound": "未找到匹配的仓库",
+    "repoName": "仓库名称",
+    "repoNamePlaceholder": "输入仓库名称",
+    "repoNameHint": "留空则使用目标目录名作为仓库名称",
+    "repoNameEditHint": "修改仓库显示名称（不影响目录）",
+    "descriptionPlaceholder": "输入描述（可选）",
+    "editRepo": "编辑仓库",
+    "description": "描述"
   },
   "projects": {
     "title": "项目总览",

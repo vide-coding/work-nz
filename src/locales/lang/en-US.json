@@ -69,7 +69,14 @@
     "imagePreview": "Image Preview",
     "noPreview": "Preview not supported",
     "searchRepos": "Search repositories (alias/name)...",
-    "noReposFound": "No matching repositories found"
+    "noReposFound": "No matching repositories found",
+    "repoName": "Repository Name",
+    "repoNamePlaceholder": "Enter repository name",
+    "repoNameHint": "Leave empty to use target directory name",
+    "repoNameEditHint": "Modify repository display name (does not affect directory)",
+    "descriptionPlaceholder": "Enter description (optional)",
+    "editRepo": "Edit Repository",
+    "description": "Description"
   },
   "projects": {
     "title": "Projects",
