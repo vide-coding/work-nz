@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { GitBranch, FileText, GitPullRequest, ExternalLink, Edit3, Trash2 } from 'lucide-vue-next'
+import Tooltip from '@/components/common/Tooltip.vue'
 import type { GitRepository, GitRepoStatus } from '@/types'
 
 const props = defineProps<{
@@ -85,41 +86,46 @@ function deleteRepo() {
       </div>
 
       <div class="flex items-center gap-2">
-        <button
-          class="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          @click="viewReadme"
-          :title="$t('workspace.readme')"
-        >
-          <FileText class="w-4 h-4" />
-        </button>
-        <button
-          class="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          @click="pull"
-          :title="$t('workspace.pull')"
-        >
-          <GitPullRequest class="w-4 h-4" />
-        </button>
-        <button
-          class="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          @click="openInIde"
-          :title="$t('workspace.openInIde')"
-        >
-          <ExternalLink class="w-4 h-4" />
-        </button>
-        <button
-          class="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          @click="edit"
-          :title="$t('common.edit')"
-        >
-          <Edit3 class="w-4 h-4" />
-        </button>
-        <button
-          class="p-2 text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          @click="deleteRepo"
-          :title="$t('common.delete')"
-        >
-          <Trash2 class="w-4 h-4" />
-        </button>
+        <Tooltip :text="$t('workspace.readme')">
+          <button
+            class="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            @click="viewReadme"
+          >
+            <FileText class="w-4 h-4" />
+          </button>
+        </Tooltip>
+        <Tooltip :text="$t('workspace.pull')">
+          <button
+            class="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            @click="pull"
+          >
+            <GitPullRequest class="w-4 h-4" />
+          </button>
+        </Tooltip>
+        <Tooltip :text="$t('workspace.openInIde')">
+          <button
+            class="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            @click="openInIde"
+          >
+            <ExternalLink class="w-4 h-4" />
+          </button>
+        </Tooltip>
+        <Tooltip :text="$t('common.edit')">
+          <button
+            class="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            @click="edit"
+          >
+            <Edit3 class="w-4 h-4" />
+          </button>
+        </Tooltip>
+        <Tooltip :text="$t('common.delete')">
+          <button
+            class="p-2 text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            @click="deleteRepo"
+          >
+            <Trash2 class="w-4 h-4" />
+          </button>
+        </Tooltip>
       </div>
     </div>
   </div>
