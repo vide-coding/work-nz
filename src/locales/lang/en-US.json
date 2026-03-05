@@ -129,6 +129,20 @@
     "inheritGlobal": "Inherit global settings",
     "override": "Override global settings",
     "appearance": "Appearance",
-    "general": "General"
+    "general": "General",
+    "ide": "IDE",
+    "defaultIde": "Default IDE",
+    "defaultIdeDescription": "Select the default IDE for opening projects",
+    "detectedIdes": "Detected IDEs",
+    "noIdesDetected": "No IDEs detected",
+    "customIde": "Custom IDE",
+    "addCustomIde": "Add Custom IDE",
+    "ideName": "Name",
+    "ideNamePlaceholder": "e.g., VS Code",
+    "ideCommand": "Command",
+    "ideCommandPlaceholder": "e.g., code, zed, idea",
+    "ideArgs": "Launch Args (optional)",
+    "ideArgsPlaceholder": "e.g., --reuse-window",
+    "ideArgsHint": "Separate multiple args with spaces"
   }
 }

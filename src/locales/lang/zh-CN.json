@@ -134,6 +134,20 @@
     "inheritGlobal": "继承全局设置",
     "override": "覆盖全局设置",
     "appearance": "外观",
-    "general": "通用"
+    "general": "通用",
+    "ide": "IDE",
+    "defaultIde": "默认 IDE",
+    "defaultIdeDescription": "选择用于打开项目的默认 IDE",
+    "detectedIdes": "已检测到的 IDE",
+    "noIdesDetected": "未检测到 IDE",
+    "customIde": "自定义 IDE",
+    "addCustomIde": "添加自定义 IDE",
+    "ideName": "名称",
+    "ideNamePlaceholder": "例如：VS Code",
+    "ideCommand": "命令",
+    "ideCommandPlaceholder": "例如：code, zed, idea",
+    "ideArgs": "启动参数（可选）",
+    "ideArgsPlaceholder": "例如：--reuse-window",
+    "ideArgsHint": "多个参数用空格分隔"
   }
 }

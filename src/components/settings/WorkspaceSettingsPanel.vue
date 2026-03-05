@@ -4,8 +4,10 @@ import { useI18n } from 'vue-i18n'
 import { FolderOpen } from 'lucide-vue-next'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import SettingItem from './SettingItem.vue'
+import IdeSelector from './IdeSelector.vue'
 import { useSettings } from '@/composables/useSettings'
 import { workspaceApi } from '@/composables/useApi'
+import type { IdeConfig } from '@/types'
 
 const { t } = useI18n()
 const {
@@ -19,10 +21,13 @@ const {
 const isLoading = ref(true)
 const isSaving = ref(false)
 const currentWorkspace = ref<{ path: string; alias?: string } | null>(null)
+const saveMessage = ref('')
 
 // Local state
 const localUseGlobalTheme = ref(true)
 const localTheme = ref<'light' | 'dark' | 'system'>('system')
+const localUseGlobalIde = ref(true)
+const localDefaultIde = ref<IdeConfig | undefined>(undefined)
 
 onMounted(async () => {
   await loadGlobalSettings()
@@ -50,6 +55,34 @@ onMounted(async () => {
     localTheme.value = globalSettings.value.themeMode
   }
 
+  // Initialize IDE state from workspace settings
+  if (workspaceSettings.value?.defaultIde) {
+    localUseGlobalIde.value = false
+    localDefaultIde.value = {
+      kind: workspaceSettings.value.defaultIde.kind,
+      name: workspaceSettings.value.defaultIde.name,
+      command: workspaceSettings.value.defaultIde.command,
+      args: workspaceSettings.value.defaultIde.args
+        ? [...workspaceSettings.value.defaultIde.args]
+        : undefined,
+    }
+  } else {
+    localUseGlobalIde.value = true
+    // Use global IDE as default
+    if (globalSettings.value.defaultIde) {
+      localDefaultIde.value = {
+        kind: globalSettings.value.defaultIde.kind,
+        name: globalSettings.value.defaultIde.name,
+        command: globalSettings.value.defaultIde.command,
+        args: globalSettings.value.defaultIde.args
+          ? [...globalSettings.value.defaultIde.args]
+          : undefined,
+      }
+    } else {
+      localDefaultIde.value = undefined
+    }
+  }
+
   isLoading.value = false
 })
 
@@ -74,6 +107,41 @@ async function handleThemeChange(theme: 'light' | 'dark' | 'system') {
     await updateWorkspaceSettings({ themeMode: theme })
     isSaving.value = false
   }
+}
+
+async function handleIdeOverrideChange(useGlobal: boolean) {
+  localUseGlobalIde.value = useGlobal
+  isSaving.value = true
+
+  if (useGlobal) {
+    // Clear workspace-specific IDE to inherit global
+    await updateWorkspaceSettings({})
+  } else {
+    // Set workspace-specific IDE
+    if (localDefaultIde.value) {
+      await updateWorkspaceSettings({ defaultIde: localDefaultIde.value })
+    }
+  }
+
+  showSaveMessage()
+  isSaving.value = false
+}
+
+async function handleIdeChange(ide: IdeConfig | undefined) {
+  localDefaultIde.value = ide
+  if (!localUseGlobalIde.value && ide) {
+    isSaving.value = true
+    await updateWorkspaceSettings({ defaultIde: ide })
+    showSaveMessage()
+    isSaving.value = false
+  }
+}
+
+function showSaveMessage() {
+  saveMessage.value = t('settings.saved')
+  setTimeout(() => {
+    saveMessage.value = ''
+  }, 2000)
 }
 </script>
 
@@ -118,6 +186,14 @@ async function handleThemeChange(theme: 'light' | 'dark' | 'system') {
             {{ t('settings.noWorkspace') }}
           </div>
         </div>
+      </div>
+
+      <!-- Save message -->
+      <div
+        v-if="saveMessage"
+        class="mb-4 px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg text-sm"
+      >
+        {{ saveMessage }}
       </div>
 
       <!-- Theme Override Section -->
@@ -177,6 +253,54 @@ async function handleThemeChange(theme: 'light' | 'dark' | 'system') {
               @update:modelValue="handleThemeChange"
             />
           </SettingItem>
+        </div>
+      </div>
+
+      <!-- IDE Section -->
+      <div v-if="currentWorkspace" class="mb-8">
+        <h3
+          class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4"
+        >
+          {{ t('settings.ide') }}
+        </h3>
+
+        <div
+          class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 px-4"
+        >
+          <!-- Use Global IDE Toggle -->
+          <SettingItem
+            :label="t('settings.inheritGlobal')"
+            :description="
+              t('settings.defaultIde') +
+              ': ' +
+              (globalSettings.defaultIde?.name || t('settings.noIdesDetected'))
+            "
+          >
+            <button
+              @click="handleIdeOverrideChange(!localUseGlobalIde)"
+              :class="[
+                'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2',
+                localUseGlobalIde ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700',
+              ]"
+              :disabled="isSaving"
+            >
+              <span
+                :class="[
+                  'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
+                  localUseGlobalIde ? 'translate-x-5' : 'translate-x-0',
+                ]"
+              />
+            </button>
+          </SettingItem>
+
+          <!-- Workspace-specific IDE (only shown when not using global) -->
+          <div v-if="!localUseGlobalIde" class="py-4">
+            <IdeSelector
+              v-model="localDefaultIde"
+              :disabled="isSaving"
+              @update:modelValue="handleIdeChange"
+            />
+          </div>
         </div>
       </div>
 

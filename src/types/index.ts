@@ -6,7 +6,7 @@ export type SupportedIdeKind = 'vscode' | 'visual_studio' | 'jetbrains' | 'custo
 export type IdeConfig = {
   kind: SupportedIdeKind
   name: string
-  exePath: string
+  command: string
   args?: string[]
 }
 

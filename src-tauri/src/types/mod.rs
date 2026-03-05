@@ -32,7 +32,7 @@ pub enum SupportedIdeKind {
 pub struct IdeConfig {
     pub kind: SupportedIdeKind,
     pub name: String,
-    pub exe_path: String,
+    pub command: String,
     pub args: Option<Vec<String>>,
 }
 
@@ -256,8 +256,7 @@ mod tests {
         let ide = IdeConfig {
             kind: SupportedIdeKind::Vscode,
             name: "VS Code".to_string(),
-            exe_path: "C:\\Users\\Test\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
-                .to_string(),
+            command: "code".to_string(),
             args: Some(vec!["--reuse-window".to_string()]),
         };
 

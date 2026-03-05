@@ -25,7 +25,7 @@ const isEditing = ref(false)
 const editingIde = ref<IdeConfig>({
   kind: 'custom',
   name: '',
-  exePath: '',
+  command: '',
   args: [],
 })
 const argInput = ref('')
@@ -65,7 +65,7 @@ function startAddCustom() {
   editingIde.value = {
     kind: 'custom',
     name: '',
-    exePath: '',
+    command: '',
     args: [],
   }
   argInput.value = ''
@@ -85,7 +85,7 @@ function startEdit() {
 
 // 保存自定义IDE
 function saveCustomIde() {
-  if (!editingIde.value.name.trim() || !editingIde.value.exePath.trim()) {
+  if (!editingIde.value.name.trim() || !editingIde.value.command.trim()) {
     return
   }
 
@@ -98,7 +98,7 @@ function saveCustomIde() {
   const newIde: IdeConfig = {
     kind: 'custom',
     name: editingIde.value.name.trim(),
-    exePath: editingIde.value.exePath.trim(),
+    command: editingIde.value.command.trim(),
     args: args.length > 0 ? args : undefined,
   }
 
@@ -144,12 +144,12 @@ onMounted(() => {
         <div class="grid grid-cols-1 gap-2">
           <button
             v-for="ide in supportedIdes"
-            :key="ide.exePath"
+            :key="ide.command"
             @click="selectIde(ide)"
             :disabled="disabled"
             :class="[
               'flex items-center gap-3 px-3 py-2 rounded-lg border text-left transition-colors',
-              selectedIde?.exePath === ide.exePath
+              selectedIde?.command === ide.command
                 ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
                 : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800',
               disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
@@ -168,11 +168,11 @@ onMounted(() => {
                 {{ ide.name }}
               </div>
               <div class="text-xs text-gray-500 dark:text-gray-400 truncate">
-                {{ ide.exePath }}
+                {{ ide.command }}
               </div>
             </div>
             <Check
-              v-if="selectedIde?.exePath === ide.exePath"
+              v-if="selectedIde?.command === ide.command"
               class="w-4 h-4 text-indigo-600 dark:text-indigo-400"
             />
           </button>
@@ -207,7 +207,7 @@ onMounted(() => {
               {{ selectedIde.name }}
             </div>
             <div class="text-xs text-gray-500 dark:text-gray-400 truncate">
-              {{ selectedIde.exePath }}
+              {{ selectedIde.command }}
             </div>
           </div>
           <button
@@ -258,16 +258,16 @@ onMounted(() => {
         />
       </div>
 
-      <!-- 可执行文件路径 -->
+      <!-- 命令 -->
       <div>
         <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-          {{ t('settings.idePath') }}
+          {{ t('settings.ideCommand') }}
         </label>
         <div class="flex gap-2">
           <input
-            v-model="editingIde.exePath"
+            v-model="editingIde.command"
             type="text"
-            :placeholder="t('settings.idePathPlaceholder')"
+            :placeholder="t('settings.ideCommandPlaceholder')"
             class="flex-1 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           />
         </div>
@@ -300,7 +300,7 @@ onMounted(() => {
         </button>
         <button
           @click="saveCustomIde"
-          :disabled="!editingIde.name.trim() || !editingIde.exePath.trim()"
+          :disabled="!editingIde.name.trim() || !editingIde.command.trim()"
           class="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <Check class="w-4 h-4 inline mr-1" />
