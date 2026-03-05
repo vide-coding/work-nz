@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { GitBranch, FileText, GitPullRequest, ExternalLink, Edit3, Trash2 } from 'lucide-vue-next'
+import {
+  GitBranch,
+  FileText,
+  GitPullRequest,
+  ExternalLink,
+  Edit3,
+  Trash2,
+  Terminal,
+} from 'lucide-vue-next'
 import Tooltip from '@/components/common/Tooltip.vue'
 import type { GitRepository, GitRepoStatus } from '@/types'
 
@@ -12,6 +20,7 @@ const emit = defineEmits<{
   viewReadme: [repo: GitRepository]
   pull: [repo: GitRepository]
   openInIde: [repo: GitRepository]
+  openInTerminal: [repo: GitRepository]
   edit: [repo: GitRepository]
   deleteRepo: [repo: GitRepository]
 }>()
@@ -30,6 +39,10 @@ function pull() {
 
 function openInIde() {
   emit('openInIde', props.repo)
+}
+
+function openInTerminal() {
+  emit('openInTerminal', props.repo)
 }
 
 function edit() {
@@ -108,6 +121,14 @@ function deleteRepo() {
             @click="openInIde"
           >
             <ExternalLink class="w-4 h-4" />
+          </button>
+        </Tooltip>
+        <Tooltip :text="$t('workspace.openInTerminal')">
+          <button
+            class="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            @click="openInTerminal"
+          >
+            <Terminal class="w-4 h-4" />
           </button>
         </Tooltip>
         <Tooltip :text="$t('common.edit')">

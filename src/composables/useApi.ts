@@ -202,6 +202,10 @@ export const ideApi = {
     return invoke('ide_open_repo', { repoId, ide })
   },
 
+  async openInTerminal(repoId: string): Promise<{ ok: boolean; message?: string }> {
+    return invoke('open_in_terminal', { repoId })
+  },
+
   async preview(repoId: string, ide?: IdeConfig): Promise<IdeConfig | null> {
     return invoke('ide_preview', { repoId, ide })
   },

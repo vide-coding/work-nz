@@ -17,6 +17,7 @@ const emit = defineEmits<{
   updateRepo: [payload: { id: string; name?: string; description?: string }]
   pullRepo: [repo: GitRepository]
   openInIde: [repo: GitRepository]
+  openInTerminal: [repo: GitRepository]
   deleteRepo: [repo: GitRepository]
   loadReadme: [repo: GitRepository]
 }>()
@@ -112,6 +113,10 @@ function openInIde(repo: GitRepository) {
   emit('openInIde', repo)
 }
 
+function openInTerminal(repo: GitRepository) {
+  emit('openInTerminal', repo)
+}
+
 function deleteRepo(repo: GitRepository) {
   emit('deleteRepo', repo)
 }
@@ -178,6 +183,7 @@ function deleteRepo(repo: GitRepository) {
           @view-readme="viewReadme"
           @pull="pull"
           @open-in-ide="openInIde"
+          @open-in-terminal="openInTerminal"
           @edit="openEditRepoDialog"
           @delete-repo="deleteRepo"
         />
