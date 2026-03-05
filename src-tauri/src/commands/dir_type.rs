@@ -814,8 +814,8 @@ pub fn ide_open_repo(
         .ok_or_else(|| "未配置 IDE，请先在设置中配置默认 IDE".to_string())?;
 
     // 验证 IDE 可执行文件存在
-    if !std::path::Path::new(&ide_config.exe_path).exists() {
-        return Err(format!("IDE 可执行文件不存在: {}", ide_config.exe_path));
+    if !std::path::Path::new(&ide_config.command).exists() {
+        return Err(format!("IDE 可执行文件不存在: {}", ide_config.command));
     }
 
     // 启动 IDE

@@ -14,7 +14,8 @@
       "Skill(skill:*)",
       "Bash(playwright-cli open http://localhost:1420)",
       "Bash(playwright-cli screenshot --filename=page2.png)",
-      "Bash(playwright-cli close)"
+      "Bash(playwright-cli close)",
+      "Bash(cargo check)"
     ]
   }
 }
