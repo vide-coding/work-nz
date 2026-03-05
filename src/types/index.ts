@@ -40,6 +40,7 @@ export type GitRepository = {
   description?: string
   lastSyncAt?: string
   lastStatusCheckedAt?: string
+  ideOverride?: IdeConfig
 }
 
 export type NetworkState = 'online' | 'offline' | 'unknown'

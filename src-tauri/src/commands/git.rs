@@ -16,13 +16,14 @@ pub fn git_repo_list(project_id: String) -> Result<Vec<GitRepository>, String> {
 
     let mut stmt = conn
         .prepare(
-            "SELECT id, project_id, name, path, remote_url, branch, description, last_sync_at, last_status_checked_at
+            "SELECT id, project_id, name, path, remote_url, branch, description, last_sync_at, last_status_checked_at, ide_override_json
              FROM git_repositories WHERE project_id = ?1",
         )
         .map_err(|e| format!("查询失败: {}", e))?;
 
     let repos = stmt
         .query_map(params![project_id], |row| {
+            let ide_override_json: Option<String> = row.get(9)?;
             Ok(GitRepository {
                 id: row.get(0)?,
                 project_id: row.get(1)?,
@@ -33,6 +34,7 @@ pub fn git_repo_list(project_id: String) -> Result<Vec<GitRepository>, String> {
                 description: row.get(6)?,
                 last_sync_at: row.get(7)?,
                 last_status_checked_at: row.get(8)?,
+                ide_override: ide_override_json.and_then(|j| serde_json::from_str(&j).ok()),
             })
         })
         .map_err(|e| format!("查询失败: {}", e))?
@@ -107,6 +109,7 @@ pub async fn git_repo_create(project_id: String, name: String) -> Result<GitRepo
         description: None,
         last_sync_at: None,
         last_status_checked_at: None,
+        ide_override: None,
     })
 }
 
@@ -224,38 +227,81 @@ pub async fn git_repo_clone(project_id: String, input: GitCloneInput) -> Result<
         description: None,
         last_sync_at: Some(now),
         last_status_checked_at: None,
+        ide_override: None,
     })
 }
 
-/// 更新 Git 仓库信息（名称和描述）
+/// Git 仓库更新输入
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitRepoUpdateInput {
+    pub name: Option<String>,
+    pub description: Option<String>,
+    pub ide_override: Option<IdeConfig>,
+}
+
+/// 更新 Git 仓库信息（名称、描述、IDE覆盖）
 #[tauri::command]
 pub fn git_repo_update(
     repo_id: String,
-    name: Option<String>,
-    description: Option<String>,
+    patch: GitRepoUpdateInput,
 ) -> Result<GitRepository, String> {
     let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
     let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
 
     let now = Utc::now().to_rfc3339();
 
+    // 获取当前仓库信息
+    let current_repo: GitRepository = conn
+        .query_row(
+            "SELECT id, project_id, name, path, remote_url, branch, description, last_sync_at, last_status_checked_at, ide_override_json
+             FROM git_repositories WHERE id = ?1",
+            params![repo_id],
+            |row| {
+                let ide_override_json: Option<String> = row.get(9)?;
+                Ok(GitRepository {
+                    id: row.get(0)?,
+                    project_id: row.get(1)?,
+                    name: row.get(2)?,
+                    path: row.get(3)?,
+                    remote_url: row.get(4)?,
+                    branch: row.get(5)?,
+                    description: row.get(6)?,
+                    last_sync_at: row.get(7)?,
+                    last_status_checked_at: row.get(8)?,
+                    ide_override: ide_override_json.and_then(|j| serde_json::from_str(&j).ok()),
+                })
+            },
+        )
+        .map_err(|e| format!("仓库不存在: {}", e))?;
+
+    // 应用更新
+    let name = patch.name.unwrap_or(current_repo.name);
+    let description = patch.description.or(current_repo.description);
+    let ide_override = patch.ide_override.or(current_repo.ide_override);
+
+    let ide_override_json = ide_override
+        .as_ref()
+        .and_then(|i| serde_json::to_string(i).ok());
+
     // Update all fields at once
     conn.execute(
-        "UPDATE git_repositories SET name = COALESCE(?1, name), description = ?2, updated_at = ?3 WHERE id = ?4",
-        params![name, description, now, repo_id],
+        "UPDATE git_repositories SET name = ?1, description = ?2, ide_override_json = ?3, updated_at = ?4 WHERE id = ?5",
+        params![name, description, ide_override_json, now, repo_id],
     )
     .map_err(|e| format!("更新仓库失败: {}", e))?;
 
     // 查询更新后的仓库信息
     let mut stmt = conn
         .prepare(
-            "SELECT id, project_id, name, path, remote_url, branch, description, last_sync_at, last_status_checked_at
+            "SELECT id, project_id, name, path, remote_url, branch, description, last_sync_at, last_status_checked_at, ide_override_json
              FROM git_repositories WHERE id = ?1",
         )
         .map_err(|e| format!("查询失败: {}", e))?;
 
     let repo = stmt
         .query_row(params![repo_id], |row| {
+            let ide_override_json: Option<String> = row.get(9)?;
             Ok(GitRepository {
                 id: row.get(0)?,
                 project_id: row.get(1)?,
@@ -266,6 +312,7 @@ pub fn git_repo_update(
                 description: row.get(6)?,
                 last_sync_at: row.get(7)?,
                 last_status_checked_at: row.get(8)?,
+                ide_override: ide_override_json.and_then(|j| serde_json::from_str(&j).ok()),
             })
         })
         .map_err(|e| format!("读取仓库失败: {}", e))?;

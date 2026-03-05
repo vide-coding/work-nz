@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS git_repositories (
   branch TEXT,
   custom_name TEXT,
   description TEXT,
+  ide_override_json TEXT,
   last_sync_at TEXT,
   last_status_checked_at TEXT,
   last_status_json TEXT,

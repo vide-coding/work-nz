@@ -78,6 +78,13 @@ export const projectApi = {
   },
 }
 
+// Git types
+export type GitRepoUpdateInput = {
+  name?: string
+  description?: string
+  ideOverride?: IdeConfig
+}
+
 // Git API
 export const gitApi = {
   async repoList(projectId: string): Promise<GitRepository[]> {
@@ -92,8 +99,8 @@ export const gitApi = {
     return invoke('git_repo_clone', { projectId, input })
   },
 
-  async repoUpdate(repoId: string, name?: string, description?: string): Promise<GitRepository> {
-    return invoke('git_repo_update', { repoId, name, description })
+  async repoUpdate(repoId: string, patch: GitRepoUpdateInput): Promise<GitRepository> {
+    return invoke('git_repo_update', { repoId, patch })
   },
 
   async extractRepoName(remoteUrl: string): Promise<string> {
@@ -193,5 +200,9 @@ export const ideApi = {
 
   async openRepo(repoId: string, ide?: IdeConfig): Promise<{ ok: boolean; message?: string }> {
     return invoke('ide_open_repo', { repoId, ide })
+  },
+
+  async preview(repoId: string, ide?: IdeConfig): Promise<IdeConfig | null> {
+    return invoke('ide_preview', { repoId, ide })
   },
 }

@@ -303,11 +303,10 @@ async function updateRepo() {
   try {
     isUpdatingRepo.value = true
     error.value = ''
-    const updated = await gitApi.repoUpdate(
-      editingRepo.value.id,
-      editRepoName.value.trim() || undefined,
-      editRepoDescription.value.trim() || undefined
-    )
+    const updated = await gitApi.repoUpdate(editingRepo.value.id, {
+      name: editRepoName.value.trim() || undefined,
+      description: editRepoDescription.value.trim() || undefined,
+    })
 
     // Update in local list
     const index = repos.value.findIndex((r) => r.id === updated.id)

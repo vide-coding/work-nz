@@ -94,6 +94,8 @@ pub struct GitRepository {
     pub last_sync_at: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub last_status_checked_at: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ide_override: Option<IdeConfig>,
 }
 
 /// 网络状态

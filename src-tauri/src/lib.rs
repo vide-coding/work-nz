@@ -58,6 +58,7 @@ pub fn run() {
             // IDE commands
             ide_list_supported,
             ide_open_repo,
+            ide_preview,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

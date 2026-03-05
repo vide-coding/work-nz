@@ -327,7 +327,7 @@ impl Default for GlobalSettings {
     }
 }
 
-fn load_global_settings() -> GlobalSettings {
+pub fn load_global_settings() -> GlobalSettings {
     let file_path = match get_global_settings_file() {
         Some(p) => p,
         None => return GlobalSettings::default(),

@@ -1,5 +1,6 @@
 use crate::commands::git::git_repo_scan;
 use crate::commands::project::project_get;
+use crate::commands::workspace::load_global_settings;
 use crate::db::get_db;
 use crate::types::*;
 use chrono::Utc;
@@ -352,9 +353,73 @@ pub fn ide_list_supported() -> Result<Vec<IdeConfig>, String> {
     Ok(ides)
 }
 
+/// 获取有效的 IDE 配置（按优先级：仓库 > 工作区 > 全局）
+fn get_effective_ide(
+    conn: &rusqlite::Connection,
+    repo_id: &str,
+    provided_ide: Option<IdeConfig>,
+) -> Option<IdeConfig> {
+    // 1. 如果调用时提供了 IDE，直接使用
+    if let Some(ide) = provided_ide {
+        return Some(ide);
+    }
+
+    // 2. 尝试获取仓库级别的 IDE 设置
+    let repo_ide: Option<String> = conn
+        .query_row(
+            "SELECT ide_override_json FROM git_repositories WHERE id = ?1",
+            params![repo_id],
+            |row| row.get(0),
+        )
+        .ok();
+    if let Some(json) = repo_ide {
+        if let Ok(ide) = serde_json::from_str::<IdeConfig>(&json) {
+            return Some(ide);
+        }
+    }
+
+    // 3. 尝试获取工作区设置
+    let workspace_ide: Option<String> = conn
+        .query_row(
+            "SELECT value FROM workspace_meta WHERE key = 'settings'",
+            [],
+            |row| row.get(0),
+        )
+        .ok();
+    if let Some(json) = workspace_ide {
+        if let Ok(settings) = serde_json::from_str::<serde_json::Value>(&json) {
+            if let Some(ide) = settings
+                .get("defaultIde")
+                .and_then(|i| serde_json::from_value::<IdeConfig>(i.clone()).ok())
+            {
+                return Some(ide);
+            }
+        }
+    }
+
+    // 4. 使用全局设置
+    let global_settings = load_global_settings();
+    global_settings.default_ide
+}
+
+/// 预览 IDE 配置（不实际打开，仅返回会使用什么 IDE）
+#[tauri::command]
+pub fn ide_preview(
+    repo_id: String,
+    provided_ide: Option<IdeConfig>,
+) -> Result<Option<IdeConfig>, String> {
+    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
+    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
+
+    Ok(get_effective_ide(conn, &repo_id, provided_ide))
+}
+
 /// 用 IDE 打开仓库
 #[tauri::command]
-pub fn ide_open_repo(repo_id: String, ide: Option<IdeConfig>) -> Result<serde_json::Value, String> {
+pub fn ide_open_repo(
+    repo_id: String,
+    provided_ide: Option<IdeConfig>,
+) -> Result<serde_json::Value, String> {
     let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
     let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
 
@@ -366,26 +431,14 @@ pub fn ide_open_repo(repo_id: String, ide: Option<IdeConfig>) -> Result<serde_js
         )
         .map_err(|e| format!("仓库不存在: {}", e))?;
 
-    let ide_config = match ide {
-        Some(i) => i,
-        None => {
-            // 获取工作区默认 IDE
-            let settings_json: Option<String> = conn
-                .query_row(
-                    "SELECT value FROM workspace_meta WHERE key = 'settings'",
-                    [],
-                    |row| row.get(0),
-                )
-                .ok();
+    // 获取有效的 IDE 配置（优先级：仓库 > 工作区 > 全局）
+    let ide_config = get_effective_ide(conn, &repo_id, provided_ide)
+        .ok_or_else(|| "未配置 IDE，请先在设置中配置默认 IDE".to_string())?;
 
-            match settings_json
-                .and_then(|j| serde_json::from_str::<crate::types::WorkspaceSettings>(&j).ok())
-            {
-                Some(s) => s.default_ide.ok_or("未配置默认 IDE")?,
-                None => return Err("未配置默认 IDE".to_string()),
-            }
-        }
-    };
+    // 验证 IDE 可执行文件存在
+    if !std::path::Path::new(&ide_config.exe_path).exists() {
+        return Err(format!("IDE 可执行文件不存在: {}", ide_config.exe_path));
+    }
 
     // 启动 IDE
     #[cfg(windows)]
@@ -397,7 +450,9 @@ pub fn ide_open_repo(repo_id: String, ide: Option<IdeConfig>) -> Result<serde_js
         cmd.arg(&path);
 
         match cmd.spawn() {
-            Ok(_) => Ok(serde_json::json!({ "ok": true })),
+            Ok(_) => Ok(
+                serde_json::json!({ "ok": true, "message": format!("已使用 {} 打开", ide_config.name) }),
+            ),
             Err(e) => {
                 Ok(serde_json::json!({ "ok": false, "message": format!("启动 IDE 失败: {}", e) }))
             }
@@ -416,12 +471,15 @@ pub fn ide_open_repo(repo_id: String, ide: Option<IdeConfig>) -> Result<serde_js
 pub fn project_dirs_sync_auto(project_id: String) -> Result<serde_json::Value, String> {
     // 扫描 Git 仓库
     let git_scanned: Vec<String> = match git_repo_scan(project_id.clone()) {
-        Ok(json) => {
-            json.get("scanned")
-                .and_then(|s| s.as_array())
-                .map(|a| a.iter().filter_map(|v| v.as_str().map(String::from)).collect())
-                .unwrap_or_default()
-        }
+        Ok(json) => json
+            .get("scanned")
+            .and_then(|s| s.as_array())
+            .map(|a| {
+                a.iter()
+                    .filter_map(|v| v.as_str().map(String::from))
+                    .collect()
+            })
+            .unwrap_or_default(),
         Err(_) => Vec::new(),
     };
 
