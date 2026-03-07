@@ -2,28 +2,93 @@
 
 /* CSS Variables for theming */
 :root {
+  /* Light theme - Clean Professional */
+  /* Primary brand colors */
   --color-primary: #4f46e5;
   --color-primary-hover: #4338ca;
+  --color-primary-dim: #3730a3;
+
+  /* Background layers - subtle elevation system */
   --color-bg: #ffffff;
-  --color-bg-secondary: #f9fafb;
-  --color-bg-tertiary: #f3f4f6;
-  --color-text: #111827;
-  --color-text-secondary: #4b5563;
-  --color-text-muted: #9ca3af;
-  --color-border: #e5e7eb;
-  --color-border-secondary: #d1d5db;
+  --color-bg-secondary: #f8fafc;
+  --color-bg-tertiary: #f1f5f9;
+  --color-bg-elevated: #e2e8f0;
+
+  /* Text colors - clear hierarchy */
+  --color-text: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted: #64748b;
+  --color-text-subtle: #94a3b8;
+
+  /* Border colors - subtle separation */
+  --color-border: #e2e8f0;
+  --color-border-secondary: #cbd5e1;
+  --color-border-tertiary: #94a3b8;
+
+  /* Semantic colors - light theme */
+  --color-success: #22c55e;
+  --color-success-dim: #16a34a;
+  --color-warning: #f59e0b;
+  --color-warning-dim: #d97706;
+  --color-error: #ef4444;
+  --color-error-dim: #dc2626;
+  --color-info: #3b82f6;
+  --color-info-dim: #2563eb;
+
+  /* Interactive states */
+  --color-hover: rgba(100, 116, 139, 0.08);
+  --color-active: rgba(100, 116, 139, 0.15);
+  --color-selected: rgba(59, 130, 246, 0.1);
+  --color-focus: rgba(59, 130, 246, 0.25);
+
+  /* Surface overlays */
+  --color-backdrop: rgba(15, 23, 42, 0.6);
+  --color-scrim: rgba(15, 23, 42, 0.4);
+  --color-shadow: rgba(0, 0, 0, 0.1);
 }
 
-/* Dark theme */
+/* Dark theme - Modern Professional */
 .dark {
-  --color-bg: #111827;
-  --color-bg-secondary: #1f2937;
-  --color-bg-tertiary: #374151;
-  --color-text: #f9fafb;
-  --color-text-secondary: #d1d5db;
-  --color-text-muted: #6b7280;
-  --color-border: #374151;
-  --color-border-secondary: #4b5563;
+  /* Background layers - subtle elevation system */
+  --color-bg: #0d1117;
+  --color-bg-secondary: #161b22;
+  --color-bg-tertiary: #21262d;
+  --color-bg-elevated: #30363d;
+
+  /* Text colors - refined contrast hierarchy */
+  --color-text: #f0f6fc;
+  --color-text-secondary: #c9d1d9;
+  --color-text-muted: #8b949e;
+  --color-text-subtle: #6e7681;
+
+  /* Border colors - subtle separation */
+  --color-border: #30363d;
+  --color-border-secondary: #21262d;
+  --color-border-tertiary: #161b22;
+
+  /* Semantic colors - dark theme adaptations */
+  --color-primary: #818cf8;
+  --color-primary-hover: #a5b4fc;
+  --color-primary-dim: #4f46e5;
+  --color-success: #3fb950;
+  --color-success-dim: #238636;
+  --color-warning: #d29922;
+  --color-warning-dim: #9e6a03;
+  --color-error: #f85149;
+  --color-error-dim: #da3633;
+  --color-info: #58a6ff;
+  --color-info-dim: #1f6feb;
+
+  /* Interactive states */
+  --color-hover: rgba(177, 186, 196, 0.12);
+  --color-active: rgba(177, 186, 196, 0.2);
+  --color-selected: rgba(56, 139, 253, 0.15);
+  --color-focus: rgba(56, 139, 253, 0.35);
+
+  /* Surface overlays */
+  --color-backdrop: rgba(1, 4, 9, 0.8);
+  --color-scrim: rgba(1, 4, 9, 0.6);
+  --color-shadow: rgba(0, 0, 0, 0.5);
 }
 
 /* Global styles */
@@ -120,6 +185,98 @@ select {
 
 .animate-pulse {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Dark theme specific overrides for better contrast */
+.dark .bg-indigo-600 {
+  background-color: #4f46e5;
+}
+
+.dark .hover\:bg-indigo-700:hover {
+  background-color: #4338ca;
+}
+
+.dark .text-indigo-600 {
+  color: #818cf8;
+}
+
+.dark .text-indigo-400 {
+  color: #a5b4fc;
+}
+
+.dark .bg-indigo-100 {
+  background-color: rgba(79, 70, 229, 0.2);
+}
+
+.dark .hover\:bg-indigo-200:hover {
+  background-color: rgba(79, 70, 229, 0.3);
+}
+
+/* Dark theme text colors for better readability */
+.dark .text-gray-900 {
+  color: var(--color-text);
+}
+
+.dark .text-gray-700 {
+  color: var(--color-text-secondary);
+}
+
+.dark .text-gray-600 {
+  color: var(--color-text-secondary);
+}
+
+.dark .text-gray-500 {
+  color: var(--color-text-muted);
+}
+
+.dark .text-gray-400 {
+  color: var(--color-text-subtle);
+}
+
+/* Dark theme background colors */
+.dark .bg-gray-50 {
+  background-color: var(--color-bg);
+}
+
+.dark .bg-white {
+  background-color: var(--color-bg-secondary);
+}
+
+.dark .bg-gray-100 {
+  background-color: var(--color-bg-tertiary);
+}
+
+.dark .bg-gray-200 {
+  background-color: var(--color-bg-elevated);
+}
+
+.dark .bg-gray-800 {
+  background-color: var(--color-bg-secondary);
+}
+
+.dark .bg-gray-700 {
+  background-color: var(--color-bg-tertiary);
+}
+
+.dark .bg-gray-900 {
+  background-color: var(--color-bg);
+}
+
+/* Dark theme border colors */
+.dark .border-gray-200 {
+  border-color: var(--color-border);
+}
+
+.dark .border-gray-300 {
+  border-color: var(--color-border-secondary);
+}
+
+.dark .border-gray-600 {
+  border-color: var(--color-border-secondary);
+}
+
+.dark .border-gray-700 {
+  border-color: var(--color-border);
 }
 
 /* Line clamp utilities */
