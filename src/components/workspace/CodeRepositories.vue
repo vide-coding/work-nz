@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, watch, ref } from 'vue'
 import { GitBranch, Search, X } from 'lucide-vue-next'
 import RepoCard from './RepoCard.vue'
 import CloneRepoDialog from './CloneRepoDialog.vue'
@@ -10,6 +10,7 @@ const props = defineProps<{
   repos: GitRepository[]
   repoStatuses: Record<string, GitRepoStatus>
   error: string
+  editRepoError?: string
 }>()
 
 const emit = defineEmits<{
@@ -20,7 +21,11 @@ const emit = defineEmits<{
   openInTerminal: [repo: GitRepository]
   deleteRepo: [repo: GitRepository]
   loadReadme: [repo: GitRepository]
+  setEditRepoError: [error: string]
 }>()
+
+// Ref for accessing edit dialog to set local error
+const editRepoDialogRef = ref<InstanceType<typeof EditRepoDialog> | null>(null)
 
 const repoSearchQuery = ref('')
 const showCloneDialog = ref(false)
@@ -38,6 +43,16 @@ const isCloning = ref(false)
 // Edit dialog state
 const isUpdatingRepo = ref(false)
 
+// Watch for edit repo error and set it on the dialog
+watch(
+  () => props.editRepoError,
+  (newError) => {
+    if (newError && editRepoDialogRef.value) {
+      editRepoDialogRef.value.setLocalError(newError)
+    }
+  }
+)
+
 const filteredRepos = computed(() => {
   if (!repoSearchQuery.value.trim()) {
     return props.repos
@@ -53,8 +68,6 @@ const filteredRepos = computed(() => {
     return false
   })
 })
-
-import { computed } from 'vue'
 
 function openCloneDialog() {
   showCloneDialog.value = true
@@ -207,12 +220,12 @@ function deleteRepo(repo: GitRepository) {
 
     <!-- Edit Repo Dialog -->
     <EditRepoDialog
+      ref="editRepoDialogRef"
       v-if="showEditRepoDialog"
       :repo="editingRepo"
       :edit-repo-name="editRepoName"
       :edit-repo-description="editRepoDescription"
       :is-updating="isUpdatingRepo"
-      :error="error"
       @update:edit-repo-name="editRepoName = $event"
       @update:edit-repo-description="editRepoDescription = $event"
       @close="closeEditRepoDialog"

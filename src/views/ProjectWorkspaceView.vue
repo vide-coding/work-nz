@@ -297,12 +297,15 @@ async function cloneRepo() {
   }
 }
 
+// Local error state for edit repo dialog
+const editRepoError = ref('')
+
 async function updateRepo() {
   if (!editingRepo.value) return
 
   try {
     isUpdatingRepo.value = true
-    error.value = ''
+    editRepoError.value = ''
     const updated = await gitApi.repoUpdate(editingRepo.value.id, {
       name: editRepoName.value.trim() || undefined,
       description: editRepoDescription.value.trim() || undefined,
@@ -317,7 +320,7 @@ async function updateRepo() {
     showEditRepoDialog.value = false
     editingRepo.value = null
   } catch (e: any) {
-    error.value = e.message || String(e)
+    editRepoError.value = e.message || String(e)
   } finally {
     isUpdatingRepo.value = false
   }
@@ -682,6 +685,7 @@ onMounted(async () => {
           :repos="repos"
           :repo-statuses="repoStatuses"
           :error="error"
+          :edit-repo-error="editRepoError"
           @clone-repo="cloneRepo"
           @update-repo="updateRepo"
           @pull-repo="pullRepo"

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, watch } from 'vue'
 import type { GitRepository } from '@/types'
 
 const props = defineProps<{
@@ -6,7 +7,6 @@ const props = defineProps<{
   editRepoName: string
   editRepoDescription: string
   isUpdating: boolean
-  error: string
 }>()
 
 const emit = defineEmits<{
@@ -16,12 +16,39 @@ const emit = defineEmits<{
   confirm: []
 }>()
 
+// Local error state for this dialog only
+const localError = ref('')
+
+// Watch for repo changes and clear error when dialog opens
+watch(
+  () => props.repo,
+  () => {
+    if (props.repo) {
+      localError.value = ''
+    }
+  }
+)
+
 function close() {
+  localError.value = ''
   emit('close')
 }
 
 function confirm() {
   emit('confirm')
+}
+
+defineExpose({
+  setLocalError,
+  clearLocalError,
+})
+
+function setLocalError(error: string) {
+  localError.value = error
+}
+
+function clearLocalError() {
+  localError.value = ''
 }
 </script>
 
@@ -79,11 +106,11 @@ function confirm() {
           </div>
 
           <div
-            v-if="error"
+            v-if="localError"
             class="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
           >
             <p class="text-sm text-red-600 dark:text-red-400">
-              {{ error }}
+              {{ localError }}
             </p>
           </div>
         </div>
