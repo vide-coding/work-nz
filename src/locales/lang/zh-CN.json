@@ -149,5 +149,19 @@
     "ideArgs": "启动参数（可选）",
     "ideArgsPlaceholder": "例如：--reuse-window",
     "ideArgsHint": "多个参数用空格分隔"
+  },
+  "theme": {
+    "select": "选择主题",
+    "markdownThemes": "Markdown 主题",
+    "light": "浅色",
+    "dark": "深色",
+    "github": "GitHub",
+    "nord": "Nord",
+    "solarized": "Solarized",
+    "mode": "主题模式",
+    "modeUnified": "统一",
+    "modeSeparate": "分离",
+    "lightTheme": "亮色主题",
+    "darkTheme": "暗色主题"
   }
 }

@@ -144,5 +144,19 @@
     "ideArgs": "Launch Args (optional)",
     "ideArgsPlaceholder": "e.g., --reuse-window",
     "ideArgsHint": "Separate multiple args with spaces"
+  },
+  "theme": {
+    "select": "Select Theme",
+    "markdownThemes": "Markdown Themes",
+    "light": "Light",
+    "dark": "Dark",
+    "github": "GitHub",
+    "nord": "Nord",
+    "solarized": "Solarized",
+    "mode": "Theme Mode",
+    "modeUnified": "Unified",
+    "modeSeparate": "Separate",
+    "lightTheme": "Light Theme",
+    "darkTheme": "Dark Theme"
   }
 }

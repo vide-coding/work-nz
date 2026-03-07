@@ -1,4 +1,6 @@
 @import 'tailwindcss';
+@import './styles/markdown-themes.css';
+@import './styles/markdown-code-themes.css';
 
 /* CSS Variables for theming */
 :root {

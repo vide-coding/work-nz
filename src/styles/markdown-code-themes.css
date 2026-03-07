@@ -1,0 +1,248 @@
+/* 代码高亮主题 - 基于 Shiki / Prism 风格 */
+
+/* GitHub Light 主题 */
+.code-theme-github-light,
+.markdown-theme-light pre code,
+.markdown-theme-github pre code {
+  --shiki-foreground: #24292f;
+  --shiki-background: transparent;
+  --shiki-token-comment: #6e7781;
+  --shiki-token-keyword: #cf222e;
+  --shiki-token-string: #0a3069;
+  --shiki-token-function: #8250df;
+  --shiki-token-number: #0550ae;
+  --shiki-token-operator: #24292f;
+  --shiki-token-punctuation: #6e7781;
+  --shiki-token-variable: #953800;
+  --shiki-token-constant: #0550ae;
+}
+
+/* GitHub Dark 主题 */
+.code-theme-github-dark,
+.markdown-theme-dark pre code {
+  --shiki-foreground: #e6edf3;
+  --shiki-background: transparent;
+  --shiki-token-comment: #8b949e;
+  --shiki-token-keyword: #ff7b72;
+  --shiki-token-string: #a5d6ff;
+  --shiki-token-function: #d2a8ff;
+  --shiki-token-number: #79c0ff;
+  --shiki-token-operator: #e6edf3;
+  --shiki-token-punctuation: #8b949e;
+  --shiki-token-variable: #ffa657;
+  --shiki-token-constant: #79c0ff;
+}
+
+/* Nord 主题 */
+.code-theme-nord,
+.markdown-theme-nord pre code {
+  --shiki-foreground: #d8dee9;
+  --shiki-background: transparent;
+  --shiki-token-comment: #616e88;
+  --shiki-token-keyword: #81a1c1;
+  --shiki-token-string: #a3be8c;
+  --shiki-token-function: #88c0d0;
+  --shiki-token-number: #b48ead;
+  --shiki-token-operator: #81a1c1;
+  --shiki-token-punctuation: #eceff4;
+  --shiki-token-variable: #d8dee9;
+  --shiki-token-constant: #d8dee9;
+}
+
+/* Solarized Dark 主题 */
+.code-theme-solarized-dark,
+.markdown-theme-solarized pre code {
+  --shiki-foreground: #93a1a1;
+  --shiki-background: transparent;
+  --shiki-token-comment: #586e75;
+  --shiki-token-keyword: #cb4b16;
+  --shiki-token-string: #859900;
+  --shiki-token-function: #268bd2;
+  --shiki-token-number: #d33682;
+  --shiki-token-operator: #93a1a1;
+  --shiki-token-punctuation: #93a1a1;
+  --shiki-token-variable: #b58900;
+  --shiki-token-constant: #d33682;
+}
+
+/* 代码块基础样式 */
+.markdown-body pre {
+  position: relative;
+  background-color: var(--md-code-bg);
+  border-radius: 8px;
+  padding: 1rem;
+  overflow-x: auto;
+  border: 1px solid var(--md-border);
+}
+
+.markdown-body pre code {
+  font-family: 'SFMono-Regular', 'SF Mono', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--shiki-foreground, var(--md-code-text));
+  background: transparent;
+  border: none;
+  padding: 0;
+  border-radius: 0;
+  white-space: pre;
+  word-wrap: normal;
+}
+
+/* 语法高亮颜色类 */
+.markdown-body .token.comment,
+.markdown-body code .comment {
+  color: var(--shiki-token-comment);
+}
+
+.markdown-body .token.keyword,
+.markdown-body code .keyword {
+  color: var(--shiki-token-keyword);
+}
+
+.markdown-body .token.string,
+.markdown-body code .string {
+  color: var(--shiki-token-string);
+}
+
+.markdown-body .token.function,
+.markdown-body code .function {
+  color: var(--shiki-token-function);
+}
+
+.markdown-body .token.number,
+.markdown-body code .number {
+  color: var(--shiki-token-number);
+}
+
+.markdown-body .token.operator,
+.markdown-body code .operator {
+  color: var(--shiki-token-operator);
+}
+
+.markdown-body .token.punctuation,
+.markdown-body code .punctuation {
+  color: var(--shiki-token-punctuation);
+}
+
+.markdown-body .token.variable,
+.markdown-body code .variable {
+  color: var(--shiki-token-variable);
+}
+
+.markdown-body .token.constant,
+.markdown-body code .constant {
+  color: var(--shiki-token-constant);
+}
+
+/* 代码块头部信息（语言标识） */
+.markdown-body .code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  background-color: var(--md-bg-tertiary);
+  border: 1px solid var(--md-border);
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  font-size: 12px;
+  color: var(--md-text-muted);
+}
+
+.markdown-body .code-header + pre {
+  border-radius: 0 0 8px 8px;
+  border-top: none;
+}
+
+.markdown-body .code-header .code-lang {
+  font-family: 'SFMono-Regular', monospace;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.markdown-body .code-header .copy-button {
+  background: none;
+  border: none;
+  color: var(--md-text-muted);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.markdown-body .code-header .copy-button:hover {
+  background-color: var(--color-hover);
+  color: var(--md-text);
+}
+
+/* 行内代码 */
+.markdown-body :not(pre) > code {
+  background-color: var(--md-code-bg);
+  border-radius: 4px;
+  padding: 0.2em 0.4em;
+  font-size: 85%;
+  color: var(--md-code-text);
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  border: 1px solid var(--md-border);
+  white-space: break-spaces;
+}
+
+.markdown-body h1 code,
+.markdown-body h2 code,
+.markdown-body h3 code,
+.markdown-body h4 code,
+.markdown-body h5 code,
+.markdown-body h6 code {
+  font-size: inherit;
+}
+
+/* 代码块滚动条 */
+.markdown-body pre::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.markdown-body pre::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 4px;
+}
+
+.markdown-body pre::-webkit-scrollbar-thumb {
+  background: var(--md-border-secondary, var(--md-border));
+  border-radius: 4px;
+}
+
+.markdown-body pre::-webkit-scrollbar-thumb:hover {
+  background: var(--md-text-muted);
+}
+
+/* 代码高亮动画 */
+@keyframes fadeInCode {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.markdown-body pre {
+  animation: fadeInCode 0.3s ease-out;
+}
+
+/* 暗黑模式下的特殊调整 */
+.dark .markdown-body pre,
+.markdown-theme-dark .markdown-body pre,
+.markdown-theme-nord .markdown-body pre {
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* 语法高亮特定语言调整 */
+.markdown-body code.language-bash::before,
+.markdown-body code.language-sh::before,
+.markdown-body code.language-shell::before {
+  content: '$ ';
+  color: var(--shiki-token-punctuation);
+  user-select: none;
+}

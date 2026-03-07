@@ -3,12 +3,14 @@ import { invoke } from '@tauri-apps/api/core'
 import type { GlobalSettings, WorkspaceSettingsOverride } from '@/types/settings'
 import type { WorkspaceSettings } from '@/types'
 import { workspaceApi } from './useApi'
+import { DEFAULT_MARKDOWN_THEME_CONFIG } from '@/types/markdown'
 
 const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   themeMode: 'system',
   language: 'zh-CN',
   fontSize: 'medium',
   defaultIde: undefined,
+  markdownTheme: DEFAULT_MARKDOWN_THEME_CONFIG,
 }
 
 // Global settings state

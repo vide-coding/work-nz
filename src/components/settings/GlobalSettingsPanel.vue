@@ -8,6 +8,8 @@ import IdeSelector from './IdeSelector.vue'
 import { useSettings } from '@/composables/useSettings'
 import type { LanguageCode, FontSize } from '@/types/settings'
 import type { IdeConfig } from '@/types'
+import type { MarkdownThemeConfig, ThemeName } from '@/types/theme'
+import MarkdownThemeSelector from '@/components/MarkdownThemeSelector.vue'
 
 const { t, locale } = useI18n()
 const { globalSettings, loadGlobalSettings, updateGlobalSettings, resetGlobalSettings } =
@@ -23,6 +25,11 @@ const localTheme = ref<'light' | 'dark' | 'system'>('system')
 const localLanguage = ref<LanguageCode>('zh-CN')
 const localFontSize = ref<FontSize>('medium')
 const localDefaultIde = ref<IdeConfig | undefined>(undefined)
+const localMarkdownTheme = ref<MarkdownThemeConfig>({
+  mode: 'separate',
+  lightTheme: 'light',
+  darkTheme: 'dark',
+})
 
 onMounted(async () => {
   await loadGlobalSettings()
@@ -37,6 +44,12 @@ onMounted(async () => {
           args: [...(globalSettings.value.defaultIde.args || [])],
         }
       : undefined
+    // Load markdown theme config
+    localMarkdownTheme.value = globalSettings.value.markdownTheme || {
+      mode: 'separate',
+      lightTheme: 'light',
+      darkTheme: 'dark',
+    }
   }
   isLoading.value = false
 })
@@ -74,6 +87,18 @@ watch(localDefaultIde, async (newIde) => {
   isSaving.value = false
   showSaveMessage()
 })
+
+// Watch for markdown theme changes
+watch(
+  localMarkdownTheme,
+  async (newThemeConfig) => {
+    isSaving.value = true
+    await updateGlobalSettings({ markdownTheme: newThemeConfig })
+    isSaving.value = false
+    showSaveMessage()
+  },
+  { deep: true }
+)
 
 function applyTheme(theme: 'light' | 'dark' | 'system') {
   const root = document.documentElement
@@ -201,6 +226,21 @@ async function handleReset() {
           >
             <IdeSelector v-model="localDefaultIde" :disabled="isSaving" />
           </SettingItem>
+        </div>
+      </div>
+
+      <!-- Markdown Theme Section -->
+      <div class="mb-8">
+        <h3
+          class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4"
+        >
+          {{ t('theme.markdownThemes') }}
+        </h3>
+
+        <div
+          class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-4"
+        >
+          <MarkdownThemeSelector v-model="localMarkdownTheme" :disabled="isSaving" />
         </div>
       </div>
     </div>

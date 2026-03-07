@@ -1,6 +1,7 @@
 // Global settings types for app configuration
 
 import type { IdeConfig } from './index'
+import type { MarkdownThemeConfig } from './markdown'
 
 export type LanguageCode = 'zh-CN' | 'en-US'
 
@@ -18,6 +19,7 @@ export type GlobalSettings = {
   language: LanguageCode
   fontSize: FontSize
   defaultIde?: IdeConfig
+  markdownTheme?: MarkdownThemeConfig
 }
 
 /**
