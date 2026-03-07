@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useLocale } from '@/locales/useLocale'
@@ -24,6 +24,7 @@ import type {
   WorkspaceInfo,
 } from '@/types'
 import { Home, Code, FileText, Image, Map, Folder } from 'lucide-vue-next'
+import { debounce } from '@/composables/useDebounce'
 
 // Components
 import WorkspaceHeader from '@/components/workspace/WorkspaceHeader.vue'
@@ -41,13 +42,13 @@ const router = useRouter()
 const route = useRoute()
 const { locale, changeLocale } = useLocale()
 
-// Type-safe theme mode for ThemeToggle
+// Type-safe theme mode for ThemeToggle (only used in template)
 const themeMode = computed(() => {
   const mode = settings.value.themeMode
   return mode === 'custom' ? 'system' : mode
 })
 
-// Type-safe locale for LanguageSelector
+// Type-safe locale for LanguageSelector (only used in template)
 const currentLocale = computed(() => locale.value as 'zh-CN' | 'en-US')
 
 // Navigation
@@ -87,14 +88,10 @@ async function updateWindowTitle(title: string | null) {
   }
 }
 
-// 监听当前工作区变化，更新窗口标题
-watch(
-  workspaceDisplayName,
-  (name) => {
-    updateWindowTitle(name)
-  },
-  { immediate: true }
-)
+// 监听当前工作区变化，更新窗口标题（避免使用 immediate 导致的初始化问题）
+watch(workspaceDisplayName, (name) => {
+  updateWindowTitle(name)
+})
 
 // Git repos
 const repos = ref<GitRepository[]>([])
@@ -137,12 +134,8 @@ const editRepoName = ref('')
 const editRepoDescription = ref('')
 const isUpdatingRepo = ref(false)
 
-// Repo search
-const repoSearchQuery = ref('')
-
 // Initialize project ID from props
 const projectId = computed(() => props.id || (route.params.id as string))
-
 // Navigation items
 const navItems = computed(() => {
   const items = [
@@ -233,24 +226,26 @@ async function loadRepos() {
     await loadProjectDirs()
 
     repos.value = await gitApi.repoList(projectId.value)
-    // Load status for each repo
+    // Load status for each repo in parallel
     const statuses: Record<string, GitRepoStatus> = {}
-    for (const repo of repos.value) {
-      try {
-        const status = await gitApi.repoStatusGet(repo.id)
-        statuses[repo.id] = status
-      } catch (e) {
-        console.error('Failed to get repo status:', e)
-      }
-    }
+    await Promise.all(
+      repos.value.map(async (repo) => {
+        try {
+          const status = await gitApi.repoStatusGet(repo.id)
+          statuses[repo.id] = status
+        } catch (e) {
+          console.error('Failed to get repo status:', e)
+        }
+      })
+    )
     repoStatuses.value = statuses
   } catch (e) {
     console.error('Failed to load repos:', e)
   }
 }
 
-// Auto extract repo name from URL when clone URL changes
-watch(cloneUrl, async (newUrl) => {
+// Auto extract repo name from URL when clone URL changes (debounced to avoid too many API calls)
+const debouncedExtractRepoName = debounce(async (newUrl: string) => {
   if (newUrl && !cloneTargetDir.value) {
     try {
       const name = await gitApi.extractRepoName(newUrl)
@@ -264,6 +259,12 @@ watch(cloneUrl, async (newUrl) => {
     } catch (e) {
       console.error('Failed to extract repo name:', e)
     }
+  }
+}, 300)
+
+watch(cloneUrl, (newUrl) => {
+  if (newUrl) {
+    debouncedExtractRepoName(newUrl)
   }
 })
 
@@ -404,10 +405,11 @@ async function updateProject() {
   if (!project.value) return
 
   try {
-    await projectApi.update(projectId.value, {
+    const updated = await projectApi.update(projectId.value, {
       description: editDescription.value,
     })
-    project.value.description = editDescription.value
+    // 使用后端返回的完整数据更新前端状态
+    project.value = updated
     isEditing.value = false
   } catch (e: any) {
     error.value = e.message || String(e)
@@ -632,6 +634,10 @@ watch(currentNav, async (newNav) => {
 onMounted(async () => {
   await loadSettings()
   await loadCurrentWorkspace()
+  // 延迟更新窗口标题，避免初始化时的性能问题
+  nextTick(() => {
+    updateWindowTitle(workspaceDisplayName.value)
+  })
   await loadProject()
   await loadDirTypes()
   await loadProjectDirs()

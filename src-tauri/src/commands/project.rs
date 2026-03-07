@@ -161,8 +161,28 @@ pub fn project_update(id: String, patch: ProjectUpdateInput) -> Result<Project, 
     let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
     let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
 
-    // 获取当前项目
-    let mut project = project_get(id.clone())?;
+    // 直接查询当前项目，避免调用 project_get 导致多次获取锁
+    let mut project: Project = conn
+        .query_row(
+            "SELECT id, name, description, project_path, display_json, ide_override_json, visible, updated_at FROM projects WHERE id = ?1",
+            params![id],
+            |row| {
+                let display_json: Option<String> = row.get(4)?;
+                let ide_override_json: Option<String> = row.get(5)?;
+
+                Ok(Project {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    description: row.get(2)?,
+                    project_path: row.get(3)?,
+                    display: display_json.and_then(|j| serde_json::from_str(&j).ok()),
+                    ide_override: ide_override_json.and_then(|j| serde_json::from_str(&j).ok()),
+                    visible: row.get(6)?,
+                    updated_at: row.get(7)?,
+                })
+            },
+        )
+        .map_err(|e| format!("项目不存在：{}", e))?;
 
     // 更新字段
     if let Some(name) = patch.name {

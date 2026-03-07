@@ -1,4 +1,3 @@
-use crate::commands::project::project_get;
 use crate::commands::workspace::get_workspace_path;
 use crate::db::get_db;
 use crate::types::*;
@@ -536,17 +535,49 @@ pub fn git_status_watch_stop(_repo_id: Option<String>) -> Result<serde_json::Val
 /// 扫描 code 目录下的 Git 仓库并自动导入数据库
 #[tauri::command]
 pub fn git_repo_scan(project_id: String) -> Result<serde_json::Value, String> {
-    let project = project_get(project_id.clone())?;
+    let db_guard = get_db().map_err(|e| format!("获取数据库失败：{}", e))?;
+    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
+
+    // 获取项目信息
+    let project: crate::types::Project = conn
+        .query_row(
+            "SELECT id, name, description, project_path, display_json, ide_override_json, visible, updated_at FROM projects WHERE id = ?1",
+            params![project_id],
+            |row| {
+                let display_json: Option<String> = row.get(4)?;
+                let ide_override_json: Option<String> = row.get(5)?;
+
+                Ok(crate::types::Project {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    description: row.get(2)?,
+                    project_path: row.get(3)?,
+                    display: display_json.and_then(|j| serde_json::from_str(&j).ok()),
+                    ide_override: ide_override_json.and_then(|j| serde_json::from_str(&j).ok()),
+                    visible: row.get(6)?,
+                    updated_at: row.get(7)?,
+                })
+            },
+        )
+        .map_err(|e| format!("项目不存在：{}", e))?;
+
     let project_path = Path::new(&project.project_path);
+
+    git_repo_scan_internal(conn, project_id, project_path)
+}
+
+/// 内部扫描函数，复用已获取的数据库连接和项目路径
+pub fn git_repo_scan_internal(
+    conn: &rusqlite::Connection,
+    project_id: String,
+    project_path: &Path,
+) -> Result<serde_json::Value, String> {
     let code_dir = project_path.join("code");
 
     // 如果 code 目录不存在，直接返回
     if !code_dir.exists() || !code_dir.is_dir() {
         return Ok(serde_json::json!({ "ok": true, "scanned": Vec::<String>::new() }));
     }
-
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败：{}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
 
     // 获取已有的仓库路径列表
     let mut stmt = conn

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useLocale } from '@/locales/useLocale'
@@ -80,13 +80,9 @@ async function updateWindowTitle(title: string | null) {
   }
 }
 
-watch(
-  workspaceDisplayName,
-  (name) => {
-    updateWindowTitle(name)
-  },
-  { immediate: true }
-)
+watch(workspaceDisplayName, (name) => {
+  updateWindowTitle(name)
+})
 
 // Methods
 async function loadProjects() {
@@ -248,6 +244,10 @@ function selectProject(project: Project) {
 onMounted(async () => {
   await loadSettings()
   await loadCurrentWorkspace()
+  // 延迟更新窗口标题，避免初始化时的性能问题
+  nextTick(() => {
+    updateWindowTitle(workspaceDisplayName.value)
+  })
   await loadProjects()
 })
 </script>

@@ -1,4 +1,3 @@
-use crate::commands::git::git_repo_scan;
 use crate::commands::project::project_get;
 use crate::commands::workspace::load_global_settings;
 use crate::db::get_db;
@@ -853,8 +852,40 @@ pub fn ide_open_repo(
 /// 当进入代码仓库页时，如果文件目录中有数据库中不存在的目录，自动导入到数据库中
 #[tauri::command]
 pub fn project_dirs_sync_auto(project_id: String) -> Result<serde_json::Value, String> {
-    // 扫描 Git 仓库
-    let git_scanned: Vec<String> = match git_repo_scan(project_id.clone()) {
+    let db_guard = get_db().map_err(|e| format!("获取数据库失败：{}", e))?;
+    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
+
+    // 先获取项目信息，避免多次获取锁
+    let project: crate::types::Project = conn
+        .query_row(
+            "SELECT id, name, description, project_path, display_json, ide_override_json, visible, updated_at FROM projects WHERE id = ?1",
+            params![project_id],
+            |row| {
+                let display_json: Option<String> = row.get(4)?;
+                let ide_override_json: Option<String> = row.get(5)?;
+
+                Ok(crate::types::Project {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    description: row.get(2)?,
+                    project_path: row.get(3)?,
+                    display: display_json.and_then(|j| serde_json::from_str(&j).ok()),
+                    ide_override: ide_override_json.and_then(|j| serde_json::from_str(&j).ok()),
+                    visible: row.get(6)?,
+                    updated_at: row.get(7)?,
+                })
+            },
+        )
+        .map_err(|e| format!("项目不存在：{}", e))?;
+
+    let project_path = Path::new(&project.project_path);
+
+    // 扫描 Git 仓库（复用已获取的项目信息和数据库连接）
+    let git_scanned: Vec<String> = match crate::commands::git::git_repo_scan_internal(
+        conn,
+        project_id.clone(),
+        project_path,
+    ) {
         Ok(json) => json
             .get("scanned")
             .and_then(|s| s.as_array())
@@ -866,12 +897,6 @@ pub fn project_dirs_sync_auto(project_id: String) -> Result<serde_json::Value, S
             .unwrap_or_default(),
         Err(_) => Vec::new(),
     };
-
-    let project = project_get(project_id.clone())?;
-    let project_path = Path::new(&project.project_path);
-
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败：{}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
 
     // 获取所有已有的目录类型
     let mut stmt = conn
