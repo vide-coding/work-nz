@@ -651,7 +651,6 @@ onMounted(async () => {
     <WorkspaceHeader
       :project="project"
       :settings="settings"
-      :workspace-info="currentWorkspace"
       :locale="locale"
       @go-back="handleGoBack"
       @go-to-settings="handleGoToSettings"

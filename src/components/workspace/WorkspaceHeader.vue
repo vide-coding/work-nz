@@ -3,12 +3,11 @@ import { ArrowLeft, ChevronRight, Settings } from 'lucide-vue-next'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import LanguageSelector from '@/components/common/LanguageSelector.vue'
 import type { Project } from '@/types'
-import type { WorkspaceSettings, WorkspaceInfo } from '@/types'
+import type { WorkspaceSettings } from '@/types'
 
 const props = defineProps<{
   project: Project | null
   settings: WorkspaceSettings
-  workspaceInfo: WorkspaceInfo | null
   locale: string
 }>()
 

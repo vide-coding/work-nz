@@ -5,12 +5,13 @@ import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useLocale } from '@/locales/useLocale'
 import { projectApi, gitApi, workspaceApi } from '@/composables/useApi'
 import type { Project, GitRepoStatus, WorkspaceSettings, WorkspaceInfo } from '@/types'
-import { ArrowLeft, Folder, Loader2, Settings } from 'lucide-vue-next'
+import { ArrowLeft, Folder, Loader2, Settings, Pencil } from 'lucide-vue-next'
 import ProjectCard from '@/components/project/ProjectCard.vue'
 import ProjectPreview from '@/components/project/ProjectPreview.vue'
 import ProjectToolbar from '@/components/project/ProjectToolbar.vue'
 import ProjectCreateDialog from '@/components/project/ProjectCreateDialog.vue'
 import ProjectEditDialog from '@/components/project/ProjectEditDialog.vue'
+import WorkspaceAliasDialog from '@/components/workspace/WorkspaceAliasDialog.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import LanguageSelector from '@/components/common/LanguageSelector.vue'
 
@@ -39,6 +40,7 @@ const showCreateDialog = ref(false)
 const showEditDialog = ref(false)
 const isCreatingProject = ref(false)
 const currentWorkspace = ref<WorkspaceInfo | null>(null)
+const showAliasDialog = ref(false)
 
 // Computed
 const workspaceDisplayName = computed(() => {
@@ -235,6 +237,17 @@ function goToSettings() {
   router.push('/settings/workspace')
 }
 
+async function saveWorkspaceAlias(alias: string | undefined) {
+  if (!currentWorkspace.value) return
+
+  try {
+    await workspaceApi.updateAlias(currentWorkspace.value.path, alias)
+    await loadCurrentWorkspace()
+  } catch (error) {
+    console.error('Failed to update workspace alias:', error)
+  }
+}
+
 function selectProject(project: Project) {
   selectedProject.value = project
   loadProjectDetails(project)
@@ -269,9 +282,19 @@ onMounted(async () => {
             {{ $t('projects.switchWorkspace') }}
           </button>
           <div class="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
-          <span class="text-sm font-medium text-gray-900 dark:text-white">
-            {{ workspaceDisplayName || $t('projects.workspace') }}
-          </span>
+          <div class="flex items-center gap-1">
+            <span class="text-sm font-medium text-gray-900 dark:text-white">
+              {{ workspaceDisplayName || $t('projects.workspace') }}
+            </span>
+            <button
+              v-if="currentWorkspace"
+              class="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              :title="$t('common.edit')"
+              @click="showAliasDialog = true"
+            >
+              <Pencil class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+            </button>
+          </div>
         </div>
 
         <!-- Right: Actions -->
@@ -357,6 +380,13 @@ onMounted(async () => {
       v-model="showEditDialog"
       :project="selectedProject"
       @save="handleEditProject"
+    />
+
+    <!-- Alias Dialog -->
+    <WorkspaceAliasDialog
+      v-model="showAliasDialog"
+      :workspace="currentWorkspace"
+      @save="saveWorkspaceAlias"
     />
   </div>
 </template>
