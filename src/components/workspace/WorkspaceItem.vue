@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { MoreVertical } from 'lucide-vue-next'
+import { MoreVertical, Pencil } from 'lucide-vue-next'
 import type { WorkspaceInfo } from '@/types'
 
 const props = defineProps<{
@@ -34,7 +34,7 @@ const displayName = computed(() => {
 
 <template>
   <div
-    class="relative flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors"
+    class="group relative flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors"
     :class="[
       selected
         ? 'bg-indigo-100 dark:bg-indigo-900/40 border-2 border-indigo-500 dark:border-indigo-400'
@@ -43,12 +43,34 @@ const displayName = computed(() => {
     @click="emit('select')"
   >
     <div class="min-w-0 flex-1">
-      <p
-        class="text-sm font-medium truncate"
-        :class="selected ? 'text-indigo-900 dark:text-indigo-200' : 'text-gray-900 dark:text-white'"
-      >
-        {{ displayName }}
-      </p>
+      <div class="flex items-center gap-1">
+        <p
+          class="text-sm font-medium truncate"
+          :class="
+            selected ? 'text-indigo-900 dark:text-indigo-200' : 'text-gray-900 dark:text-white'
+          "
+        >
+          {{ displayName }}
+        </p>
+        <!-- Edit Button -->
+        <button
+          class="p-1 rounded-md transition-colors opacity-0 group-hover:opacity-100"
+          :class="
+            selected
+              ? 'hover:bg-indigo-200 dark:hover:bg-indigo-800'
+              : 'hover:bg-gray-200 dark:hover:bg-gray-600'
+          "
+          :title="$t('common.edit')"
+          @click.stop="emit('rename', $event)"
+        >
+          <Pencil
+            class="w-3 h-3"
+            :class="
+              selected ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-600 dark:text-gray-400'
+            "
+          />
+        </button>
+      </div>
       <p class="text-xs text-gray-500 dark:text-gray-400">
         {{ workspace.alias ? workspace.path : formatDate(workspace.lastOpenedAt) }}
       </p>
