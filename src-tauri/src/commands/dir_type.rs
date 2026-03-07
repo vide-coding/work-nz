@@ -8,6 +8,7 @@ use rusqlite::params;
 use std::fs;
 use std::path::Path;
 use std::process::Command;
+use which::which;
 
 /// 列出所有目录类型
 #[tauri::command]
@@ -813,15 +814,20 @@ pub fn ide_open_repo(
     let ide_config = get_effective_ide(conn, &repo_id, provided_ide)
         .ok_or_else(|| "未配置 IDE，请先在设置中配置默认 IDE".to_string())?;
 
-    // 验证 IDE 可执行文件存在
-    if !std::path::Path::new(&ide_config.command).exists() {
-        return Err(format!("IDE 可执行文件不存在: {}", ide_config.command));
-    }
+    // 验证 IDE 可执行文件存在（支持完整路径或 PATH 中的命令）
+    let ide_path = if std::path::Path::new(&ide_config.command).exists() {
+        // 如果是完整路径且文件存在，直接使用
+        std::path::PathBuf::from(&ide_config.command)
+    } else {
+        // 否则尝试在 PATH 中查找
+        which(&ide_config.command)
+            .map_err(|_| format!("IDE 可执行文件不存在: {}，请确保已安装并在 PATH 中", ide_config.command))?
+    };
 
     // 启动 IDE
     #[cfg(windows)]
     {
-        let mut cmd = Command::new(&ide_config.command);
+        let mut cmd = Command::new(&ide_path);
         if let Some(args) = ide_config.args {
             cmd.args(&args);
         }

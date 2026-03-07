@@ -43,6 +43,7 @@ env_logger = "0.11"
 dirs = "5"
 walkdir = "2"
 once_cell = "1"
+which = "6"
 
 # Windows-specific
 [target.'cfg(windows)'.dependencies]
