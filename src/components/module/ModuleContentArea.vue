@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Directory, Module } from '@/types'
+import type { Directory } from '@/types'
 import { moduleRegistry } from '@/composables/useModuleRegistry'
-import { useFileModule } from '@/composables/useFileModule'
-import { useTaskModule } from '@/composables/useTaskModule'
 import GitModuleView from './GitModuleView.vue'
 
 interface Props {
@@ -21,35 +19,12 @@ const module = computed(() => {
 // Determine which composable to use based on module
 const moduleType = computed(() => module.value?.key)
 
-// File module content
-const fileModule = computed(() => {
-  if (moduleType.value !== 'file') return null
-  return useFileModule(props.directory)
-})
-
-// Task module content
-const taskModule = computed(() => {
-  if (moduleType.value !== 'task') return null
-  return useTaskModule(props.directory)
-})
-
-// Git module - using existing CodeRepositories component
-const hasGitCapability = computed(() => {
-  if (!props.directory.moduleId) return false
-  return moduleRegistry.hasCapability(props.directory.moduleId, 'git.status')
-})
-
 // Module capabilities
 const capabilities = computed(() => {
   if (!props.directory.moduleId) return []
   const mod = moduleRegistry.get(props.directory.moduleId)
   return mod?.capabilities ?? []
 })
-
-// Helper to check capability
-function hasCapability(capability: string): boolean {
-  return capabilities.value.includes(capability as any)
-}
 </script>
 
 <template>

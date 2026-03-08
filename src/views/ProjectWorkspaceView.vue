@@ -100,6 +100,10 @@ function getModuleIcon(moduleKey?: string) {
 // Show module-based directory list (always use new system)
 const showModuleNav = computed(() => true)
 
+// Navigation (legacy - kept for compatibility)
+type NavItem = 'intro' | 'code' | 'docs' | 'ui_design' | 'project_planning' | string
+const currentNav = ref<NavItem>('intro')
+
 // State
 const project = ref<Project | null>(null)
 const settings = ref<WorkspaceSettings>({ themeMode: 'system' })
@@ -559,7 +563,7 @@ function handleUpdateTheme(themeMode: 'light' | 'dark' | 'system' | 'custom') {
   updateTheme(themeMode)
 }
 
-function handleUpdateLocale(newLocale: string) {
+function handleUpdateLocale(newLocale: 'zh-CN' | 'en-US') {
   changeLocale(newLocale)
 }
 

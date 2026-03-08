@@ -1,4 +1,4 @@
-import type { Module, ModuleCapability, ModuleConfigSchema, Directory } from '@/types'
+import type { Module, ModuleCapability, Directory } from '@/types'
 
 /**
  * Built-in module definitions
@@ -74,8 +74,7 @@ export const BUILTIN_MODULES: Module[] = [
               name: { type: 'string' },
               color: { type: 'string' },
             },
-            required: ['id', 'name'],
-          },
+          } as any,
           default: [
             { id: 'todo', name: 'To Do', color: '#9CA3AF' },
             { id: 'in_progress', name: 'In Progress', color: '#3B82F6' },
@@ -92,8 +91,7 @@ export const BUILTIN_MODULES: Module[] = [
               name: { type: 'string' },
               color: { type: 'string' },
             },
-            required: ['id', 'name'],
-          },
+          } as any,
           default: [
             { id: 'low', name: 'Low', color: '#6B7280' },
             { id: 'medium', name: 'Medium', color: '#F59E0B' },
@@ -375,7 +373,7 @@ export class ModuleRegistry {
         if (prop.properties) {
           const nestedErrors = this.validateAgainstSchema(
             value as Record<string, unknown>,
-            { type: 'object', properties: prop.properties },
+            { type: 'object', properties: prop.properties } as any,
             propKey
           )
           errors.push(...nestedErrors)
@@ -447,7 +445,7 @@ export class ModuleRegistry {
         }
         if (propConfig.maxLength !== undefined && value.length > propConfig.maxLength) {
           errors.push(
-            `${prefix ? prefix + '.' : ''}${key} must be at most ${prop.maxLength} characters`
+            `${prefix ? prefix + '.' : ''}${key} must be at most ${propConfig.maxLength} characters`
           )
         }
       }
@@ -472,7 +470,11 @@ export class ModuleRegistry {
       // Array items validation
       if (propConfig.type === 'array' && Array.isArray(value) && propConfig.items) {
         value.forEach((item, index) => {
-          if (typeof propConfig.items === 'object' && 'type' in propConfig.items) {
+          if (
+            propConfig.items &&
+            typeof propConfig.items === 'object' &&
+            'type' in propConfig.items
+          ) {
             const itemProp = propConfig.items as { type: string }
             const itemActualType = this.getActualType(item)
             if (!this.isValidType(itemActualType, itemProp.type)) {

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ArrowLeft, ChevronRight, Settings } from 'lucide-vue-next'
+import { computed } from 'vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import LanguageSelector from '@/components/common/LanguageSelector.vue'
-import type { Project } from '@/types'
-import type { WorkspaceSettings } from '@/types'
+import type { Project, WorkspaceSettings, ThemeMode } from '@/types'
 
 const props = defineProps<{
   project: Project | null
@@ -11,11 +11,21 @@ const props = defineProps<{
   locale: string
 }>()
 
+// 将 ThemeMode 映射到 ThemeToggle 支持的类型
+const displayThemeMode = computed<'light' | 'dark' | 'system'>(() => {
+  const mode = props.settings.themeMode as ThemeMode
+  if (mode === 'custom') {
+    // 对于 custom 模式，默认使用 light（或可以根据某条件选择）
+    return 'light'
+  }
+  return mode
+})
+
 const emit = defineEmits<{
   goBack: []
   goToSettings: []
-  updateTheme: [themeMode: 'light' | 'dark' | 'system' | 'custom']
-  updateLocale: [locale: string]
+  updateTheme: [themeMode: 'light' | 'dark' | 'system']
+  updateLocale: [locale: 'zh-CN' | 'en-US']
 }>()
 
 function goBack() {
@@ -26,11 +36,11 @@ function goToSettings() {
   emit('goToSettings')
 }
 
-function updateTheme(themeMode: 'light' | 'dark' | 'system' | 'custom') {
+function updateTheme(themeMode: 'light' | 'dark' | 'system') {
   emit('updateTheme', themeMode)
 }
 
-function updateLocale(locale: string) {
+function updateLocale(locale: 'zh-CN' | 'en-US') {
   emit('updateLocale', locale)
 }
 </script>
@@ -64,9 +74,12 @@ function updateLocale(locale: string) {
           <Settings class="w-5 h-5 text-gray-600 dark:text-gray-300" />
         </button>
         <!-- Theme -->
-        <ThemeToggle :model-value="settings.themeMode" @update:model-value="updateTheme" />
+        <ThemeToggle :model-value="displayThemeMode" @update:model-value="updateTheme" />
         <!-- Language -->
-        <LanguageSelector :model-value="locale" @update:model-value="updateLocale" />
+        <LanguageSelector
+          :model-value="locale as 'zh-CN' | 'en-US'"
+          @update:model-value="updateLocale"
+        />
       </div>
     </div>
   </header>

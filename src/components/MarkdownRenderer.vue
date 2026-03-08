@@ -1,20 +1,15 @@
 <template>
   <div
-    :class="[
-      'markdown-body',
-      `markdown-theme-${currentTheme}`,
-      { 'markdown-body-compact': compact },
-    ]"
-    v-html="renderedContent"
+    :class="['markdown-body', `markdown-theme-${theme}`, { 'markdown-body-compact': compact }]"
+    v-html="htmlContent"
   />
 </template>
 
 <script setup lang="ts">
 import { marked, type Renderer, type Tokens } from 'marked'
-import { computed, watch } from 'vue'
+import { computed, watch, ref } from 'vue'
 import { convertFileSrc } from '@tauri-apps/api/core'
 import type { ThemeName } from '@/types/theme'
-import { CODE_THEME_MAP } from '@/types/theme'
 import { useMarkdownHighlight } from '@/composables/useMarkdownHighlight'
 
 const props = withDefaults(
@@ -38,13 +33,10 @@ const emit = defineEmits<{
 }>()
 
 // 代码高亮 composable
-const { highlightCode, getLanguageFromClass } = useMarkdownHighlight()
+const { highlightCode } = useMarkdownHighlight()
 
-// 当前主题
-const currentTheme = computed(() => props.theme)
-
-// 代码主题
-const codeTheme = computed(() => CODE_THEME_MAP[currentTheme.value] || 'github-light')
+// 存储渲染后的 HTML
+const _html = ref('')
 
 // 创建自定义 renderer
 function createRenderer(): Renderer {
@@ -78,7 +70,6 @@ function createRenderer(): Renderer {
   // 重写代码块渲染 - 支持语法高亮
   renderer.code = ({ text, lang }: Tokens.Code) => {
     const language = lang || 'text'
-    const codeClass = `language-${language}`
 
     // 如果启用了高亮，使用高亮后的代码
     let highlightedCode = text
@@ -93,7 +84,7 @@ function createRenderer(): Renderer {
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
         </button>
       </div>
-      <pre class="${codeClass}"><code class="${codeClass}">${highlightedCode}</code></pre>
+      <pre class="language-${language}"><code class="language-${language}">${highlightedCode}</code></pre>
     </div>`
   }
 
@@ -109,12 +100,20 @@ function createRenderer(): Renderer {
     return `<blockquote>${text}</blockquote>`
   }
 
-  // 重写表格渲染
-  renderer.table = (header: string, body: string) => {
+  // 表格渲染 - 使用 v17 正确的 token 结构
+  // Tokens.Table 有 header (string) 和 rows (string[])
+  renderer.table = (token: Tokens.Table) => {
+    const rows = token.rows
+      .map((row) => {
+        const cells = row.map((cell) => `<td>${cell}</td>`).join('')
+        return `<tr>${cells}</tr>`
+      })
+      .join('')
+
     return `<div class="table-wrapper">
       <table>
-        <thead>${header}</thead>
-        <tbody>${body}</tbody>
+        <thead>${token.header}</thead>
+        <tbody>${rows}</tbody>
       </table>
     </div>`
   }
@@ -133,40 +132,42 @@ function createRenderer(): Renderer {
   return renderer
 }
 
-// 渲染内容
-const renderedContent = computed(() => {
+// 异步渲染 Markdown
+async function renderMarkdown(): Promise<string> {
+  if (!props.content) return ''
   try {
     const renderer = createRenderer()
-    const html = marked(props.content || '', {
+    // Marked v17: gfm 选项仍然可用，但默认启用
+    const html = await marked(props.content, {
       renderer,
       gfm: true,
-      breaks: false,
-      pedantic: false,
     })
 
     // 发出渲染完成事件
     emit('rendered', html)
-
     return html
   } catch (error) {
     console.error('Markdown rendering error:', error)
     return `<p class="text-[var(--color-error)]">Failed to render markdown: ${error}</p>`
   }
-})
+}
 
-// 监听内容变化
+// 监听内容变化并重新渲染
 watch(
   () => props.content,
-  () => {
-    // 内容变化时可以添加动画效果
-  }
+  async () => {
+    _html.value = await renderMarkdown()
+  },
+  { immediate: true }
 )
 
-// 初始化代码复制功能
+// 暴露给模板使用
+const htmlContent = computed(() => _html.value)
+
+// 代码复制功能
 watch(
-  renderedContent,
+  htmlContent,
   () => {
-    // 在下一次 DOM 更新后绑定复制按钮事件
     setTimeout(() => {
       document.querySelectorAll('.copy-button').forEach((btn) => {
         btn.addEventListener('click', async () => {
@@ -174,7 +175,6 @@ watch(
           if (code) {
             try {
               await navigator.clipboard.writeText(decodeURIComponent(code))
-              // 显示复制成功反馈
               const originalHTML = btn.innerHTML
               btn.innerHTML =
                 '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'

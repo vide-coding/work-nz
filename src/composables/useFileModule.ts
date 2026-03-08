@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import { directoryApi, fsApi, previewApi } from './useApi'
+import { fsApi, previewApi } from './useApi'
 import { directoryHasCapability } from './useModuleRegistry'
 import type { Directory, FileNode, PreviewKind } from '@/types'
 

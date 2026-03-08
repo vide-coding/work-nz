@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import { templateApi, directoryApi } from './useApi'
+import { templateApi } from './useApi'
 import type { DirectoryTemplate, DirectoryTemplateItem, Directory, TemplateScope } from '@/types'
 
 /**

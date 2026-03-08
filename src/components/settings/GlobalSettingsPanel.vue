@@ -8,7 +8,7 @@ import IdeSelector from './IdeSelector.vue'
 import { useSettings } from '@/composables/useSettings'
 import type { LanguageCode, FontSize } from '@/types/settings'
 import type { IdeConfig } from '@/types'
-import type { MarkdownThemeConfig, ThemeName } from '@/types/theme'
+import type { MarkdownThemeConfig } from '@/types/markdown'
 import MarkdownThemeSelector from '@/components/MarkdownThemeSelector.vue'
 
 const { t, locale } = useI18n()

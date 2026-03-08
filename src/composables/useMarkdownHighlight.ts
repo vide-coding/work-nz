@@ -1,6 +1,3 @@
-import type { ThemeName } from '@/types/theme'
-import { CODE_THEME_MAP } from '@/types/theme'
-
 // 代码高亮功能已禁用
 // 如需重新启用，可以集成 shiki 或 highlight.js
 

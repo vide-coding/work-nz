@@ -1,8 +1,6 @@
-import { ref, computed, shallowRef } from 'vue'
-import { directoryApi, gitApi } from './useApi'
-import { moduleRegistry, directoryHasCapability } from './useModuleRegistry'
-import type { Directory, ModuleCapability } from '@/types'
-import type { GitRepository, GitRepoStatus } from '@/types'
+import { ref, computed } from 'vue'
+import { directoryHasCapability } from './useModuleRegistry'
+import type { Directory } from '@/types'
 
 /**
  * Task type for the Task module

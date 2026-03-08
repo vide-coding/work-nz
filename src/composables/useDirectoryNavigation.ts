@@ -1,4 +1,4 @@
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { directoryApi, moduleApi } from './useApi'
 import { moduleRegistry } from './useModuleRegistry'
 import type { Directory, Module, ModuleCapability } from '@/types'

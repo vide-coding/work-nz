@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
 import {
   ArrowLeft,
   FolderPlus,
@@ -42,10 +41,6 @@ const emit = defineEmits<{
   closeCreateFolderDialog: []
   confirmCreateFolder: []
 }>()
-
-const currentDirType = computed(() => {
-  return props.dirTypes.find((t) => t.id === props.currentNav || t.kind === props.currentNav)
-})
 
 function navigateToParent() {
   emit('navigateToParent')

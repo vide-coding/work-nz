@@ -138,7 +138,8 @@
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Sun, Moon } from 'lucide-vue-next'
-import type { MarkdownThemeConfig, ThemeName } from '@/types/theme'
+import type { MarkdownThemeConfig } from '@/types/markdown'
+import type { ThemeName } from '@/types/theme'
 import { DEFAULT_MARKDOWN_THEME_CONFIG } from '@/types/markdown'
 
 const props = defineProps<{

@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
-import { Home, Code, FileText, Image, Map, Folder } from 'lucide-vue-next'
-import type { DirectoryType } from '@/types'
 
 type NavItem = {
   id: string

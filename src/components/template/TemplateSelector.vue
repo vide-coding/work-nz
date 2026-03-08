@@ -19,8 +19,7 @@ const emit = defineEmits<{
   create: [template: DirectoryTemplate]
 }>()
 
-const { templates, templatesByScope, loading, error, loadTemplates, applyTemplate } =
-  useDirectoryTemplate()
+const { templates, loading, error, loadTemplates, applyTemplate } = useDirectoryTemplate()
 
 const activeScope = ref<TemplateScope | 'all'>('all')
 const searchQuery = ref('')
@@ -68,7 +67,7 @@ async function handleApply(template: DirectoryTemplate) {
 
   applyingTemplate.value = true
   try {
-    const directories = await applyTemplate(template.id, props.projectId)
+    await applyTemplate(template.id, props.projectId)
     emit('apply', template)
   } finally {
     applyingTemplate.value = false
