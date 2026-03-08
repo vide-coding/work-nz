@@ -83,13 +83,13 @@ const displayName = computed(() => {
           class="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 first:rounded-t-md"
           @click.stop="emit('rename', $event)"
         >
-          重命名
+          {{ $t('workspace.rename') }}
         </button>
         <button
           class="w-full px-3 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 last:rounded-b-md"
           @click.stop="emit('delete', $event)"
         >
-          删除
+          {{ $t('common.delete') }}
         </button>
       </div>
     </div>

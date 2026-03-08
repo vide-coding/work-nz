@@ -31,7 +31,7 @@ function togglePreview() {
         <input
           :value="searchQuery"
           type="text"
-          placeholder="搜索项目..."
+          :placeholder="$t('projects.searchPlaceholder')"
           class="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-indigo-500"
           @input="emit('update:searchQuery', ($event.target as HTMLInputElement).value)"
         />

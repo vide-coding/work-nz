@@ -76,7 +76,9 @@
     "repoNameEditHint": "Modify repository display name (does not affect directory)",
     "descriptionPlaceholder": "Enter description (optional)",
     "editRepo": "Edit Repository",
-    "description": "Description"
+    "description": "Description",
+    "rename": "Rename",
+    "aliasHint": "Alias will replace path in the list"
   },
   "projects": {
     "title": "Projects",
@@ -97,6 +99,11 @@
     "projectNamePlaceholder": "Enter project name",
     "description": "Description",
     "descriptionPlaceholder": "Enter project description (optional)"
+  },
+  "project": {
+    "edit": "Edit Project",
+    "hide": "Hide Project",
+    "open": "Open"
   },
   "projectEdit": {
     "title": "Edit Project",
@@ -158,5 +165,11 @@
     "modeSeparate": "Separate",
     "lightTheme": "Light Theme",
     "darkTheme": "Dark Theme"
+  },
+  "time": {
+    "justNow": "Just now",
+    "minutesAgo": "{n} minutes ago",
+    "hoursAgo": "{n} hours ago",
+    "daysAgo": "{n} days ago"
   }
 }

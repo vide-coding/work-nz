@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { Trash2, ChevronRight, Pen } from 'lucide-vue-next'
+import { useI18n } from 'vue-i18n'
 import type { Project, GitRepoStatus } from '@/types'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   project: Project
@@ -23,10 +26,10 @@ function formatDate(dateStr: string): string {
   const hours = Math.floor(diff / 3600000)
   const days = Math.floor(diff / 86400000)
 
-  if (minutes < 1) return '刚刚'
-  if (minutes < 60) return `${minutes} 分钟前`
-  if (hours < 24) return `${hours} 小时前`
-  if (days < 7) return `${days} 天前`
+  if (minutes < 1) return t('time.justNow')
+  if (minutes < 60) return t('time.minutesAgo', { n: minutes })
+  if (hours < 24) return t('time.hoursAgo', { n: hours })
+  if (days < 7) return t('time.daysAgo', { n: days })
 
   return date.toLocaleDateString('zh-CN')
 }
@@ -69,14 +72,14 @@ function formatDate(dateStr: string): string {
           <button
             class="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
             @click.stop="emit('edit')"
-            title="编辑项目"
+            :title="$t('project.edit')"
           >
             <Pen class="w-4 h-4" />
           </button>
           <button
             class="p-1.5 rounded-lg text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
             @click.stop="emit('hide')"
-            title="隐藏项目"
+            :title="$t('project.hide')"
           >
             <Trash2 class="w-4 h-4" />
           </button>
@@ -88,7 +91,7 @@ function formatDate(dateStr: string): string {
           class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors"
           @click.stop="emit('open')"
         >
-          打开
+          {{ $t('project.open') }}
           <ChevronRight class="w-4 h-4" />
         </button>
       </div>

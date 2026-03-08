@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Globe } from 'lucide-vue-next'
+
+const { t } = useI18n()
 
 const props = withDefaults(
   defineProps<{
@@ -17,7 +20,7 @@ const emit = defineEmits<{
 }>()
 
 const languageLabel = computed(() => {
-  return props.modelValue === 'zh-CN' ? '中文' : 'English'
+  return props.modelValue === 'zh-CN' ? t('app.langZh') : t('app.langEn')
 })
 
 function toggleLanguage() {
@@ -48,7 +51,7 @@ function selectLanguage(locale: 'zh-CN' | 'en-US') {
     class="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-indigo-500"
     @change="selectLanguage(($event.target as HTMLSelectElement).value as 'zh-CN' | 'en-US')"
   >
-    <option value="zh-CN">中文</option>
-    <option value="en-US">EN</option>
+    <option :value="'zh-CN'">{{ $t('app.langZh') }}</option>
+    <option :value="'en-US'">{{ $t('app.langEn') }}</option>
   </select>
 </template>

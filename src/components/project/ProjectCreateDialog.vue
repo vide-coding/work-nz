@@ -40,18 +40,18 @@ function handleCancel() {
 <template>
   <BaseDialog
     :model-value="modelValue"
-    title="创建新项目"
+    :title="$t('projects.newProject')"
     @update:model-value="emit('update:modelValue', $event)"
   >
     <div class="space-y-4">
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          项目名称
+          {{ $t('projects.projectName') }}
         </label>
         <input
           v-model="nameInput"
           type="text"
-          placeholder="输入项目名称"
+          :placeholder="$t('projects.projectNamePlaceholder')"
           class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
           @keyup.enter="handleCreate"
         />
@@ -59,12 +59,12 @@ function handleCancel() {
 
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          描述
+          {{ $t('projects.description') }}
         </label>
         <textarea
           v-model="descriptionInput"
           rows="3"
-          placeholder="输入项目描述（可选）"
+          :placeholder="$t('projects.descriptionPlaceholder')"
           class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 resize-none"
         ></textarea>
       </div>
@@ -82,14 +82,14 @@ function handleCancel() {
         class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
         @click="handleCancel"
       >
-        取消
+        {{ $t('common.cancel') }}
       </button>
       <button
         class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors disabled:opacity-50"
         :disabled="!nameInput.trim() || loading"
         @click="handleCreate"
       >
-        {{ loading ? '创建中...' : '创建' }}
+        {{ loading ? $t('common.creating') : $t('projects.createNewProject') }}
       </button>
     </template>
   </BaseDialog>

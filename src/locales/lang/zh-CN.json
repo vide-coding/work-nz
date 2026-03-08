@@ -37,6 +37,7 @@
     "open": "打开",
     "delete": "删除",
     "rename": "重命名",
+    "aliasHint": "别名将替代路径显示在列表中",
     "setAlias": "设置别名",
     "aliasPlaceholder": "输入别名（可选）",
     "validWorkspace": "有效工作区，使用 .app/ 目录存储数据。",
@@ -103,12 +104,23 @@
     "description": "项目描述",
     "descriptionPlaceholder": "输入项目描述（可选）"
   },
+  "project": {
+    "edit": "编辑项目",
+    "hide": "隐藏项目",
+    "open": "打开"
+  },
   "projectEdit": {
     "title": "编辑项目",
     "name": "项目名称",
     "namePlaceholder": "输入项目名称",
     "description": "项目描述",
     "descriptionPlaceholder": "输入项目描述（可选）"
+  },
+  "time": {
+    "justNow": "刚刚",
+    "minutesAgo": "{n} 分钟前",
+    "hoursAgo": "{n} 小时前",
+    "daysAgo": "{n} 天前"
   },
   "settings": {
     "title": "设置",
