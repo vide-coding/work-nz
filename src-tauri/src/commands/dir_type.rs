@@ -728,7 +728,9 @@ fn is_valid_command_name(command: &str) -> bool {
         return false;
     }
     // 只允许字母、数字、连字符、下划线和点
-    command.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_' || c == '.')
+    command
+        .chars()
+        .all(|c| c.is_alphanumeric() || c == '-' || c == '_' || c == '.')
 }
 
 /// 获取有效的 IDE 配置（按优先级：仓库 > 工作区 > 全局）
@@ -819,16 +821,26 @@ pub fn ide_open_repo(
         std::path::PathBuf::from(&ide_config.command)
     } else {
         // 否则尝试在 PATH 中查找
-        which(&ide_config.command)
-            .map_err(|_| format!("IDE 可执行文件不存在: {}，请确保已安装并在 PATH 中", ide_config.command))?
+        which(&ide_config.command).map_err(|_| {
+            format!(
+                "IDE 可执行文件不存在: {}，请确保已安装并在 PATH 中",
+                ide_config.command
+            )
+        })?
     };
 
-    // 启动 IDE
+    // 启动 IDE（在新窗口中打开，不复用已有窗口）
     #[cfg(windows)]
     {
         let mut cmd = Command::new(&ide_path);
+        // 移除 --reuse-window 参数，让 IDE 在新窗口中打开
         if let Some(args) = ide_config.args {
-            cmd.args(&args);
+            // 过滤掉 --reuse-window 参数
+            let filtered_args: Vec<String> = args
+                .into_iter()
+                .filter(|arg| arg != "--reuse-window")
+                .collect();
+            cmd.args(&filtered_args);
         }
         cmd.arg(&path);
 
@@ -845,6 +857,121 @@ pub fn ide_open_repo(
     #[cfg(not(windows))]
     {
         Ok(serde_json::json!({ "ok": false, "message": "不支持的平台" }))
+    }
+}
+
+/// 用终端打开仓库目录
+#[tauri::command]
+pub fn open_in_terminal(repo_id: String) -> Result<serde_json::Value, String> {
+    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
+    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
+
+    let path: String = conn
+        .query_row(
+            "SELECT path FROM git_repositories WHERE id = ?1",
+            params![repo_id],
+            |row| row.get(0),
+        )
+        .map_err(|e| format!("仓库不存在: {}", e))?;
+
+    // 检测并打开终端
+    #[cfg(windows)]
+    {
+        // 尝试多种终端命令
+        let terminal_commands = [
+            ("cmd", vec!["/c", "start", "cmd"]),
+            ("powershell", vec!["-NoExit", "-Command"]),
+            (
+                "WindowsTerminal",
+                vec!["nt", "--vertical-split", "--horizontal-split"],
+            ),
+            ("wt", vec!["nt", "--vertical-split", "--horizontal-split"]),
+        ];
+
+        let mut last_error = String::new();
+
+        for (cmd_name, args) in terminal_commands.iter() {
+            // 检查命令是否可用
+            if !is_command_available(cmd_name) {
+                continue;
+            }
+
+            let mut cmd = Command::new(cmd_name);
+            cmd.args(args);
+            cmd.current_dir(&path);
+
+            // 对于 powershell，需要添加 cd 命令
+            if *cmd_name == "powershell" {
+                cmd.arg(&format!("cd '{}'", path));
+            }
+
+            match cmd.spawn() {
+                Ok(_) => {
+                    return Ok(serde_json::json!({
+                        "ok": true,
+                        "message": format!("已在终端中打开 {}", path)
+                    }));
+                }
+                Err(e) => {
+                    last_error = format!("启动 {} 失败: {}", cmd_name, e);
+                    continue;
+                }
+            }
+        }
+
+        // 如果所有命令都失败，尝试使用 Windows 的 start 命令
+        let mut cmd = Command::new("cmd");
+        cmd.args(&["/c", "start", "cmd"]);
+        cmd.current_dir(&path);
+
+        match cmd.spawn() {
+            Ok(_) => Ok(serde_json::json!({
+                "ok": true,
+                "message": format!("已在终端中打开 {}", path)
+            })),
+            Err(e) => Ok(serde_json::json!({
+                "ok": false,
+                "message": format!("打开终端失败: {}，原始错误: {}", e, last_error)
+            })),
+        }
+    }
+
+    #[cfg(not(windows))]
+    {
+        // Unix 系统使用 x-terminal-emulator 或 gnome-terminal 等
+        let terminal_commands = [
+            "x-terminal-emulator",
+            "gnome-terminal",
+            "konsole",
+            "xfce4-terminal",
+            "xterm",
+        ];
+
+        for cmd_name in terminal_commands.iter() {
+            if !is_command_available(cmd_name) {
+                continue;
+            }
+
+            let mut cmd = Command::new(cmd_name);
+            cmd.current_dir(&path);
+
+            match cmd.spawn() {
+                Ok(_) => {
+                    return Ok(serde_json::json!({
+                        "ok": true,
+                        "message": format!("已在终端中打开 {}", path)
+                    }));
+                }
+                Err(e) => {
+                    continue;
+                }
+            }
+        }
+
+        Ok(serde_json::json!({
+            "ok": false,
+            "message": "未找到可用的终端模拟器"
+        }))
     }
 }
 

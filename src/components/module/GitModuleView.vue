@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import type { Directory, GitRepository, GitRepoStatus } from '@/types'
-import { gitApi } from '@/composables/useApi'
+import { gitApi, ideApi, fsApi } from '@/composables/useApi'
 import RepoCard from '@/components/workspace/RepoCard.vue'
+import ReadmePreview from '@/components/workspace/ReadmePreview.vue'
 import CloneRepoDialog from '@/components/workspace/CloneRepoDialog.vue'
 import EditRepoDialog from '@/components/workspace/EditRepoDialog.vue'
 
@@ -32,6 +33,11 @@ const editRepoName = ref('')
 const editRepoDescription = ref('')
 const isUpdating = ref(false)
 const editRepoError = ref('')
+
+// README preview state
+const selectedRepo = ref<GitRepository | null>(null)
+const readmeContent = ref('')
+const isLoadingReadme = ref(false)
 
 // Filter repos by directory path
 const filteredRepos = computed(() => {
@@ -144,14 +150,22 @@ async function handlePull(repo: GitRepository) {
 
 // Open in IDE
 async function handleOpenInIde(repo: GitRepository) {
-  // TODO: Implement
-  console.log('Open in IDE:', repo)
+  try {
+    await ideApi.openRepo(repo.id)
+  } catch (e: any) {
+    console.error('Failed to open in IDE:', e)
+    error.value = e.message || 'Failed to open in IDE'
+  }
 }
 
 // Open in terminal
 async function handleOpenInTerminal(repo: GitRepository) {
-  // TODO: Implement
-  console.log('Open in terminal:', repo)
+  try {
+    await ideApi.openInTerminal(repo.id)
+  } catch (e: any) {
+    console.error('Failed to open terminal:', e)
+    error.value = e.message || 'Failed to open terminal'
+  }
 }
 
 // Delete repository
@@ -162,8 +176,37 @@ async function handleDeleteRepo(repo: GitRepository) {
 
 // Load README
 async function handleLoadReadme(repo: GitRepository) {
-  // TODO: Implement
-  console.log('Load README:', repo)
+  selectedRepo.value = repo
+  readmeContent.value = ''
+  isLoadingReadme.value = true
+
+  try {
+    // Try common README filenames
+    const readmeNames = ['README.md', 'README.MD', 'Readme.md', 'readme.md', 'README', 'readme']
+
+    for (const name of readmeNames) {
+      const readmePath = `${repo.path}/${name}`
+      try {
+        const result = await fsApi.readText(readmePath)
+        readmeContent.value = result.content
+        break
+      } catch {
+        // Try next filename
+        continue
+      }
+    }
+  } catch (e: any) {
+    console.error('Failed to load README:', e)
+    readmeContent.value = ''
+  } finally {
+    isLoadingReadme.value = false
+  }
+}
+
+// Close README preview
+function closeReadmePreview() {
+  selectedRepo.value = null
+  readmeContent.value = ''
 }
 
 // Open edit dialog
@@ -205,49 +248,60 @@ watch(
 
 <template>
   <div class="git-module">
-    <!-- Header -->
-    <div class="git-module__header">
-      <h3 class="git-module__title">Git Repositories</h3>
-      <button class="git-module__clone-btn" @click="showCloneDialog = true">
-        + Clone Repository
-      </button>
+    <div class="git-module__content">
+      <!-- Header -->
+      <div class="git-module__header">
+        <h3 class="git-module__title">Git Repositories</h3>
+        <button class="git-module__clone-btn" @click="showCloneDialog = true">
+          + Clone Repository
+        </button>
+      </div>
+
+      <!-- Directory path -->
+      <div v-if="directory.relativePath" class="git-module__path">
+        <span class="git-module__path-label">Directory:</span>
+        <span class="git-module__path-value">{{ directory.relativePath }}</span>
+      </div>
+
+      <!-- Loading state -->
+      <div v-if="loading" class="git-module__loading">Loading repositories...</div>
+
+      <!-- Error state -->
+      <div v-else-if="error" class="git-module__error">
+        {{ error }}
+      </div>
+
+      <!-- Repository list -->
+      <div v-else-if="filteredRepos.length > 0" class="git-module__list">
+        <RepoCard
+          v-for="repo in filteredRepos"
+          :key="repo.id"
+          :repo="repo"
+          :status="repoStatuses[repo.id]"
+          @view-readme="handleLoadReadme"
+          @pull="handlePull"
+          @open-in-ide="handleOpenInIde"
+          @open-in-terminal="handleOpenInTerminal"
+          @edit="openEditDialog"
+          @delete-repo="handleDeleteRepo"
+        />
+      </div>
+
+      <!-- Empty state -->
+      <div v-else class="git-module__empty">
+        <p>No Git repositories in this directory</p>
+        <p class="git-module__empty-hint">Click "Clone Repository" to add one</p>
+      </div>
     </div>
 
-    <!-- Directory path -->
-    <div v-if="directory.relativePath" class="git-module__path">
-      <span class="git-module__path-label">Directory:</span>
-      <span class="git-module__path-value">{{ directory.relativePath }}</span>
-    </div>
-
-    <!-- Loading state -->
-    <div v-if="loading" class="git-module__loading">Loading repositories...</div>
-
-    <!-- Error state -->
-    <div v-else-if="error" class="git-module__error">
-      {{ error }}
-    </div>
-
-    <!-- Repository list -->
-    <div v-else-if="filteredRepos.length > 0" class="git-module__list">
-      <RepoCard
-        v-for="repo in filteredRepos"
-        :key="repo.id"
-        :repo="repo"
-        :status="repoStatuses[repo.id]"
-        @view-readme="handleLoadReadme"
-        @pull="handlePull"
-        @open-in-ide="handleOpenInIde"
-        @open-in-terminal="handleOpenInTerminal"
-        @edit="openEditDialog"
-        @delete-repo="handleDeleteRepo"
-      />
-    </div>
-
-    <!-- Empty state -->
-    <div v-else class="git-module__empty">
-      <p>No Git repositories in this directory</p>
-      <p class="git-module__empty-hint">Click "Clone Repository" to add one</p>
-    </div>
+    <!-- README Preview Sidebar -->
+    <ReadmePreview
+      v-if="selectedRepo"
+      :selected-repo="selectedRepo"
+      :readme-content="readmeContent"
+      :is-loading-readme="isLoadingReadme"
+      @close="closeReadmePreview"
+    />
 
     <!-- Clone Dialog -->
     <CloneRepoDialog
@@ -284,9 +338,15 @@ watch(
 .git-module {
   height: 100%;
   display: flex;
-  flex-direction: column;
   padding: 16px;
+  overflow: hidden;
+}
+
+.git-module__content {
+  flex: 1;
+  min-width: 0;
   overflow-y: auto;
+  padding-right: 16px;
 }
 
 .git-module__header {

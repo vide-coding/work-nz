@@ -59,6 +59,7 @@ pub fn run() {
             ide_list_supported,
             ide_open_repo,
             ide_preview,
+            open_in_terminal,
             // Module commands
             module_list,
             module_get,
