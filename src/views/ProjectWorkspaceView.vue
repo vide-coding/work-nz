@@ -12,6 +12,8 @@ import {
   workspaceApi,
   previewApi,
 } from '@/composables/useApi'
+import { useDirectoryNavigation } from '@/composables/useDirectoryNavigation'
+import { moduleRegistry } from '@/composables/useModuleRegistry'
 import type {
   Project,
   GitRepository,
@@ -22,8 +24,19 @@ import type {
   WorkspaceSettings,
   PreviewKind,
   WorkspaceInfo,
+  Directory,
 } from '@/types'
-import { Home, Code, FileText, Image, Map, Folder } from 'lucide-vue-next'
+import {
+  Home,
+  Code,
+  FileText,
+  Image,
+  Map,
+  Folder,
+  GitBranch,
+  CheckSquare,
+  Files,
+} from 'lucide-vue-next'
 import { debounce } from '@/composables/useDebounce'
 
 // Components
@@ -33,6 +46,7 @@ import ProjectIntro from '@/components/workspace/ProjectIntro.vue'
 import CodeRepositories from '@/components/workspace/CodeRepositories.vue'
 import FileBrowser from '@/components/workspace/FileBrowser.vue'
 import ReadmePreview from '@/components/workspace/ReadmePreview.vue'
+import ModuleContentArea from '@/components/module/ModuleContentArea.vue'
 
 const props = defineProps<{
   id: string
@@ -51,9 +65,40 @@ const themeMode = computed(() => {
 // Type-safe locale for LanguageSelector (only used in template)
 const currentLocale = computed(() => locale.value as 'zh-CN' | 'en-US')
 
-// Navigation
-type NavItem = 'intro' | 'code' | 'docs' | 'ui_design' | 'project_planning' | string
-const currentNav = ref<NavItem>('intro')
+// === New Module System Only ===
+const projectId = computed(() => props.id || (route.params.id as string))
+
+// Initialize directory navigation with new module system
+const {
+  directories,
+  navItems: moduleNavItems,
+  currentDirectory,
+  currentModule,
+  loading: dirLoading,
+  error: dirError,
+  loadDirectories,
+  createDirectory,
+  selectDirectory,
+  enableModule,
+  disableModule,
+} = useDirectoryNavigation(projectId.value)
+
+// Get icon for module type
+function getModuleIcon(moduleKey?: string) {
+  switch (moduleKey) {
+    case 'git':
+      return GitBranch
+    case 'task':
+      return CheckSquare
+    case 'file':
+      return Files
+    default:
+      return Folder
+  }
+}
+
+// Show module-based directory list (always use new system)
+const showModuleNav = computed(() => true)
 
 // State
 const project = ref<Project | null>(null)
@@ -134,20 +179,14 @@ const editRepoName = ref('')
 const editRepoDescription = ref('')
 const isUpdatingRepo = ref(false)
 
-// Initialize project ID from props
-const projectId = computed(() => props.id || (route.params.id as string))
-// Navigation items
+// Navigation items (legacy fallback)
 const navItems = computed(() => {
   const items = [
     { id: 'intro', labelKey: 'workspace.projectIntro', icon: Home },
     { id: 'code', labelKey: 'workspace.code', icon: Code },
     { id: 'docs', labelKey: 'workspace.docs', icon: FileText },
     { id: 'ui_design', labelKey: 'workspace.uiDesign', icon: Image },
-    {
-      id: 'project_planning',
-      labelKey: 'workspace.projectPlanning',
-      icon: Map,
-    },
+    { id: 'project_planning', labelKey: 'workspace.projectPlanning', icon: Map },
   ]
 
   // Add custom directory types
@@ -157,18 +196,6 @@ const navItems = computed(() => {
   })
 
   return items
-})
-
-// Computed
-const currentDirType = computed(() => {
-  return dirTypes.value.find((t) => t.id === currentNav.value || t.kind === currentNav.value)
-})
-
-const boundDirs = computed(() => {
-  return projectDirs.value.filter((pd) => {
-    const dt = dirTypes.value.find((d) => d.id === pd.dirTypeId)
-    return dt && (dt.kind === currentNav.value || dt.id === currentNav.value)
-  })
 })
 
 // Methods
@@ -417,19 +444,8 @@ async function updateProject() {
 }
 
 async function bindDirectory() {
-  try {
-    if (!currentDirType.value) return
-
-    const dirPath = currentDirType.value.kind + 's'
-    await dirTypeApi.createOrUpdateProjectDir(projectId.value, {
-      dirTypeId: currentDirType.value.id,
-      relativePath: dirPath,
-    })
-    await loadProjectDirs()
-    await loadFileTree(dirPath)
-  } catch (e: any) {
-    error.value = e.message || String(e)
-  }
+  // Old bindDirectory function - not used with new module system
+  // TODO: Remove or refactor for new directory system
 }
 
 async function loadFileTree(relativePath: string) {
@@ -547,11 +563,6 @@ function handleUpdateLocale(newLocale: string) {
   changeLocale(newLocale)
 }
 
-// Sidebar events
-function handleNavigate(id: string) {
-  currentNav.value = id
-}
-
 // ProjectIntro events
 function handleStartEdit() {
   isEditing.value = true
@@ -605,30 +616,30 @@ function handleConfirmCreateFolder() {
   }
 }
 
-// Watch navigation changes
-watch(currentNav, async (newNav) => {
-  // Close README preview when switching away from code tab
-  if (newNav !== 'code') {
-    selectedRepo.value = null
-    readmeContent.value = ''
-    previewKind.value = null
+// Create new directory with module (new module system)
+async function handleCreateModuleDirectory() {
+  const name = prompt('Enter directory name:')
+  if (!name) return
+
+  const moduleId = prompt('Enter module type (git, task, file):')
+  if (!moduleId) return
+
+  const validModules = ['git', 'task', 'file']
+  if (!validModules.includes(moduleId)) {
+    alert('Invalid module type. Use: git, task, or file')
+    return
   }
 
-  if (newNav === 'intro') {
-    await loadProject()
-  } else if (newNav === 'code') {
-    await loadRepos()
-  } else {
-    // Resource directory
-    const dt = dirTypes.value.find((t) => t.id === newNav || t.kind === newNav)
-    if (dt) {
-      const pd = projectDirs.value.find((p) => p.dirTypeId === dt.id)
-      if (pd) {
-        await loadFileTree(pd.relativePath)
-      }
-    }
+  const result = await createDirectory({
+    name,
+    relativePath: name.toLowerCase().replace(/\s+/g, '-'),
+    moduleId: `builtin:${moduleId}`,
+  })
+
+  if (result) {
+    selectDirectory(result.id)
   }
-})
+}
 
 // Lifecycle
 onMounted(async () => {
@@ -642,6 +653,9 @@ onMounted(async () => {
   await loadDirTypes()
   await loadProjectDirs()
   await loadRepos()
+
+  // Load new module-based directories
+  await loadDirectories()
 })
 </script>
 
@@ -658,82 +672,105 @@ onMounted(async () => {
       @update-locale="handleUpdateLocale"
     />
 
-    <!-- Main Content -->
+    <!-- Main Content - New Module System Only -->
     <div class="flex-1 flex overflow-hidden">
-      <!-- Sidebar -->
-      <WorkspaceSidebar
-        :current-nav="currentNav"
-        :nav-items="navItems"
-        @navigate="handleNavigate"
-      />
+      <!-- Directory Sidebar -->
+      <div
+        class="w-72 border-r border-gray-200 dark:border-gray-700 flex flex-col bg-white dark:bg-gray-900"
+      >
+        <!-- Project Header -->
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+            {{ project?.name || 'Project' }}
+          </h2>
+        </div>
+
+        <!-- Directories List -->
+        <div class="flex-1 overflow-y-auto p-4">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Directories</h3>
+            <button
+              class="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              @click="handleCreateModuleDirectory"
+            >
+              + Add
+            </button>
+          </div>
+
+          <!-- Loading State -->
+          <div v-if="dirLoading" class="text-center py-4 text-gray-500">Loading...</div>
+
+          <!-- Error State -->
+          <div v-else-if="dirError" class="text-center py-4 text-red-500">
+            {{ dirError }}
+          </div>
+
+          <!-- Directories -->
+          <div v-else class="space-y-2">
+            <div
+              v-for="dir in directories"
+              :key="dir.id"
+              :class="[
+                'p-3 rounded-lg cursor-pointer transition-all',
+                currentDirectory?.id === dir.id
+                  ? 'bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-500 shadow-sm'
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-800 border-2 border-transparent',
+              ]"
+              @click="selectDirectory(dir.id)"
+            >
+              <div class="flex items-center gap-3">
+                <component :is="getModuleIcon(dir.moduleId)" class="w-5 h-5 text-gray-500" />
+                <div class="flex-1 min-w-0">
+                  <div class="font-medium text-gray-900 dark:text-white truncate">
+                    {{ dir.name }}
+                  </div>
+                  <div v-if="dir.moduleId" class="text-xs text-gray-500">
+                    {{ moduleRegistry.get(dir.moduleId)?.name }}
+                  </div>
+                  <div v-else class="text-xs text-gray-400">No module</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Empty State -->
+            <div v-if="directories.length === 0" class="text-center py-8">
+              <Folder class="w-12 h-12 mx-auto text-gray-300 mb-3" />
+              <p class="text-gray-500 text-sm mb-4">No directories yet</p>
+              <button
+                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                @click="handleCreateModuleDirectory"
+              >
+                Create First Directory
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- Content Area -->
-      <main class="flex-1 overflow-auto">
-        <!-- Project Introduction -->
-        <ProjectIntro
-          v-if="currentNav === 'intro'"
-          :project="project"
-          :repos="repos"
-          :project-dirs="projectDirs"
-          :dir-types="dirTypes"
-          :is-editing="isEditing"
-          :edit-description="editDescription"
-          @start-edit="handleStartEdit"
-          @cancel-edit="handleCancelEdit"
-          @save-project="handleSaveProject"
-          @update-description="handleUpdateDescription"
-        />
+      <main class="flex-1 overflow-hidden bg-gray-50 dark:bg-gray-800">
+        <!-- Module Content -->
+        <ModuleContentArea v-if="currentDirectory" :directory="currentDirectory" />
 
-        <!-- Code Management -->
-        <CodeRepositories
-          v-else-if="currentNav === 'code'"
-          :repos="repos"
-          :repo-statuses="repoStatuses"
-          :error="error"
-          :edit-repo-error="editRepoError"
-          @clone-repo="cloneRepo"
-          @update-repo="updateRepo"
-          @pull-repo="pullRepo"
-          @open-in-ide="openInIde"
-          @delete-repo="deleteRepo"
-          @load-readme="loadRepoReadme"
-        />
-
-        <!-- Resource Directory (Docs, UI Design, Project Planning) -->
-        <FileBrowser
-          v-else
-          :current-dir-path="currentDirPath"
-          :file-tree="fileTree"
-          :view-mode="viewMode"
-          :selected-file="selectedFile"
-          :file-content="fileContent"
-          :preview-kind="previewKind"
-          :is-loading-tree="isLoadingTree"
-          :is-loading-preview="isLoadingPreview"
-          :bound-dirs="boundDirs"
-          :dir-types="dirTypes"
-          :current-nav="currentNav"
-          :new-folder-name="newFolderName"
-          :is-creating-folder="isCreatingFolder"
-          @navigate-to-parent="handleNavigateToParent"
-          @select-file="handleSelectFile"
-          @create-folder="handleCreateFolder"
-          @update-view-mode="handleUpdateViewMode"
-          @bind-directory="handleBindDirectory"
-          @update-new-folder-name="handleUpdateNewFolderName"
-          @close-create-folder-dialog="handleCloseCreateFolderDialog"
-          @confirm-create-folder="handleConfirmCreateFolder"
-        />
+        <!-- Empty State -->
+        <div v-else class="h-full flex items-center justify-center">
+          <div class="text-center">
+            <Folder class="w-16 h-16 mx-auto text-gray-300 mb-4" />
+            <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Select a Directory
+            </h3>
+            <p class="text-gray-500 mb-4">
+              Choose a directory from the sidebar or create a new one
+            </p>
+            <button
+              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              @click="handleCreateModuleDirectory"
+            >
+              + Create Directory
+            </button>
+          </div>
+        </div>
       </main>
-
-      <!-- README Preview Sidebar -->
-      <ReadmePreview
-        v-if="selectedRepo"
-        :selected-repo="selectedRepo"
-        :readme-content="readmeContent"
-        :is-loading-readme="isLoadingReadme"
-        @close="closeReadmePreview"
-      />
     </div>
   </div>
 </template>

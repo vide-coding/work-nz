@@ -130,11 +130,12 @@ pub async fn git_repo_clone(project_id: String, input: GitCloneInput) -> Result<
         .map_err(|e| format!("项目不存在: {}", e))?
     };
 
-    // 创建 code 目录（如果不存在）
-    let code_dir = Path::new(&project_path).join("code");
-    fs::create_dir_all(&code_dir).map_err(|e| format!("创建 code 目录失败: {}", e))?;
+    // 确定目标目录（使用提供的目录或默认 code）
+    let target_dir = input.target_directory.as_deref().unwrap_or("code");
+    let target_base = Path::new(&project_path).join(target_dir);
+    fs::create_dir_all(&target_base).map_err(|e| format!("创建目标目录失败: {}", e))?;
 
-    let repo_path = code_dir.join(&input.target_dir_name);
+    let repo_path = target_base.join(&input.target_dir_name);
     let remote_url = input.remote_url.clone();
 
     // 克隆仓库 - 在阻塞线程中执行

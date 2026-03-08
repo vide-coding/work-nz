@@ -60,4 +60,53 @@ CREATE INDEX IF NOT EXISTS idx_projects_name ON projects(name);
 CREATE INDEX IF NOT EXISTS idx_git_repositories_project_id ON git_repositories(project_id);
 CREATE INDEX IF NOT EXISTS idx_directory_types_sort_order ON directory_types(sort_order);
 CREATE INDEX IF NOT EXISTS idx_project_directories_project_id ON project_directories(project_id);
+
+-- New Module System Tables
+
+CREATE TABLE IF NOT EXISTS modules (
+  id TEXT PRIMARY KEY,
+  key TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  description TEXT NOT NULL,
+  version TEXT NOT NULL,
+  capabilities_json TEXT NOT NULL,
+  config_schema_json TEXT NOT NULL,
+  default_config_json TEXT NOT NULL,
+  icon TEXT,
+  is_built_in INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS directories (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  relative_path TEXT NOT NULL,
+  module_id TEXT,
+  module_config_json TEXT,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (module_id) REFERENCES modules(id)
+);
+
+CREATE TABLE IF NOT EXISTS directory_templates (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  scope TEXT NOT NULL,
+  project_id TEXT,
+  items_json TEXT NOT NULL,
+  created_by TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+-- Indexes for new tables
+CREATE INDEX IF NOT EXISTS idx_modules_key ON modules(key);
+CREATE INDEX IF NOT EXISTS idx_directories_project_id ON directories(project_id);
+CREATE INDEX IF NOT EXISTS idx_directories_module_id ON directories(module_id);
+CREATE INDEX IF NOT EXISTS idx_directory_templates_scope ON directory_templates(scope);
+CREATE INDEX IF NOT EXISTS idx_directory_templates_project_id ON directory_templates(project_id);
 "#;

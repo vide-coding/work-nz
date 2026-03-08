@@ -27,6 +27,9 @@ pub fn init_db(workspace_path: &str) -> Result<()> {
     // 插入默认目录类型
     insert_default_directory_types(&conn)?;
 
+    // 插入内置模块
+    insert_builtin_modules(&conn)?;
+
     // 存储连接
     let mut db = DB.lock().unwrap();
     *db = Some(conn);
@@ -113,6 +116,110 @@ fn insert_default_directory_types(conn: &Connection) -> Result<()> {
             params![uuid::Uuid::new_v4().to_string(), kind, name, category, sort_order],
         )?;
     }
+
+    Ok(())
+}
+
+/// 插入内置模块
+fn insert_builtin_modules(conn: &Connection) -> Result<()> {
+    let now = chrono::Utc::now().to_rfc3339();
+
+    // Git 模块
+    let git_capabilities = r#"["git.clone","git.pull","git.status","git.log","git.config"]"#;
+    let git_config_schema = r#"{
+        "type": "object",
+        "title": "Git Module Configuration",
+        "properties": {
+            "autoDetect": {
+                "type": "boolean",
+                "title": "Auto-detect repositories",
+                "default": true
+            }
+        }
+    }"#;
+    let git_default_config = r#"{"autoDetect": true}"#;
+
+    conn.execute(
+        "INSERT OR IGNORE INTO modules (id, key, name, description, version, capabilities_json, config_schema_json, default_config_json, icon, is_built_in, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 1, ?10, ?10)",
+        params![
+            "builtin:git",
+            "git",
+            "Git",
+            "Git repository management with clone, pull, status, and log capabilities",
+            "1.0.0",
+            git_capabilities,
+            git_config_schema,
+            git_default_config,
+            "git",
+            now
+        ],
+    )?;
+
+    // Task 模块
+    let task_capabilities = r#"["task.create","task.list","task.update","task.delete","task.kanban"]"#;
+    let task_config_schema = r#"{
+        "type": "object",
+        "title": "Task Module Configuration",
+        "properties": {
+            "defaultPriority": {
+                "type": "string",
+                "title": "Default Priority",
+                "enum": ["urgent", "high", "medium", "low"],
+                "default": "medium"
+            }
+        }
+    }"#;
+    let task_default_config = r#"{"defaultPriority": "medium"}"#;
+
+    conn.execute(
+        "INSERT OR IGNORE INTO modules (id, key, name, description, version, capabilities_json, config_schema_json, default_config_json, icon, is_built_in, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 1, ?10, ?10)",
+        params![
+            "builtin:task",
+            "task",
+            "Task",
+            "Task and issue tracking with kanban board support",
+            "1.0.0",
+            task_capabilities,
+            task_config_schema,
+            task_default_config,
+            "checklist",
+            now
+        ],
+    )?;
+
+    // File 模块
+    let file_capabilities = r#"["file.read","file.write","file.list","file.search"]"#;
+    let file_config_schema = r#"{
+        "type": "object",
+        "title": "File Module Configuration",
+        "properties": {
+            "showHidden": {
+                "type": "boolean",
+                "title": "Show Hidden Files",
+                "default": false
+            }
+        }
+    }"#;
+    let file_default_config = r#"{"showHidden": false}"#;
+
+    conn.execute(
+        "INSERT OR IGNORE INTO modules (id, key, name, description, version, capabilities_json, config_schema_json, default_config_json, icon, is_built_in, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 1, ?10, ?10)",
+        params![
+            "builtin:file",
+            "file",
+            "File",
+            "File management with read, write, list, and search capabilities",
+            "1.0.0",
+            file_capabilities,
+            file_config_schema,
+            file_default_config,
+            "folder",
+            now
+        ],
+    )?;
 
     Ok(())
 }

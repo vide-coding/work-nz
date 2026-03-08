@@ -59,6 +59,34 @@ pub fn run() {
             ide_list_supported,
             ide_open_repo,
             ide_preview,
+            // Module commands
+            module_list,
+            module_get,
+            module_get_by_key,
+            module_create,
+            module_update,
+            module_delete,
+            module_validate_config,
+            // Directory commands
+            directory_list,
+            directory_get,
+            directory_create,
+            directory_update,
+            directory_delete,
+            directory_enable_module,
+            directory_disable_module,
+            directory_update_module_config,
+            directory_reorder,
+            // Template commands
+            template_list,
+            template_get,
+            template_create,
+            template_update,
+            template_delete,
+            template_apply,
+            template_from_directories,
+            template_export,
+            template_import,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

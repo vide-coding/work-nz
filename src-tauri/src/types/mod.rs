@@ -157,6 +157,10 @@ pub struct FileNode {
 pub struct GitCloneInput {
     pub remote_url: String,
     pub target_dir_name: String,
+    /// Optional target directory relative path (e.g., "src/my-module")
+    /// If not provided, defaults to "code"
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub target_directory: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub branch: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -382,4 +386,193 @@ mod tests {
 
         assert_eq!(pd.relative_path, "docs");
     }
+}
+
+// ============== New Module System Types ==============
+
+/// Module capability
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum ModuleCapability {
+    GitClone,
+    GitPull,
+    GitStatus,
+    GitLog,
+    GitConfig,
+    TaskCreate,
+    TaskUpdate,
+    TaskDelete,
+    TaskList,
+    TaskStatus,
+    FileBrowse,
+    FileRead,
+    FilePreview,
+    FileSearch,
+    FileCreate,
+    FileDelete,
+    FileRename,
+}
+
+impl ModuleCapability {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            ModuleCapability::GitClone => "git.clone",
+            ModuleCapability::GitPull => "git.pull",
+            ModuleCapability::GitStatus => "git.status",
+            ModuleCapability::GitLog => "git.log",
+            ModuleCapability::GitConfig => "git.config",
+            ModuleCapability::TaskCreate => "task.create",
+            ModuleCapability::TaskUpdate => "task.update",
+            ModuleCapability::TaskDelete => "task.delete",
+            ModuleCapability::TaskList => "task.list",
+            ModuleCapability::TaskStatus => "task.status",
+            ModuleCapability::FileBrowse => "file.browse",
+            ModuleCapability::FileRead => "file.read",
+            ModuleCapability::FilePreview => "file.preview",
+            ModuleCapability::FileSearch => "file.search",
+            ModuleCapability::FileCreate => "file.create",
+            ModuleCapability::FileDelete => "file.delete",
+            ModuleCapability::FileRename => "file.rename",
+        }
+    }
+
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s {
+            "git.clone" => Some(ModuleCapability::GitClone),
+            "git.pull" => Some(ModuleCapability::GitPull),
+            "git.status" => Some(ModuleCapability::GitStatus),
+            "git.log" => Some(ModuleCapability::GitLog),
+            "git.config" => Some(ModuleCapability::GitConfig),
+            "task.create" => Some(ModuleCapability::TaskCreate),
+            "task.update" => Some(ModuleCapability::TaskUpdate),
+            "task.delete" => Some(ModuleCapability::TaskDelete),
+            "task.list" => Some(ModuleCapability::TaskList),
+            "task.status" => Some(ModuleCapability::TaskStatus),
+            "file.browse" => Some(ModuleCapability::FileBrowse),
+            "file.read" => Some(ModuleCapability::FileRead),
+            "file.preview" => Some(ModuleCapability::FilePreview),
+            "file.search" => Some(ModuleCapability::FileSearch),
+            "file.create" => Some(ModuleCapability::FileCreate),
+            "file.delete" => Some(ModuleCapability::FileDelete),
+            "file.rename" => Some(ModuleCapability::FileRename),
+            _ => None,
+        }
+    }
+}
+
+/// Module config property
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct ModuleConfigProperty {
+    #[serde(rename = "type")]
+    pub prop_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub default: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub enum_values: Option<Vec<serde_json::Value>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub items: Option<Box<ModuleConfigProperty>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub format: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub min_length: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_length: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub minimum: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub maximum: Option<f64>,
+}
+
+/// Module config schema
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModuleConfigSchema {
+    #[serde(rename = "type")]
+    pub schema_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    pub properties: std::collections::HashMap<String, ModuleConfigProperty>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub required: Option<Vec<String>>,
+}
+
+/// Module
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Module {
+    pub id: String,
+    pub key: String,
+    pub name: String,
+    pub description: String,
+    pub version: String,
+    pub capabilities: Vec<String>,
+    pub config_schema: ModuleConfigSchema,
+    pub default_config: serde_json::Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub icon: Option<String>,
+    pub is_built_in: bool,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+/// Directory (new module system)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Directory {
+    pub id: String,
+    pub project_id: String,
+    pub name: String,
+    pub relative_path: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub module_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub module_config: Option<serde_json::Value>,
+    pub sort_order: i32,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+/// Template scope
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum TemplateScope {
+    Local,
+    Project,
+    Official,
+}
+
+/// Directory template item
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DirectoryTemplateItem {
+    pub name: String,
+    pub relative_path: String,
+    pub module_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub module_config: Option<serde_json::Value>,
+}
+
+/// Directory template
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DirectoryTemplate {
+    pub id: String,
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    pub scope: TemplateScope,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub project_id: Option<String>,
+    pub items: Vec<DirectoryTemplateItem>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub created_by: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
 }

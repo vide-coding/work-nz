@@ -18,6 +18,17 @@ import type {
   PreviewKind,
   IdeConfig,
   FsResult,
+  // New module system types
+  Module,
+  ModuleCreateInput,
+  ModuleUpdateInput,
+  Directory,
+  DirectoryCreateInput,
+  DirectoryUpdateInput,
+  DirectoryTemplate,
+  DirectoryTemplateCreateInput,
+  DirectoryTemplateUpdateInput,
+  TemplateScope,
 } from '@/types'
 
 // Workspace API
@@ -208,5 +219,140 @@ export const ideApi = {
 
   async preview(repoId: string, ide?: IdeConfig): Promise<IdeConfig | null> {
     return invoke('ide_preview', { repoId, ide })
+  },
+}
+
+// Module API
+export const moduleApi = {
+  async list(): Promise<Module[]> {
+    return invoke('module_list')
+  },
+
+  async get(id: string): Promise<Module> {
+    return invoke('module_get', { id })
+  },
+
+  async getByKey(key: string): Promise<Module> {
+    return invoke('module_get_by_key', { key })
+  },
+
+  async create(input: ModuleCreateInput): Promise<Module> {
+    return invoke('module_create', { input })
+  },
+
+  async update(id: string, patch: ModuleUpdateInput): Promise<Module> {
+    return invoke('module_update', { id, patch })
+  },
+
+  async delete(id: string): Promise<void> {
+    return invoke('module_delete', { id })
+  },
+
+  async validateConfig(
+    id: string,
+    config: Record<string, unknown>
+  ): Promise<{ valid: boolean; errors?: string[] }> {
+    return invoke('module_validate_config', { id, config })
+  },
+}
+
+// Directory API
+export const directoryApi = {
+  async list(projectId: string): Promise<Directory[]> {
+    return invoke('directory_list', { projectId })
+  },
+
+  async get(id: string): Promise<Directory> {
+    return invoke('directory_get', { id })
+  },
+
+  async create(projectId: string, input: DirectoryCreateInput): Promise<Directory> {
+    return invoke('directory_create', { projectId, input })
+  },
+
+  async update(id: string, patch: DirectoryUpdateInput): Promise<Directory> {
+    return invoke('directory_update', { id, patch })
+  },
+
+  async delete(id: string): Promise<void> {
+    return invoke('directory_delete', { id })
+  },
+
+  async enableModule(
+    id: string,
+    moduleId: string,
+    config?: Record<string, unknown>
+  ): Promise<Directory> {
+    return invoke('directory_enable_module', { id, moduleId, config })
+  },
+
+  async disableModule(id: string): Promise<Directory> {
+    return invoke('directory_disable_module', { id })
+  },
+
+  async updateModuleConfig(id: string, config: Record<string, unknown>): Promise<Directory> {
+    return invoke('directory_update_module_config', { id, config })
+  },
+
+  async reorder(projectId: string, orderedIds: string[]): Promise<Directory[]> {
+    return invoke('directory_reorder', { projectId, orderedIds })
+  },
+}
+
+// Template API
+export const templateApi = {
+  async list(
+    scope?: 'local' | 'project' | 'official',
+    projectId?: string
+  ): Promise<DirectoryTemplate[]> {
+    return invoke('template_list', { scope, projectId })
+  },
+
+  async get(id: string): Promise<DirectoryTemplate> {
+    return invoke('template_get', { id })
+  },
+
+  async create(input: DirectoryTemplateCreateInput): Promise<DirectoryTemplate> {
+    return invoke('template_create', { input })
+  },
+
+  async update(id: string, patch: DirectoryTemplateUpdateInput): Promise<DirectoryTemplate> {
+    return invoke('template_update', { id, patch })
+  },
+
+  async delete(id: string): Promise<void> {
+    return invoke('template_delete', { id })
+  },
+
+  async apply(
+    templateId: string,
+    projectId: string,
+    customizations?: { items?: Array<{ relativePath?: string; name?: string; excluded?: boolean }> }
+  ): Promise<Directory[]> {
+    return invoke('template_apply', { templateId, projectId, customizations })
+  },
+
+  async fromDirectories(
+    name: string,
+    description: string,
+    scope: TemplateScope,
+    projectId: string,
+    directoryIds: string[]
+  ): Promise<DirectoryTemplate> {
+    return invoke('template_from_directories', {
+      name,
+      description,
+      scope,
+      projectId,
+      directoryIds,
+    })
+  },
+
+  async export(templateId: string): Promise<string> {
+    return invoke('template_export', { templateId })
+  },
+
+  async import(filePath: string): Promise<DirectoryTemplate> {
+    return invoke('template_import', { filePath })
   },
 }
