@@ -1,17 +1,110 @@
-// 代码高亮功能已禁用
-// 如需重新启用，可以集成 shiki 或 highlight.js
+import { createHighlighter, type Highlighter } from 'shiki'
 
-// 语言规则定义（已禁用）
-const languageRules: Record<string, never> = {}
+// Language support
+const supportedLanguages = [
+  'javascript',
+  'typescript',
+  'jsx',
+  'tsx',
+  'python',
+  'ruby',
+  'go',
+  'rust',
+  'java',
+  'c',
+  'cpp',
+  'csharp',
+  'html',
+  'css',
+  'scss',
+  'less',
+  'json',
+  'yaml',
+  'toml',
+  'xml',
+  'markdown',
+  'bash',
+  'shell',
+  'powershell',
+  'sql',
+  'graphql',
+  'dockerfile',
+  'vue',
+  'svelte',
+  'php',
+]
 
-// 代码高亮函数（已禁用，直接返回转义后的代码）
-export function highlightCode(code: string, _language: string): string {
-  if (!code) return ''
-  // 直接返回转义后的代码，不做高亮处理
-  return escapeHtml(code)
+// Theme configurations - matching CSS variables
+const themeMap: Record<string, string> = {
+  light: 'github-light',
+  dark: 'github-dark',
+  nord: 'nord',
+  solarized: 'solarized-dark',
 }
 
-// 转义 HTML 特殊字符
+// Singleton highlighter instance
+let highlighter: Highlighter | null = null
+
+// Initialize highlighter
+async function initHighlighter(): Promise<Highlighter> {
+  if (highlighter) return highlighter
+
+  highlighter = await createHighlighter({
+    themes: ['github-light', 'github-dark', 'nord', 'solarized-dark'],
+    langs: supportedLanguages,
+  })
+
+  return highlighter
+}
+
+// Code highlight function using Shiki
+export async function highlightCode(code: string, language: string): Promise<string> {
+  if (!code) return ''
+
+  const lang = normalizeLanguage(language)
+
+  try {
+    const hl = await initHighlighter()
+    const theme = 'github-light' // Default theme, can be customized
+
+    const html = hl.codeToHtml(code, {
+      lang,
+      theme,
+    })
+
+    // Extract just the highlighted code, strip outer wrapper
+    // Shiki returns: <pre class="shiki ..."><code>...</code></pre>
+    const match = html.match(/<code[^>]*>([\s\S]*)<\/code>/)
+    return match ? match[1] : escapeHtml(code)
+  } catch (error) {
+    console.warn(`Failed to highlight code with Shiki (lang: ${lang}):`, error)
+    return escapeHtml(code)
+  }
+}
+
+// Normalize language alias to supported language
+function normalizeLanguage(lang: string): string {
+  const languageMap: Record<string, string> = {
+    js: 'javascript',
+    ts: 'typescript',
+    sh: 'bash',
+    shell: 'bash',
+    yml: 'yaml',
+    md: 'markdown',
+    py: 'python',
+    rb: 'ruby',
+    rs: 'rust',
+    cpp: 'cpp',
+    csharp: 'csharp',
+    cs: 'csharp',
+    vue: 'vue',
+  }
+
+  const normalized = lang?.toLowerCase() || ''
+  return languageMap[normalized] || normalized || 'text'
+}
+
+// Escape HTML special characters
 function escapeHtml(text: string): string {
   return text
     .replace(/&/g, '&amp;')
@@ -21,23 +114,29 @@ function escapeHtml(text: string): string {
     .replace(/'/g, '&#039;')
 }
 
-// 从语言类名中提取语言
+// Extract language from class name
 export function getLanguageFromClass(className: string): string {
   const match = className.match(/language-(\w+)/)
   return match ? match[1] : 'text'
 }
 
-// 检查语言是否支持（已禁用，始终返回 false）
-export function isLanguageSupported(_language: string): boolean {
-  return false
+// Check if language is supported
+export function isLanguageSupported(language: string): boolean {
+  return supportedLanguages.includes(normalizeLanguage(language))
 }
 
-// Composable 导出
+// Get available themes
+export function getAvailableThemes(): string[] {
+  return Object.keys(themeMap)
+}
+
+// Composable export
 export function useMarkdownHighlight() {
   return {
     highlightCode,
     getLanguageFromClass,
     isLanguageSupported,
-    languageRules,
+    getAvailableThemes,
+    supportedLanguages,
   }
 }

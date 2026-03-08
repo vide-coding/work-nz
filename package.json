@@ -25,6 +25,7 @@
     "lucide-vue-next": "^0.577.0",
     "marked": "^17.0.4",
     "postcss": "^8.5.8",
+    "shiki": "^4.0.1",
     "tailwindcss": "^4.2.1",
     "vue": "^3.5.13",
     "vue-i18n": "^11.3.0",

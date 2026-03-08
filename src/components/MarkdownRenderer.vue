@@ -33,7 +33,69 @@ const emit = defineEmits<{
 }>()
 
 // 代码高亮 composable
-const { highlightCode } = useMarkdownHighlight()
+const { highlightCode: highlightCodeAsync } = useMarkdownHighlight()
+
+// 同步版本的 highlightCode（向后兼容）
+function highlightCode(code: string, language: string): string {
+  // 同步调用时会返回空字符串，因为 Shiki 是异步的
+  // 实际高亮在 postProcess 中处理
+  return escapeHtml(code)
+}
+
+// 后处理 HTML，替换代码块为高亮版本
+async function postProcessHtml(html: string): Promise<string> {
+  if (!props.enableHighlight) return html
+
+  // 匹配所有代码块
+  const codeBlockRegex =
+    /<div class="code-block-wrapper">\s*<div class="code-header">\s*<span class="code-lang">(\w+)<\/span>.*?<pre class="language-(\w+)"[^>]*><code[^>]*>([\s\S]*?)<\/code><\/pre>\s*<\/div>/g
+
+  const matches: Array<{ lang: string; code: string; start: number; end: number }> = []
+  let match
+
+  while ((match = codeBlockRegex.exec(html)) !== null) {
+    const fullMatch = match[0]
+    const lang = match[1]
+    const code = decodeHtmlEntities(match[3])
+    matches.push({ lang, code, start: match.index, end: match.index + fullMatch.length })
+  }
+
+  // 从后往前替换，避免索引变化
+  let result = html
+  for (const m of matches.reverse()) {
+    const highlightedCode = await highlightCodeAsync(m.code, m.lang)
+    const newBlock = `<div class="code-block-wrapper">
+      <div class="code-header">
+        <span class="code-lang">${m.lang}</span>
+        <button class="copy-button" data-code="${encodeURIComponent(m.code)}" title="Copy code">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+        </button>
+      </div>
+      <pre class="language-${m.lang}"><code class="language-${m.lang}">${highlightedCode}</code></pre>
+    </div>`
+
+    result = result.slice(0, m.start) + newBlock + result.slice(m.end)
+  }
+
+  return result
+}
+
+// HTML 实体解码
+function decodeHtmlEntities(text: string): string {
+  const textarea = document.createElement('textarea')
+  textarea.innerHTML = text
+  return textarea.value
+}
+
+// HTML 转义（用于初始渲染）
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
 
 // 存储渲染后的 HTML
 const _html = ref('')
@@ -71,11 +133,8 @@ function createRenderer(): Renderer {
   renderer.code = ({ text, lang }: Tokens.Code) => {
     const language = lang || 'text'
 
-    // 如果启用了高亮，使用高亮后的代码
-    let highlightedCode = text
-    if (props.enableHighlight) {
-      highlightedCode = highlightCode(text, language)
-    }
+    // 直接返回转义后的代码，高亮在 postProcess 中异步处理
+    const escapedCode = escapeHtml(text)
 
     return `<div class="code-block-wrapper">
       <div class="code-header">
@@ -84,7 +143,7 @@ function createRenderer(): Renderer {
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
         </button>
       </div>
-      <pre class="language-${language}"><code class="language-${language}">${highlightedCode}</code></pre>
+      <pre class="language-${language}"><code class="language-${language}">${escapedCode}</code></pre>
     </div>`
   }
 
@@ -143,9 +202,12 @@ async function renderMarkdown(): Promise<string> {
       gfm: true,
     })
 
+    // 后处理：异步高亮代码块
+    const processedHtml = await postProcessHtml(html)
+
     // 发出渲染完成事件
-    emit('rendered', html)
-    return html
+    emit('rendered', processedHtml)
+    return processedHtml
   } catch (error) {
     console.error('Markdown rendering error:', error)
     return `<p class="text-[var(--color-error)]">Failed to render markdown: ${error}</p>`
