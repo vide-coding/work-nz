@@ -2,6 +2,7 @@
 import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { getCurrentWindow } from '@tauri-apps/api/window'
+import draggable from 'vuedraggable'
 import { useLocale } from '@/locales/useLocale'
 import {
   projectApi,
@@ -36,6 +37,7 @@ import {
   GitBranch,
   CheckSquare,
   Files,
+  GripVertical,
 } from 'lucide-vue-next'
 import { debounce } from '@/composables/useDebounce'
 
@@ -81,6 +83,7 @@ const {
   selectDirectory,
   enableModule,
   disableModule,
+  reorderDirectories,
 } = useDirectoryNavigation(projectId.value)
 
 // Get icon for module type
@@ -645,6 +648,88 @@ async function handleCreateModuleDirectory() {
   }
 }
 
+// Handle directory reorder (drag and drop)
+const isReordering = ref(false)
+const draggedDirectories = ref<Directory[]>([])
+
+// One-time sync when directories first load
+let hasInitialized = false
+watch(
+  directories,
+  (newDirs) => {
+    if (!hasInitialized && newDirs.length > 0) {
+      draggedDirectories.value = [...newDirs]
+      hasInitialized = true
+    }
+  },
+  { immediate: true }
+)
+
+// Handle drag events
+let reorderTimeout: ReturnType<typeof setTimeout> | null = null
+
+function onDragStart() {
+  console.log(
+    'Drag started, current order:',
+    draggedDirectories.value.map((d) => d.name)
+  )
+}
+
+function onDragChange(evt: any) {
+  console.log('Drag CHANGE event:', evt)
+  console.log(
+    'After change, draggedDirectories:',
+    draggedDirectories.value.map((d) => d.name)
+  )
+}
+
+function onDragUpdate(evt: any) {
+  console.log('Drag UPDATE event:', evt)
+  console.log(
+    'After update, draggedDirectories:',
+    draggedDirectories.value.map((d) => d.name)
+  )
+}
+
+function onModelValueUpdate(newList: Directory[]) {
+  console.log(
+    'Model value updated:',
+    newList.map((d) => d.name)
+  )
+  draggedDirectories.value = newList
+}
+
+function onDragEnd() {
+  console.log(
+    'Drag ended, NEW order:',
+    draggedDirectories.value.map((d) => d.name)
+  )
+
+  if (isReordering.value || reorderTimeout) return
+
+  // Wait for drag animation to complete (200ms)
+  reorderTimeout = setTimeout(async () => {
+    reorderTimeout = null
+    isReordering.value = true
+    try {
+      const orderedIds = draggedDirectories.value.map((dir) => dir.id)
+      console.log('Saving order:', orderedIds)
+      const reordered = await reorderDirectories(orderedIds)
+      console.log('Reorder result:', reordered)
+      if (reordered) {
+        // Reload to get fresh data from server
+        await loadDirectories()
+        // Reset initialized flag to allow re-sync
+        hasInitialized = false
+      }
+    } catch (e) {
+      console.error('Failed to reorder directories:', e)
+    } finally {
+      isReordering.value = false
+    }
+  }, 250)
+}
+
 // Lifecycle
 onMounted(async () => {
   await loadSettings()
@@ -710,71 +795,64 @@ onMounted(async () => {
           </div>
 
           <!-- Directories -->
-          <div v-else class="space-y-2">
-            <div
-              v-for="dir in directories"
-              :key="dir.id"
-              :class="[
-                'p-3 rounded-lg cursor-pointer transition-all',
-                currentDirectory?.id === dir.id
-                  ? 'bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-500 shadow-sm'
-                  : 'hover:bg-gray-100 dark:hover:bg-gray-800 border-2 border-transparent',
-              ]"
-              @click="selectDirectory(dir.id)"
-            >
-              <div class="flex items-center gap-3">
-                <component :is="getModuleIcon(dir.moduleId)" class="w-5 h-5 text-gray-500" />
-                <div class="flex-1 min-w-0">
-                  <div class="font-medium text-gray-900 dark:text-white truncate">
-                    {{ dir.name }}
+          <draggable
+            :model-value="draggedDirectories"
+            @update:model-value="onModelValueUpdate"
+            item-key="id"
+            group="directories"
+            ghost-class="opacity-50"
+            animation="200"
+            force-fallback="true"
+            @start="onDragStart"
+            @end="onDragEnd"
+          >
+            <template #item="{ element: dir }">
+              <div
+                :class="[
+                  'p-3 rounded-lg cursor-pointer transition-all select-none',
+                  currentDirectory?.id === dir.id
+                    ? 'bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-500 shadow-sm'
+                    : 'hover:bg-gray-100 dark:hover:bg-gray-800 border-2 border-transparent',
+                ]"
+                @click="selectDirectory(dir.id)"
+              >
+                <div class="flex items-center gap-3">
+                  <div
+                    class="drag-handle w-5 h-5 flex items-center justify-center cursor-grab active:cursor-grabbing flex-shrink-0"
+                  >
+                    <GripVertical class="w-4 h-4 text-gray-400 pointer-events-none" />
                   </div>
-                  <div v-if="dir.moduleId" class="text-xs text-gray-500">
-                    {{ moduleRegistry.get(dir.moduleId)?.name }}
+                  <component
+                    :is="getModuleIcon(dir.moduleId)"
+                    class="w-5 h-5 text-gray-500 flex-shrink-0"
+                  />
+                  <div class="flex-1 min-w-0">
+                    <div class="font-medium text-gray-900 dark:text-white truncate">
+                      {{ dir.name }}
+                    </div>
+                    <div v-if="dir.moduleId" class="text-xs text-gray-500">
+                      {{ moduleRegistry.get(dir.moduleId)?.name }}
+                    </div>
+                    <div v-else class="text-xs text-gray-400">No module</div>
                   </div>
-                  <div v-else class="text-xs text-gray-400">No module</div>
                 </div>
               </div>
-            </div>
+            </template>
+          </draggable>
 
-            <!-- Empty State -->
-            <div v-if="directories.length === 0" class="text-center py-8">
-              <Folder class="w-12 h-12 mx-auto text-gray-300 mb-3" />
-              <p class="text-gray-500 text-sm mb-4">No directories yet</p>
-              <button
-                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                @click="handleCreateModuleDirectory"
-              >
-                Create First Directory
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Content Area -->
-      <main class="flex-1 overflow-hidden bg-gray-50 dark:bg-gray-800">
-        <!-- Module Content -->
-        <ModuleContentArea v-if="currentDirectory" :directory="currentDirectory" />
-
-        <!-- Empty State -->
-        <div v-else class="h-full flex items-center justify-center">
-          <div class="text-center">
-            <Folder class="w-16 h-16 mx-auto text-gray-300 mb-4" />
-            <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Select a Directory
-            </h3>
-            <p class="text-gray-500 mb-4">
-              Choose a directory from the sidebar or create a new one
-            </p>
+          <!-- Empty State -->
+          <div v-if="directories.length === 0" class="text-center py-8">
+            <Folder class="w-12 h-12 mx-auto text-gray-300 mb-3" />
+            <p class="text-gray-500 text-sm mb-4">No directories yet</p>
             <button
-              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
               @click="handleCreateModuleDirectory"
             >
-              + Create Directory
+              Create First Directory
             </button>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   </div>
 </template>

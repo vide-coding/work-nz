@@ -98,23 +98,17 @@ pub fn directory_create(project_id: String, input: serde_json::Value) -> Result<
         .and_then(|v| v.as_str())
         .map(String::from);
 
-    let module_config: Option<serde_json::Value> = input
-        .get("moduleConfig")
-        .cloned();
+    let module_config: Option<serde_json::Value> = input.get("moduleConfig").cloned();
 
-    let sort_order = input
-        .get("sortOrder")
-        .and_then(|v| v.as_i64())
-        .unwrap_or(0) as i32;
+    let sort_order = input.get("sortOrder").and_then(|v| v.as_i64()).unwrap_or(0) as i32;
 
     // 获取项目信息，创建物理目录
     let project = project_get(project_id.clone())?;
     let full_path = Path::new(&project.project_path).join(&relative_path);
 
     // 创建物理目录（如果不存在）
-    fs::create_dir_all(&full_path).map_err(|e| {
-        format!("创建物理目录失败: {} - {}", full_path.display(), e)
-    })?;
+    fs::create_dir_all(&full_path)
+        .map_err(|e| format!("创建物理目录失败: {} - {}", full_path.display(), e))?;
 
     let id = uuid::Uuid::new_v4().to_string();
     let now = Utc::now().to_rfc3339();
@@ -203,9 +197,8 @@ pub fn directory_update(id: String, patch: serde_json::Value) -> Result<Director
         let new_full_path = Path::new(&project.project_path).join(&relative_path);
 
         if old_full_path.exists() && old_full_path.is_dir() {
-            fs::rename(&old_full_path, &new_full_path).map_err(|e| {
-                format!("移动目录失败: {} - {}", old_full_path.display(), e)
-            })?;
+            fs::rename(&old_full_path, &new_full_path)
+                .map_err(|e| format!("移动目录失败: {} - {}", old_full_path.display(), e))?;
         }
     }
 
@@ -213,7 +206,15 @@ pub fn directory_update(id: String, patch: serde_json::Value) -> Result<Director
         "UPDATE directories SET name = ?1, relative_path = ?2, module_id = ?3,
                            module_config_json = ?4, sort_order = ?5, updated_at = ?6
          WHERE id = ?7",
-        params![name, relative_path, module_id, module_config_json, sort_order, now, id],
+        params![
+            name,
+            relative_path,
+            module_id,
+            module_config_json,
+            sort_order,
+            now,
+            id
+        ],
     )
     .map_err(|e| format!("更新目录失败: {}", e))?;
 
@@ -281,11 +282,13 @@ pub fn directory_enable_module(
 
     // 验证配置
     if let Some(cfg) = &config {
-        let validation = crate::commands::module::module_validate_config(
-            module_id.clone(),
-            cfg.clone(),
-        )?;
-        if !validation.get("valid").and_then(|v| v.as_bool()).unwrap_or(false) {
+        let validation =
+            crate::commands::module::module_validate_config(module_id.clone(), cfg.clone())?;
+        if !validation
+            .get("valid")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false)
+        {
             let errors = validation
                 .get("errors")
                 .and_then(|v| v.as_array())
@@ -344,14 +347,16 @@ pub fn directory_update_module_config(
 
     // 获取当前模块
     let dir = directory_get(id.clone())?;
-    let module_id = dir
-        .module_id
-        .ok_or("目录未启用模块")?;
+    let module_id = dir.module_id.ok_or("目录未启用模块")?;
 
     // 验证配置
     let validation =
         crate::commands::module::module_validate_config(module_id.clone(), config.clone())?;
-    if !validation.get("valid").and_then(|v| v.as_bool()).unwrap_or(false) {
+    if !validation
+        .get("valid")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false)
+    {
         let errors = validation
             .get("errors")
             .and_then(|v| v.as_array())
@@ -380,10 +385,7 @@ pub fn directory_update_module_config(
 
 /// 重新排序目录
 #[tauri::command]
-pub fn directory_reorder(
-    project_id: String,
-    ordered_ids: Vec<String>,
-) -> Result<Vec<Directory>, String> {
+pub fn directory_reorder(project_id: String, ordered_ids: Vec<String>) -> Result<(), String> {
     let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
     let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
 
@@ -397,6 +399,5 @@ pub fn directory_reorder(
         .map_err(|e| format!("更新排序失败: {}", e))?;
     }
 
-    // 返回更新后的目录列表
-    directory_list(project_id)
+    Ok(())
 }

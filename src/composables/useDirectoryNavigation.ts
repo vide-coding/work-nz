@@ -253,6 +253,30 @@ export function useDirectoryNavigation(projectId: string) {
     }
   }
 
+  // Reorder directories with timeout
+  async function reorderDirectories(orderedIds: string[]): Promise<boolean> {
+    loading.value = true
+    error.value = null
+    try {
+      // Create a promise that rejects after timeout
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout')), 5000)
+      })
+
+      await Promise.race([directoryApi.reorder(projectId, orderedIds), timeoutPromise])
+
+      // Reload directories to get updated order
+      await loadDirectories()
+      return true
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Failed to reorder directories'
+      console.error('Reorder failed:', e)
+      return false
+    } finally {
+      loading.value = false
+    }
+  }
+
   // Check if directory has capability
   function hasCapability(directoryId: string, capability: ModuleCapability): boolean {
     const dir = directories.value.find((d) => d.id === directoryId)
@@ -283,6 +307,7 @@ export function useDirectoryNavigation(projectId: string) {
     createDirectory,
     updateDirectory,
     deleteDirectory,
+    reorderDirectories,
     enableModule,
     disableModule,
     hasCapability,
