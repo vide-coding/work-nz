@@ -8,6 +8,7 @@ const props = defineProps<{
   directories: DirectoryNavItem[]
   repos: GitRepository[]
   isEditing: boolean
+  editName: string
   editDescription: string
 }>()
 
@@ -15,6 +16,7 @@ const emit = defineEmits<{
   startEdit: []
   cancelEdit: []
   saveProject: []
+  updateName: [value: string]
   updateDescription: [value: string]
 }>()
 
@@ -95,6 +97,10 @@ function saveProject() {
 function updateDescription(event: Event) {
   emit('updateDescription', (event.target as HTMLTextAreaElement).value)
 }
+
+function updateName(event: Event) {
+  emit('updateName', (event.target as HTMLInputElement).value)
+}
 </script>
 
 <template>
@@ -133,13 +139,30 @@ function updateDescription(event: Event) {
 
       <!-- Edit Mode -->
       <div v-if="isEditing" class="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-        <textarea
-          :value="editDescription"
-          rows="4"
-          class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 resize-none"
-          :placeholder="$t('projects.descriptionPlaceholder')"
-          @input="updateDescription"
-        ></textarea>
+        <div class="mb-3">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            {{ $t('projectEdit.name') }}
+          </label>
+          <input
+            :value="editName"
+            type="text"
+            class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+            :placeholder="$t('projectEdit.namePlaceholder')"
+            @input="updateName"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            {{ $t('projectEdit.description') }}
+          </label>
+          <textarea
+            :value="editDescription"
+            rows="3"
+            class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 resize-none"
+            :placeholder="$t('projects.descriptionPlaceholder')"
+            @input="updateDescription"
+          ></textarea>
+        </div>
         <div class="flex justify-end gap-2 mt-3">
           <button
             class="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"

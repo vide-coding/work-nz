@@ -118,6 +118,7 @@ const settings = ref<WorkspaceSettings>({ themeMode: 'system' })
 const loading = ref(false)
 const error = ref('')
 const isEditing = ref(false)
+const editName = ref('')
 const editDescription = ref('')
 const currentWorkspace = ref<WorkspaceInfo | null>(null)
 
@@ -216,6 +217,7 @@ async function loadProject() {
     loading.value = true
     error.value = ''
     project.value = await projectApi.get(projectId.value)
+    editName.value = project.value.name
     editDescription.value = project.value.description || ''
   } catch (e: any) {
     error.value = e.message || String(e)
@@ -445,6 +447,7 @@ async function updateProject() {
 
   try {
     const updated = await projectApi.update(projectId.value, {
+      name: editName.value,
       description: editDescription.value,
     })
     // 使用后端返回的完整数据更新前端状态
@@ -588,6 +591,10 @@ function handleSaveProject() {
   updateProject()
 }
 
+function handleUpdateName(value: string) {
+  editName.value = value
+}
+
 function handleUpdateDescription(value: string) {
   editDescription.value = value
 }
@@ -656,17 +663,13 @@ async function handleCreateModuleDirectory() {
 // Handle directory reorder (drag and drop)
 const draggedDirectories = ref<Directory[]>([])
 
-// One-time sync when directories first load
-let hasInitialized = false
+// Sync draggedDirectories when directories change
 watch(
   directories,
   (newDirs) => {
-    if (!hasInitialized && newDirs.length > 0) {
-      draggedDirectories.value = [...newDirs]
-      hasInitialized = true
-    }
+    draggedDirectories.value = [...newDirs]
   },
-  { immediate: true }
+  { immediate: true, deep: true }
 )
 
 // Handle drag events
@@ -863,10 +866,12 @@ onMounted(async () => {
           :directories="directories"
           :repos="repos"
           :is-editing="isEditing"
+          :edit-name="editName"
           :edit-description="editDescription"
           @start-edit="handleStartEdit"
           @cancel-edit="handleCancelEdit"
           @save-project="handleSaveProject"
+          @update-name="handleUpdateName"
           @update-description="handleUpdateDescription"
         />
         <ModuleContentArea v-else :directory="currentDirectory" />
