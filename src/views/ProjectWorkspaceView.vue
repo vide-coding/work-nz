@@ -13,7 +13,7 @@ import {
   workspaceApi,
   previewApi,
 } from '@/composables/useApi'
-import { useDirectoryNavigation } from '@/composables/useDirectoryNavigation'
+import { useDirectoryNavigation, type DirectoryNavItem } from '@/composables/useDirectoryNavigation'
 import { moduleRegistry } from '@/composables/useModuleRegistry'
 import type {
   Project,
@@ -98,6 +98,11 @@ function getModuleIcon(moduleKey?: string) {
     default:
       return Folder
   }
+}
+
+// Go to home page (ProjectIntro)
+function goToHome() {
+  selectDirectory(null)
 }
 
 // Show module-based directory list (always use new system)
@@ -760,7 +765,10 @@ onMounted(async () => {
       >
         <!-- Project Header -->
         <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+          <h2
+            class="text-lg font-semibold text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+            @click="goToHome"
+          >
             {{ project?.name || 'Project' }}
           </h2>
         </div>
@@ -848,13 +856,20 @@ onMounted(async () => {
 
       <!-- Main Content Area -->
       <div class="flex-1 overflow-hidden bg-white dark:bg-gray-800">
-        <ModuleContentArea v-if="currentDirectory" :directory="currentDirectory" />
-        <div v-else class="h-full flex items-center justify-center text-gray-500">
-          <div class="text-center">
-            <Folder class="w-16 h-16 mx-auto mb-4 text-gray-300" />
-            <p>Select a directory to view its content</p>
-          </div>
-        </div>
+        <!-- Show ProjectIntro as home page when no directory is selected -->
+        <ProjectIntro
+          v-if="!currentDirectory"
+          :project="project"
+          :directories="directories"
+          :repos="repos"
+          :is-editing="isEditing"
+          :edit-description="editDescription"
+          @start-edit="handleStartEdit"
+          @cancel-edit="handleCancelEdit"
+          @save-project="handleSaveProject"
+          @update-description="handleUpdateDescription"
+        />
+        <ModuleContentArea v-else :directory="currentDirectory" />
       </div>
     </div>
   </div>
