@@ -1,4 +1,8 @@
 {
+  "rust-analyzer.server.extraEnv": {
+    "CARGO_TARGET_DIR": "${workspaceFolder}/src-tauri/target/analyzer"
+  },
+  "rust-analyzer.cargo.targetDir": "${workspaceFolder}/src-tauri/target/analyzer",
   "i18n-ally.enabledFrameworks": ["vue"],
   "i18n-ally.enabledParsers": ["json"],
   "i18n-ally.localesPaths": ["src/locales/lang"],

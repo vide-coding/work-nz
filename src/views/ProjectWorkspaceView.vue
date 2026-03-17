@@ -649,7 +649,6 @@ async function handleCreateModuleDirectory() {
 }
 
 // Handle directory reorder (drag and drop)
-const isReordering = ref(false)
 const draggedDirectories = ref<Directory[]>([])
 
 // One-time sync when directories first load
@@ -705,27 +704,19 @@ function onDragEnd() {
     draggedDirectories.value.map((d) => d.name)
   )
 
-  if (isReordering.value || reorderTimeout) return
+  if (reorderTimeout) return
 
   // Wait for drag animation to complete (200ms)
   reorderTimeout = setTimeout(async () => {
     reorderTimeout = null
-    isReordering.value = true
     try {
       const orderedIds = draggedDirectories.value.map((dir) => dir.id)
       console.log('Saving order:', orderedIds)
       const reordered = await reorderDirectories(orderedIds)
       console.log('Reorder result:', reordered)
-      if (reordered) {
-        // Reload to get fresh data from server
-        await loadDirectories()
-        // Reset initialized flag to allow re-sync
-        hasInitialized = false
-      }
+      // 不刷新列表，保持当前排序状态
     } catch (e) {
       console.error('Failed to reorder directories:', e)
-    } finally {
-      isReordering.value = false
     }
   }, 250)
 }
@@ -803,6 +794,7 @@ onMounted(async () => {
             ghost-class="opacity-50"
             animation="200"
             force-fallback="true"
+            handle=".drag-handle"
             @start="onDragStart"
             @end="onDragEnd"
           >
@@ -850,6 +842,17 @@ onMounted(async () => {
             >
               Create First Directory
             </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content Area -->
+      <div class="flex-1 overflow-hidden bg-white dark:bg-gray-800">
+        <ModuleContentArea v-if="currentDirectory" :directory="currentDirectory" />
+        <div v-else class="h-full flex items-center justify-center text-gray-500">
+          <div class="text-center">
+            <Folder class="w-16 h-16 mx-auto mb-4 text-gray-300" />
+            <p>Select a directory to view its content</p>
           </div>
         </div>
       </div>

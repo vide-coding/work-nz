@@ -255,7 +255,7 @@ export function useDirectoryNavigation(projectId: string) {
 
   // Reorder directories with timeout
   async function reorderDirectories(orderedIds: string[]): Promise<boolean> {
-    loading.value = true
+    // 不设置 loading 状态，避免显示 loading 提示
     error.value = null
     try {
       // Create a promise that rejects after timeout
@@ -265,15 +265,21 @@ export function useDirectoryNavigation(projectId: string) {
 
       await Promise.race([directoryApi.reorder(projectId, orderedIds), timeoutPromise])
 
-      // Reload directories to get updated order
-      await loadDirectories()
+      // 更新本地目录顺序，不刷新列表
+      const reorderedDirs: Directory[] = []
+      for (const id of orderedIds) {
+        const dir = directories.value.find((d) => d.id === id)
+        if (dir) {
+          reorderedDirs.push(dir)
+        }
+      }
+      directories.value = reorderedDirs
+
       return true
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to reorder directories'
       console.error('Reorder failed:', e)
       return false
-    } finally {
-      loading.value = false
     }
   }
 
