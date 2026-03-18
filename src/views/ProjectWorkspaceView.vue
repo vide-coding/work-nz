@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import draggable from 'vuedraggable'
 import { useLocale } from '@/locales/useLocale'
@@ -58,6 +59,7 @@ const props = defineProps<{
 const router = useRouter()
 const route = useRoute()
 const { locale, changeLocale } = useLocale()
+const { t } = useI18n()
 
 // Type-safe theme mode for ThemeToggle (only used in template)
 const themeMode = computed(() => {
@@ -770,24 +772,28 @@ onMounted(async () => {
             class="text-lg font-semibold text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
             @click="goToHome"
           >
-            {{ project?.name || 'Project' }}
+            {{ project?.name || t('projects.defaultTitle') }}
           </h2>
         </div>
 
         <!-- Directories List -->
         <div class="flex-1 overflow-y-auto p-4">
           <div class="flex justify-between items-center mb-4">
-            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Directories</h3>
+            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              {{ t('workspace.directories') }}
+            </h3>
             <button
               class="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               @click="handleCreateModuleDirectory"
             >
-              + Add
+              {{ t('workspace.addDirectory') }}
             </button>
           </div>
 
           <!-- Loading State -->
-          <div v-if="dirLoading" class="text-center py-4 text-gray-500">Loading...</div>
+          <div v-if="dirLoading" class="text-center py-4 text-gray-500">
+            {{ t('common.loading') }}
+          </div>
 
           <!-- Error State -->
           <div v-else-if="dirError" class="text-center py-4 text-red-500">
@@ -834,7 +840,7 @@ onMounted(async () => {
                     <div v-if="dir.moduleId" class="text-xs text-gray-500">
                       {{ moduleRegistry.get(dir.moduleId)?.name }}
                     </div>
-                    <div v-else class="text-xs text-gray-400">No module</div>
+                    <div v-else class="text-xs text-gray-400">{{ t('workspace.noModule') }}</div>
                   </div>
                 </div>
               </div>
@@ -844,12 +850,12 @@ onMounted(async () => {
           <!-- Empty State -->
           <div v-if="directories.length === 0" class="text-center py-8">
             <Folder class="w-12 h-12 mx-auto text-gray-300 mb-3" />
-            <p class="text-gray-500 text-sm mb-4">No directories yet</p>
+            <p class="text-gray-500 text-sm mb-4">{{ t('workspace.noDirectories') }}</p>
             <button
               class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
               @click="handleCreateModuleDirectory"
             >
-              Create First Directory
+              {{ t('workspace.createFirstDirectory') }}
             </button>
           </div>
         </div>

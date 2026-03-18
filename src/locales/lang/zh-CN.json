@@ -13,7 +13,8 @@
     "create": "创建",
     "creating": "创建中...",
     "cloning": "克隆中...",
-    "confirm": "确认"
+    "confirm": "确认",
+    "loading": "加载中..."
   },
   "workspace": {
     "description": "请选择工作区文件夹，应用数据与项目均存于此处",
@@ -93,7 +94,13 @@
     "repoNameEditHint": "修改仓库显示名称（不影响目录）",
     "descriptionPlaceholder": "输入描述（可选）",
     "editRepo": "编辑仓库",
-    "description": "描述"
+    "description": "描述",
+    "cloneUrlPlaceholder": "https://github.com/...",
+    "cloneTargetPlaceholder": "my-repo",
+    "directories": "目录",
+    "addDirectory": "+ 添加",
+    "noDirectories": "暂无目录",
+    "createFirstDirectory": "创建首个目录"
   },
   "projects": {
     "title": "项目总览",
@@ -113,7 +120,12 @@
     "projectName": "项目名称",
     "projectNamePlaceholder": "输入项目名称",
     "description": "项目描述",
-    "descriptionPlaceholder": "输入项目描述（可选）"
+    "descriptionPlaceholder": "输入项目描述（可选）",
+    "selectToView": "选择项目查看详情",
+    "updatedAt": "更新时间",
+    "openWorkspace": "进入工作区",
+    "defaultTitle": "项目",
+    "hideConfirm": "确定隐藏此项目吗？隐藏后可在工作区数据文件中恢复。"
   },
   "project": {
     "edit": "编辑项目",
@@ -190,5 +202,39 @@
     "modeSeparate": "分离",
     "lightTheme": "亮色主题",
     "darkTheme": "暗色主题"
+  },
+  "template": {
+    "selectTitle": "选择模板",
+    "searchPlaceholder": "搜索模板...",
+    "loading": "加载模板中...",
+    "applying": "应用中...",
+    "apply": "应用",
+    "itemCount": "{n} 个目录",
+    "moreItems": "+{n} 更多",
+    "noResults": "未找到模板",
+    "scopeAll": "所有模板",
+    "scopeOfficial": "官方",
+    "scopeProject": "项目",
+    "scopeLocal": "本地"
+  },
+  "git": {
+    "title": "Git 仓库",
+    "cloneButton": "+ 克隆仓库",
+    "directory": "目录：",
+    "loading": "加载仓库中...",
+    "noRepos": "此目录中没有 Git 仓库",
+    "noReposHint": "点击「克隆仓库」添加",
+    "readme": "README",
+    "noReadme": "未找到 README"
+  },
+  "module": {
+    "noModule": "未启用模块",
+    "selectHint": "选择一个模块以为此目录启用附加功能",
+    "taskEnabled": "任务管理已启用",
+    "taskHint": "创建和管理具有优先级和分配的任务",
+    "fileEnabled": "文件浏览已启用",
+    "fileHint": "浏览和管理此目录中的文件",
+    "notImplemented": "此模块类型尚未在 UI 中实现",
+    "capabilities": "功能："
   }
 }

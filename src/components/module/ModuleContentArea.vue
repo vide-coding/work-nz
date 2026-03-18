@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Directory } from '@/types'
 import { moduleRegistry } from '@/composables/useModuleRegistry'
 import GitModuleView from './GitModuleView.vue'
+
+const { t } = useI18n()
 
 interface Props {
   directory: Directory
@@ -32,9 +35,9 @@ const capabilities = computed(() => {
     <!-- No module assigned -->
     <div v-if="!module" class="module-content-area__empty">
       <div class="module-content-area__empty-content">
-        <p class="module-content-area__empty-title">No module enabled</p>
+        <p class="module-content-area__empty-title">{{ t('module.noModule') }}</p>
         <p class="module-content-area__empty-description">
-          Select a module to enable additional functionality for this directory.
+          {{ t('module.selectHint') }}
         </p>
       </div>
     </div>
@@ -64,9 +67,9 @@ const capabilities = computed(() => {
         <!-- Task Module Content -->
         <template v-else-if="moduleType === 'task'">
           <div class="module-content-area__tasks">
-            <p>Task management enabled</p>
+            <p>{{ t('module.taskEnabled') }}</p>
             <p class="module-content-area__hint">
-              Create and manage tasks with priorities and assignments
+              {{ t('module.taskHint') }}
             </p>
           </div>
         </template>
@@ -74,25 +77,23 @@ const capabilities = computed(() => {
         <!-- File Module Content -->
         <template v-else-if="moduleType === 'file'">
           <div class="module-content-area__files">
-            <p>File browsing enabled</p>
-            <p class="module-content-area__hint">Browse and manage files in this directory</p>
+            <p>{{ t('module.fileEnabled') }}</p>
+            <p class="module-content-area__hint">{{ t('module.fileHint') }}</p>
           </div>
         </template>
 
         <!-- Unknown module type -->
         <template v-else>
           <div class="module-content-area__unknown">
-            <p>Module: {{ module.name }}</p>
-            <p class="module-content-area__hint">
-              This module type is not yet implemented in the UI
-            </p>
+            <p>{{ t('module.notImplemented') }}</p>
+            <p class="module-content-area__hint">{{ module.name }}</p>
           </div>
         </template>
       </div>
 
       <!-- Capabilities indicator -->
       <div class="module-content-area__capabilities">
-        <span class="module-content-area__capabilities-label">Capabilities:</span>
+        <span class="module-content-area__capabilities-label">{{ t('module.capabilities') }}</span>
         <div class="module-content-area__capabilities-list">
           <span v-for="cap in capabilities" :key="cap" class="module-content-area__capability">
             {{ cap }}

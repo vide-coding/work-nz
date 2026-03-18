@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useDirectoryTemplate } from '@/composables/useDirectoryTemplate'
 import type { DirectoryTemplate, TemplateScope } from '@/types'
+
+const { t } = useI18n()
 
 interface Props {
   projectId?: string
@@ -45,10 +48,10 @@ const filteredTemplates = computed(() => {
 })
 
 const scopeLabels: Record<TemplateScope | 'all', string> = {
-  all: 'All Templates',
-  official: 'Official',
-  project: 'Project',
-  local: 'Local',
+  all: t('template.scopeAll'),
+  official: t('template.scopeOfficial'),
+  project: t('template.scopeProject'),
+  local: t('template.scopeLocal'),
 }
 
 onMounted(async () => {
@@ -79,14 +82,14 @@ async function handleApply(template: DirectoryTemplate) {
   <div class="template-selector">
     <!-- Header -->
     <div class="template-selector__header">
-      <h3 class="template-selector__title">Select Template</h3>
+      <h3 class="template-selector__title">{{ t('template.selectTitle') }}</h3>
 
       <!-- Search -->
       <div class="template-selector__search">
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="Search templates..."
+          :placeholder="t('template.searchPlaceholder')"
           class="template-selector__search-input"
         />
       </div>
@@ -109,7 +112,7 @@ async function handleApply(template: DirectoryTemplate) {
 
     <!-- Loading State -->
     <div v-if="loading" class="template-selector__loading">
-      <span>Loading templates...</span>
+      <span>{{ t('template.loading') }}</span>
     </div>
 
     <!-- Error State -->
@@ -138,7 +141,7 @@ async function handleApply(template: DirectoryTemplate) {
             :disabled="applyingTemplate"
             @click.stop="handleApply(template)"
           >
-            {{ applyingTemplate ? 'Applying...' : 'Apply' }}
+            {{ applyingTemplate ? t('template.applying') : t('template.apply') }}
           </button>
         </div>
 
@@ -148,7 +151,9 @@ async function handleApply(template: DirectoryTemplate) {
         </p>
 
         <div class="template-card__meta">
-          <span class="template-card__item-count"> {{ template.items.length }} directories </span>
+          <span class="template-card__item-count">{{
+            t('template.itemCount', { n: template.items.length })
+          }}</span>
         </div>
 
         <!-- Preview Items -->
@@ -162,14 +167,14 @@ async function handleApply(template: DirectoryTemplate) {
             <span class="template-card__item-module">{{ item.moduleId }}</span>
           </div>
           <div v-if="template.items.length > 3" class="template-card__item-more">
-            +{{ template.items.length - 3 }} more
+            {{ t('template.moreItems', { n: template.items.length - 3 }) }}
           </div>
         </div>
       </div>
 
       <!-- Empty State -->
       <div v-if="filteredTemplates.length === 0" class="template-selector__empty">
-        <p>No templates found</p>
+        <p>{{ t('template.noResults') }}</p>
       </div>
     </div>
   </div>

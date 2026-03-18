@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { debounce } from '@/composables/useDebounce'
 import type { Directory, GitRepository, GitRepoStatus } from '@/types'
 import { gitApi, ideApi, fsApi } from '@/composables/useApi'
@@ -7,6 +8,8 @@ import RepoCard from '@/components/workspace/RepoCard.vue'
 import ReadmePreview from '@/components/workspace/ReadmePreview.vue'
 import CloneRepoDialog from '@/components/workspace/CloneRepoDialog.vue'
 import EditRepoDialog from '@/components/workspace/EditRepoDialog.vue'
+
+const { t } = useI18n()
 
 interface Props {
   directory: Directory
@@ -282,20 +285,20 @@ watch(
     <div class="git-module__content">
       <!-- Header -->
       <div class="git-module__header">
-        <h3 class="git-module__title">Git Repositories</h3>
+        <h3 class="git-module__title">{{ t('git.title') }}</h3>
         <button class="git-module__clone-btn" @click="showCloneDialog = true">
-          + Clone Repository
+          {{ t('git.cloneButton') }}
         </button>
       </div>
 
       <!-- Directory path -->
       <div v-if="directory.relativePath" class="git-module__path">
-        <span class="git-module__path-label">Directory:</span>
+        <span class="git-module__path-label">{{ t('git.directory') }}</span>
         <span class="git-module__path-value">{{ directory.relativePath }}</span>
       </div>
 
       <!-- Loading state -->
-      <div v-if="loading" class="git-module__loading">Loading repositories...</div>
+      <div v-if="loading" class="git-module__loading">{{ t('git.loading') }}</div>
 
       <!-- Error state -->
       <div v-else-if="error" class="git-module__error">
@@ -320,8 +323,8 @@ watch(
 
       <!-- Empty state -->
       <div v-else class="git-module__empty">
-        <p>No Git repositories in this directory</p>
-        <p class="git-module__empty-hint">Click "Clone Repository" to add one</p>
+        <p>{{ t('git.noRepos') }}</p>
+        <p class="git-module__empty-hint">{{ t('git.noReposHint') }}</p>
       </div>
     </div>
 
