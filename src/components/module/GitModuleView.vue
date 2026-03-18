@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { debounce } from '@/composables/useDebounce'
 import type { Directory, GitRepository, GitRepoStatus } from '@/types'
 import { gitApi, ideApi, fsApi } from '@/composables/useApi'
 import RepoCard from '@/components/workspace/RepoCard.vue'
@@ -25,6 +26,36 @@ const cloneUrl = ref('')
 const cloneTargetDir = ref('')
 const cloneRepoName = ref('')
 const isCloning = ref(false)
+
+// Auto extract repo name from URL when clone URL changes
+const debouncedExtractRepoName = debounce(async (newUrl: string) => {
+  if (newUrl && !cloneTargetDir.value) {
+    try {
+      const name = await gitApi.extractRepoName(newUrl)
+      if (name) {
+        cloneTargetDir.value = name
+        if (!cloneRepoName.value) {
+          cloneRepoName.value = name
+        }
+      }
+    } catch (e) {
+      console.error('Failed to extract repo name:', e)
+    }
+  }
+}, 300)
+
+watch(cloneUrl, (newUrl) => {
+  if (newUrl) {
+    debouncedExtractRepoName(newUrl)
+  }
+})
+
+// Auto update repo name when target dir changes
+watch(cloneTargetDir, (newDir) => {
+  if (newDir && !cloneRepoName.value) {
+    cloneRepoName.value = newDir
+  }
+})
 
 // Edit dialog state
 const showEditDialog = ref(false)

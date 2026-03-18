@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, watch, ref } from 'vue'
+import { debounce } from '@/composables/useDebounce'
 import { GitBranch, Search, X } from 'lucide-vue-next'
 import RepoCard from './RepoCard.vue'
 import CloneRepoDialog from './CloneRepoDialog.vue'
 import EditRepoDialog from './EditRepoDialog.vue'
 import type { GitRepository, GitRepoStatus } from '@/types'
+import { gitApi } from '@/composables/useApi'
 
 const props = defineProps<{
   repos: GitRepository[]
@@ -39,6 +41,36 @@ const cloneUrl = ref('')
 const cloneTargetDir = ref('')
 const cloneRepoName = ref('')
 const isCloning = ref(false)
+
+// Auto extract repo name from URL when clone URL changes
+const debouncedExtractRepoName = debounce(async (newUrl: string) => {
+  if (newUrl && !cloneTargetDir.value) {
+    try {
+      const name = await gitApi.extractRepoName(newUrl)
+      if (name) {
+        cloneTargetDir.value = name
+        if (!cloneRepoName.value) {
+          cloneRepoName.value = name
+        }
+      }
+    } catch (e) {
+      console.error('Failed to extract repo name:', e)
+    }
+  }
+}, 300)
+
+watch(cloneUrl, (newUrl) => {
+  if (newUrl) {
+    debouncedExtractRepoName(newUrl)
+  }
+})
+
+// Auto update repo name when target dir changes
+watch(cloneTargetDir, (newDir) => {
+  if (newDir && !cloneRepoName.value) {
+    cloneRepoName.value = newDir
+  }
+})
 
 // Edit dialog state
 const isUpdatingRepo = ref(false)
