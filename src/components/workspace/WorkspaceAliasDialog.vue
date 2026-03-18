@@ -40,7 +40,7 @@ function handleCancel() {
 <template>
   <BaseDialog
     :model-value="modelValue"
-    title="$t('workspace.rename')"
+    :title="$t('workspace.rename')"
     @update:model-value="emit('update:modelValue', $event)"
   >
     <div class="space-y-4">

@@ -89,7 +89,11 @@
     "editRepo": "Edit Repository",
     "description": "Description",
     "rename": "Rename",
-    "aliasHint": "Alias will replace path in the list"
+    "aliasHint": "Alias will replace path in the list",
+    "selectOrCreate": "Select or Create Workspace",
+    "delete": "Delete",
+    "setAlias": "Set Alias",
+    "aliasPlaceholder": "Enter alias (optional)"
   },
   "projects": {
     "title": "Projects",
