@@ -112,3 +112,44 @@ print('Missing in zh-CN:', en - zh)
 print('Missing in en-US:', zh - en)
 "
 ```
+
+## Testing Requirements
+
+### After completing ANY coding task, you MUST run tests to verify code quality.
+
+**Test Commands:**
+
+| Command                      | Description                    |
+| ---------------------------- | ------------------------------ |
+| `pnpm test`                  | Run frontend Vitest tests      |
+| `pnpm test:coverage`         | Run tests with coverage report |
+| `pnpm test:run`              | Run tests once (CI mode)       |
+| `cd src-tauri && cargo test` | Run Rust backend tests         |
+
+### Coverage Requirements
+
+- **Target**: 80%+ code coverage
+- **Frontend**: Composables and utility functions
+- **Backend**: Rust commands and type validations
+
+### Test Files Location
+
+**Frontend:**
+
+- `src/composables/*.spec.ts` - Composable unit tests
+- `src/types/*.spec.ts` - Type definition tests
+
+**Backend:**
+
+- `src-tauri/src/**/*.rs` - Inline `#[cfg(test)]` modules
+- `src-tauri/tests/**/*.rs` - Integration tests
+
+### Test Agent
+
+The test agent runs automatically after code changes:
+
+1. Frontend tests with coverage check
+2. Backend Rust tests
+3. Verifies 80% coverage threshold
+
+See `.claude/agents/test-agent.md` for detailed configuration.

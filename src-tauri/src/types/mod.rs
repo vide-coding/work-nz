@@ -27,7 +27,7 @@ pub enum SupportedIdeKind {
 }
 
 /// IDE 配置
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct IdeConfig {
     pub kind: SupportedIdeKind,
@@ -355,7 +355,9 @@ mod tests {
         let input = GitCloneInput {
             remote_url: "https://github.com/test/repo.git".to_string(),
             target_dir_name: "my-repo".to_string(),
+            target_directory: None,
             branch: Some("main".to_string()),
+            name: Some("My Repo".to_string()),
         };
 
         let json = serde_json::to_string(&input).unwrap();
@@ -391,6 +393,157 @@ mod tests {
         };
 
         assert_eq!(pd.relative_path, "docs");
+    }
+
+    // Module System Tests
+
+    #[test]
+    fn test_module_capability_as_str() {
+        assert_eq!(ModuleCapability::GitClone.as_str(), "git.clone");
+        assert_eq!(ModuleCapability::GitPull.as_str(), "git.pull");
+        assert_eq!(ModuleCapability::TaskCreate.as_str(), "task.create");
+        assert_eq!(ModuleCapability::FileBrowse.as_str(), "file.browse");
+    }
+
+    #[test]
+    fn test_module_capability_from_str() {
+        assert_eq!(ModuleCapability::from_str("git.clone"), Some(ModuleCapability::GitClone));
+        assert_eq!(ModuleCapability::from_str("git.pull"), Some(ModuleCapability::GitPull));
+        assert_eq!(ModuleCapability::from_str("invalid"), None);
+    }
+
+    #[test]
+    fn test_module_capability_roundtrip() {
+        for cap in [
+            ModuleCapability::GitClone,
+            ModuleCapability::GitStatus,
+            ModuleCapability::TaskCreate,
+            ModuleCapability::FileBrowse,
+        ] {
+            assert_eq!(ModuleCapability::from_str(cap.as_str()), Some(cap));
+        }
+    }
+
+    #[test]
+    fn test_template_scope() {
+        assert_eq!(TemplateScope::Local, TemplateScope::Local);
+        assert_eq!(TemplateScope::Project, TemplateScope::Project);
+        assert_eq!(TemplateScope::Official, TemplateScope::Official);
+    }
+
+    #[test]
+    fn test_directory_serialization() {
+        let dir = Directory {
+            id: "dir-1".to_string(),
+            project_id: "proj-1".to_string(),
+            name: "src".to_string(),
+            relative_path: "src".to_string(),
+            module_id: Some("builtin:git".to_string()),
+            module_config: Some(serde_json::json!({"autoDetect": true})),
+            sort_order: 0,
+            created_at: "2024-01-01T00:00:00Z".to_string(),
+            updated_at: "2024-01-01T00:00:00Z".to_string(),
+        };
+
+        let json = serde_json::to_string(&dir).unwrap();
+        assert!(json.contains("dir-1"));
+        assert!(json.contains("builtin:git"));
+    }
+
+    #[test]
+    fn test_directory_template_serialization() {
+        let template = DirectoryTemplate {
+            id: "tpl-1".to_string(),
+            name: "My Template".to_string(),
+            description: Some("A test template".to_string()),
+            scope: TemplateScope::Project,
+            project_id: Some("proj-1".to_string()),
+            items: vec![
+                DirectoryTemplateItem {
+                    name: "src".to_string(),
+                    relative_path: "src".to_string(),
+                    module_id: "builtin:git".to_string(),
+                    module_config: None,
+                },
+            ],
+            created_by: Some("user".to_string()),
+            created_at: "2024-01-01T00:00:00Z".to_string(),
+            updated_at: "2024-01-01T00:00:00Z".to_string(),
+        };
+
+        let json = serde_json::to_string(&template).unwrap();
+        assert!(json.contains("My Template"));
+        assert!(json.contains("src"));
+    }
+
+    #[test]
+    fn test_module_config_property() {
+        let prop = ModuleConfigProperty {
+            prop_type: "string".to_string(),
+            title: Some("Test Property".to_string()),
+            description: Some("A test property".to_string()),
+            default: Some(serde_json::json!("default")),
+            enum_values: Some(vec![serde_json::json!("a"), serde_json::json!("b")]),
+            items: None,
+            format: None,
+            min_length: Some(1),
+            max_length: Some(100),
+            minimum: None,
+            maximum: None,
+        };
+
+        assert_eq!(prop.prop_type, "string");
+        assert_eq!(prop.min_length, Some(1));
+    }
+
+    #[test]
+    fn test_module_serialization() {
+        use std::collections::HashMap;
+
+        let mut props = HashMap::new();
+        props.insert(
+            "enabled".to_string(),
+            ModuleConfigProperty {
+                prop_type: "boolean".to_string(),
+                title: Some("Enabled".to_string()),
+                description: None,
+                default: Some(serde_json::json!(true)),
+                enum_values: None,
+                items: None,
+                format: None,
+                min_length: None,
+                max_length: None,
+                minimum: None,
+                maximum: None,
+            },
+        );
+
+        let schema = ModuleConfigSchema {
+            schema_type: "object".to_string(),
+            title: Some("Test Module".to_string()),
+            description: None,
+            properties: props,
+            required: Some(vec!["enabled".to_string()]),
+        };
+
+        let module = Module {
+            id: "test:module".to_string(),
+            key: "test".to_string(),
+            name: "Test Module".to_string(),
+            description: "A test module".to_string(),
+            version: "1.0.0".to_string(),
+            capabilities: vec!["test.action".to_string()],
+            config_schema: schema,
+            default_config: serde_json::json!({"enabled": true}),
+            icon: Some("test".to_string()),
+            is_built_in: false,
+            created_at: "2024-01-01T00:00:00Z".to_string(),
+            updated_at: "2024-01-01T00:00:00Z".to_string(),
+        };
+
+        let json = serde_json::to_string(&module).unwrap();
+        assert!(json.contains("test:module"));
+        assert!(json.contains("Test Module"));
     }
 }
 
