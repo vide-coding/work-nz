@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Plus, Trash2, Edit2, Check, X } from 'lucide-vue-next'
+import { Plus, Trash2, Edit2, Check, X, Circle } from 'lucide-vue-next'
 import { ideApi } from '@/composables/useApi'
 import type { IdeConfig, SupportedIdeKind } from '@/types'
 
@@ -36,6 +36,16 @@ const selectedIde = computed({
   set: (value) => emit('update:modelValue', value),
 })
 
+// 可用的IDE列表
+const availableIdes = computed(() => {
+  return supportedIdes.value.filter((ide) => ide.available)
+})
+
+// 不可用的IDE列表
+const unavailableIdes = computed(() => {
+  return supportedIdes.value.filter((ide) => !ide.available)
+})
+
 // 加载支持的IDE列表
 async function loadSupportedIdes() {
   isLoading.value = true
@@ -51,6 +61,10 @@ async function loadSupportedIdes() {
 
 // 选择IDE
 function selectIde(ide: IdeConfig) {
+  // 只允许选择可用的IDE
+  if (!ide.available) {
+    return
+  }
   selectedIde.value = { ...ide }
 }
 
@@ -100,6 +114,7 @@ function saveCustomIde() {
     name: editingIde.value.name.trim(),
     command: editingIde.value.command.trim(),
     args: args.length > 0 ? args : undefined,
+    available: true, // 自定义IDE默认标记为可用
   }
 
   selectedIde.value = newIde
@@ -136,14 +151,19 @@ onMounted(() => {
   <div class="space-y-4">
     <!-- IDE列表 -->
     <div v-if="!isEditing" class="space-y-2">
-      <!-- 已检测到的IDE -->
-      <div v-if="supportedIdes.length > 0" class="space-y-2">
+      <!-- 加载状态 -->
+      <div v-if="isLoading" class="flex items-center justify-center py-4">
+        <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600"></div>
+      </div>
+
+      <!-- 可用的IDE -->
+      <div v-if="availableIdes.length > 0" class="space-y-2">
         <div class="text-xs text-gray-500 dark:text-gray-400">
-          {{ t('settings.detectedIdes') }}
+          {{ t('settings.supportedIdes') }}
         </div>
         <div class="grid grid-cols-1 gap-2">
           <button
-            v-for="ide in supportedIdes"
+            v-for="ide in availableIdes"
             :key="ide.command"
             @click="selectIde(ide)"
             :disabled="disabled"
@@ -171,22 +191,56 @@ onMounted(() => {
                 {{ ide.command }}
               </div>
             </div>
-            <Check
-              v-if="selectedIde?.command === ide.command"
-              class="w-4 h-4 text-indigo-600 dark:text-indigo-400"
-            />
+            <div class="flex items-center gap-1">
+              <span class="text-xs text-green-600 dark:text-green-400">
+                {{ t('settings.available') }}
+              </span>
+              <Check
+                v-if="selectedIde?.command === ide.command"
+                class="w-4 h-4 text-indigo-600 dark:text-indigo-400"
+              />
+            </div>
           </button>
         </div>
       </div>
 
-      <!-- 加载状态 -->
-      <div v-else-if="isLoading" class="flex items-center justify-center py-4">
-        <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600"></div>
-      </div>
-
-      <!-- 未检测到IDE -->
-      <div v-else class="text-sm text-gray-500 dark:text-gray-400 py-2">
-        {{ t('settings.noIdesDetected') }}
+      <!-- 不可用的IDE -->
+      <div v-if="unavailableIdes.length > 0" class="space-y-2 mt-4">
+        <div class="text-xs text-gray-500 dark:text-gray-400">
+          {{ t('settings.notInstalledIdes') }}
+        </div>
+        <div class="grid grid-cols-1 gap-2">
+          <div
+            v-for="ide in unavailableIdes"
+            :key="ide.command"
+            :class="[
+              'flex items-center gap-3 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 opacity-60',
+            ]"
+          >
+            <div
+              :class="[
+                'w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold',
+                getIdeColor(ide.kind),
+              ]"
+            >
+              {{ ide.name.charAt(0).toUpperCase() }}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                {{ ide.name }}
+              </div>
+              <div class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                {{ ide.command }}
+              </div>
+            </div>
+            <div class="flex items-center gap-1">
+              <span class="text-xs text-gray-400 dark:text-gray-500">
+                {{ t('settings.notInstalled') }}
+              </span>
+              <Circle class="w-3 h-3 text-gray-400" />
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- 自定义IDE -->

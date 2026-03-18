@@ -33,7 +33,11 @@ pub struct IdeConfig {
     pub kind: SupportedIdeKind,
     pub name: String,
     pub command: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub args: Option<Vec<String>>,
+    /// 是否可用（CLI 命令在 PATH 中可用）
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub available: Option<bool>,
 }
 
 /// 工作区设置
@@ -262,11 +266,13 @@ mod tests {
             name: "VS Code".to_string(),
             command: "code".to_string(),
             args: Some(vec!["--reuse-window".to_string()]),
+            available: Some(true),
         };
 
         let json = serde_json::to_string(&ide).unwrap();
         assert!(json.contains("vscode"));
         assert!(json.contains("VS Code"));
+        assert!(json.contains("\"available\":true") || json.contains("\"available\": true"));
     }
 
     #[test]

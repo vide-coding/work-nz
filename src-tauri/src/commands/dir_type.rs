@@ -286,411 +286,68 @@ pub fn preview_detect(path: String) -> Result<PreviewDetectResult, String> {
     Ok(PreviewDetectResult { kind })
 }
 
-/// 列出支持的 IDE（通过检测命令行工具）
+/// 列出所有支持的 IDE（包括未安装的），并标记可用状态
 #[tauri::command]
 pub fn ide_list_supported() -> Result<Vec<IdeConfig>, String> {
     let mut ides = Vec::new();
 
-    // 检测 CLI 命令是否可用
-    #[cfg(windows)]
-    {
-        // 检测 VS Code (code 命令)
-        if is_command_available("code") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Vscode,
-                name: "VS Code".to_string(),
-                command: "code".to_string(),
-                args: Some(vec!["--reuse-window".to_string()]),
-            });
-        }
+    // 定义所有支持的 IDE 列表
+    let all_supported_ides: Vec<(&str, SupportedIdeKind, &str, Option<Vec<&str>>)> = vec![
+        // 主流 IDE
+        ("code", SupportedIdeKind::Vscode, "VS Code", Some(vec!["--reuse-window"])),
+        ("code-insiders", SupportedIdeKind::Vscode, "VS Code Insiders", Some(vec!["--reuse-window"])),
+        ("cursor", SupportedIdeKind::Custom, "Cursor", Some(vec!["--reuse-window"])),
+        ("zed", SupportedIdeKind::Custom, "Zed", None),
+        ("idea", SupportedIdeKind::Jetbrains, "IntelliJ IDEA", None),
+        ("webstorm", SupportedIdeKind::Jetbrains, "WebStorm", None),
+        ("pycharm", SupportedIdeKind::Jetbrains, "PyCharm", None),
+        ("goland", SupportedIdeKind::Jetbrains, "GoLand", None),
+        ("datagrip", SupportedIdeKind::Jetbrains, "DataGrip", None),
+        ("rustrover", SupportedIdeKind::Jetbrains, "RustRover", None),
+        ("phpstorm", SupportedIdeKind::Jetbrains, "PhpStorm", None),
+        ("rubymine", SupportedIdeKind::Jetbrains, "RubyMine", None),
+        ("clion", SupportedIdeKind::Jetbrains, "CLion", None),
+        ("appcode", SupportedIdeKind::Jetbrains, "AppCode", None),
+        ("aqua", SupportedIdeKind::Jetbrains, "Aqua", None),
+        ("fleet", SupportedIdeKind::Jetbrains, "Fleet", None),
+        ("devenv", SupportedIdeKind::VisualStudio, "Visual Studio", None),
+        // 其他编辑器
+        ("subl", SupportedIdeKind::Custom, "Sublime Text", None),
+        ("atom", SupportedIdeKind::Custom, "Atom", None),
+        ("npp", SupportedIdeKind::Custom, "Notepad++", None),
+        ("eclipse", SupportedIdeKind::Custom, "Eclipse", None),
+        ("netbeans", SupportedIdeKind::Custom, "NetBeans", None),
+        ("studio64", SupportedIdeKind::Custom, "Android Studio", None),
+        ("studio", SupportedIdeKind::Custom, "Android Studio", None),
+        ("rstudio", SupportedIdeKind::Custom, "RStudio", None),
+        ("jupyter-lab", SupportedIdeKind::Custom, "Jupyter Lab", None),
+        ("gvim", SupportedIdeKind::Custom, "Vim (gVim)", None),
+        ("vim", SupportedIdeKind::Custom, "Vim", None),
+        ("emacs", SupportedIdeKind::Custom, "Emacs", None),
+        ("hbuilderx", SupportedIdeKind::Custom, "HBuilderX", None),
+        ("comate", SupportedIdeKind::Custom, "Comate", None),
+        ("textpad", SupportedIdeKind::Custom, "TextPad", None),
+        ("editplus", SupportedIdeKind::Custom, "EditPlus", None),
+        ("uedit32", SupportedIdeKind::Custom, "UltraEdit", None),
+        // Markdown/笔记工具
+        ("typora", SupportedIdeKind::Custom, "Typora", None),
+        ("obsidian", SupportedIdeKind::Custom, "Obsidian", None),
+        ("logseq", SupportedIdeKind::Custom, "LogSeq", None),
+        // Windows 自带编辑器
+        ("notepad", SupportedIdeKind::Custom, "Notepad", None),
+        ("write", SupportedIdeKind::Custom, "WordPad", None),
+    ];
 
-        // 检测 Zed (zed 命令)
-        if is_command_available("zed") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Custom,
-                name: "Zed".to_string(),
-                command: "zed".to_string(),
-                args: None,
-            });
-        }
-
-        // 检测 IntelliJ IDEA (idea 命令)
-        if is_command_available("idea") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Jetbrains,
-                name: "IntelliJ IDEA".to_string(),
-                command: "idea".to_string(),
-                args: None,
-            });
-        }
-
-        // 检测 WebStorm (webstorm 命令)
-        if is_command_available("webstorm") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Jetbrains,
-                name: "WebStorm".to_string(),
-                command: "webstorm".to_string(),
-                args: None,
-            });
-        }
-
-        // 检测 PyCharm (pycharm 命令)
-        if is_command_available("pycharm") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Jetbrains,
-                name: "PyCharm".to_string(),
-                command: "pycharm".to_string(),
-                args: None,
-            });
-        }
-
-        // 检测 GoLand (goland 命令)
-        if is_command_available("goland") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Jetbrains,
-                name: "GoLand".to_string(),
-                command: "goland".to_string(),
-                args: None,
-            });
-        }
-
-        // 检测 DataGrip (datagrip 命令)
-        if is_command_available("datagrip") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Jetbrains,
-                name: "DataGrip".to_string(),
-                command: "datagrip".to_string(),
-                args: None,
-            });
-        }
-
-        // 检测 RustRover (rustrover 命令)
-        if is_command_available("rustrover") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Jetbrains,
-                name: "RustRover".to_string(),
-                command: "rustrover".to_string(),
-                args: None,
-            });
-        }
-
-        // 检测 Visual Studio (devenv 命令)
-        if is_command_available("devenv") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::VisualStudio,
-                name: "Visual Studio".to_string(),
-                command: "devenv".to_string(),
-                args: None,
-            });
-        }
-
-        // 检测 Sublime Text (subl 命令)
-        if is_command_available("subl") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Custom,
-                name: "Sublime Text".to_string(),
-                command: "subl".to_string(),
-                args: None,
-            });
-        }
-
-        // 检测 Atom (atom 命令)
-        if is_command_available("atom") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Custom,
-                name: "Atom".to_string(),
-                command: "atom".to_string(),
-                args: None,
-            });
-        }
-
-        // 检测 Notepad++ (npp 命令)
-        if is_command_available("npp") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Custom,
-                name: "Notepad++".to_string(),
-                command: "npp".to_string(),
-                args: None,
-            });
-        }
-
-        // ========== 主流 IDE ==========
-
-        // VS Code Insiders
-        if is_command_available("code-insiders") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Vscode,
-                name: "VS Code Insiders".to_string(),
-                command: "code-insiders".to_string(),
-                args: Some(vec!["--reuse-window".to_string()]),
-            });
-        }
-
-        // Cursor (AI IDE)
-        if is_command_available("cursor") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Custom,
-                name: "Cursor".to_string(),
-                command: "cursor".to_string(),
-                args: Some(vec!["--reuse-window".to_string()]),
-            });
-        }
-
-        // PhpStorm
-        if is_command_available("phpstorm") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Jetbrains,
-                name: "PhpStorm".to_string(),
-                command: "phpstorm".to_string(),
-                args: None,
-            });
-        }
-
-        // RubyMine
-        if is_command_available("rubymine") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Jetbrains,
-                name: "RubyMine".to_string(),
-                command: "rubymine".to_string(),
-                args: None,
-            });
-        }
-
-        // CLion
-        if is_command_available("clion") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Jetbrains,
-                name: "CLion".to_string(),
-                command: "clion".to_string(),
-                args: None,
-            });
-        }
-
-        // AppCode
-        if is_command_available("appcode") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Jetbrains,
-                name: "AppCode".to_string(),
-                command: "appcode".to_string(),
-                args: None,
-            });
-        }
-
-        // Aqua
-        if is_command_available("aqua") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Jetbrains,
-                name: "Aqua".to_string(),
-                command: "aqua".to_string(),
-                args: None,
-            });
-        }
-
-        // Fleet
-        if is_command_available("fleet") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Jetbrains,
-                name: "Fleet".to_string(),
-                command: "fleet".to_string(),
-                args: None,
-            });
-        }
-
-        // ========== 其他常用 IDE ==========
-
-        // Eclipse
-        if is_command_available("eclipse") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Custom,
-                name: "Eclipse".to_string(),
-                command: "eclipse".to_string(),
-                args: None,
-            });
-        }
-
-        // NetBeans
-        if is_command_available("netbeans") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Custom,
-                name: "NetBeans".to_string(),
-                command: "netbeans".to_string(),
-                args: None,
-            });
-        }
-
-        // Android Studio (studio64 或 studio)
-        if is_command_available("studio64") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Custom,
-                name: "Android Studio".to_string(),
-                command: "studio64".to_string(),
-                args: None,
-            });
-        } else if is_command_available("studio") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Custom,
-                name: "Android Studio".to_string(),
-                command: "studio".to_string(),
-                args: None,
-            });
-        }
-
-        // RStudio
-        if is_command_available("rstudio") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Custom,
-                name: "RStudio".to_string(),
-                command: "rstudio".to_string(),
-                args: None,
-            });
-        }
-
-        // Jupyter
-        if is_command_available("jupyter-lab") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Custom,
-                name: "Jupyter Lab".to_string(),
-                command: "jupyter-lab".to_string(),
-                args: None,
-            });
-        }
-
-        // ========== 编辑器 ==========
-
-        // Vim / Gvim
-        if is_command_available("gvim") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Custom,
-                name: "Vim (gVim)".to_string(),
-                command: "gvim".to_string(),
-                args: None,
-            });
-        } else if is_command_available("vim") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Custom,
-                name: "Vim".to_string(),
-                command: "vim".to_string(),
-                args: None,
-            });
-        }
-
-        // Emacs
-        if is_command_available("emacs") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Custom,
-                name: "Emacs".to_string(),
-                command: "emacs".to_string(),
-                args: None,
-            });
-        }
-
-        // ========== 中国主流 IDE ==========
-
-        // HBuilderX
-        if is_command_available("hbuilderx") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Custom,
-                name: "HBuilderX".to_string(),
-                command: "hbuilderx".to_string(),
-                args: None,
-            });
-        }
-
-        // 百度 Comate
-        if is_command_available("comate") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Custom,
-                name: "Comate".to_string(),
-                command: "comate".to_string(),
-                args: None,
-            });
-        }
-
-        // ========== 其他常用编辑器 ==========
-
-        // TextPad
-        if is_command_available("textpad") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Custom,
-                name: "TextPad".to_string(),
-                command: "textpad".to_string(),
-                args: None,
-            });
-        }
-
-        // EditPlus
-        if is_command_available("editplus") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Custom,
-                name: "EditPlus".to_string(),
-                command: "editplus".to_string(),
-                args: None,
-            });
-        }
-
-        // UltraEdit
-        if is_command_available("uedit32") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Custom,
-                name: "UltraEdit".to_string(),
-                command: "uedit32".to_string(),
-                args: None,
-            });
-        }
-
-        // ========== Markdown/笔记工具 ==========
-
-        // Typora
-        if is_command_available("typora") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Custom,
-                name: "Typora".to_string(),
-                command: "typora".to_string(),
-                args: None,
-            });
-        }
-
-        // Obsidian
-        if is_command_available("obsidian") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Custom,
-                name: "Obsidian".to_string(),
-                command: "obsidian".to_string(),
-                args: None,
-            });
-        }
-
-        // LogSeq
-        if is_command_available("logseq") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Custom,
-                name: "LogSeq".to_string(),
-                command: "logseq".to_string(),
-                args: None,
-            });
-        }
-
-        // ========== Windows 自带编辑器 ==========
-
-        // 记事本
-        if is_command_available("notepad") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Custom,
-                name: "Notepad".to_string(),
-                command: "notepad".to_string(),
-                args: None,
-            });
-        }
-
-        // WordPad
-        if is_command_available("write") {
-            ides.push(IdeConfig {
-                kind: SupportedIdeKind::Custom,
-                name: "WordPad".to_string(),
-                command: "write".to_string(),
-                args: None,
-            });
-        }
+    // 检测每个 IDE 的可用性
+    for (command, kind, name, args) in all_supported_ides {
+        let available = is_command_available(command);
+        ides.push(IdeConfig {
+            kind,
+            name: name.to_string(),
+            command: command.to_string(),
+            args: args.map(|v| v.into_iter().map(String::from).collect()),
+            available: Some(available),
+        });
     }
 
     Ok(ides)
