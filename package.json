@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "i": "pnpm install & cd src-tauri & cargo check",
+    "i": "pnpm install & cd src-tauri & cargo build",
     "kanban": "cross-env PORT=3000 HOST=0.0.0.0 npx vibe-kanban@latest",
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",

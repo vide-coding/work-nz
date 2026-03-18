@@ -49,6 +49,7 @@ import CodeRepositories from '@/components/workspace/CodeRepositories.vue'
 import FileBrowser from '@/components/workspace/FileBrowser.vue'
 import ReadmePreview from '@/components/workspace/ReadmePreview.vue'
 import ModuleContentArea from '@/components/module/ModuleContentArea.vue'
+import CreateDirectoryDialog from '@/components/project/CreateDirectoryDialog.vue'
 
 const props = defineProps<{
   id: string
@@ -191,6 +192,9 @@ const editingRepo = ref<GitRepository | null>(null)
 const editRepoName = ref('')
 const editRepoDescription = ref('')
 const isUpdatingRepo = ref(false)
+
+// Create directory dialog
+const showCreateDirectoryDialog = ref(false)
 
 // Navigation items (legacy fallback)
 const navItems = computed(() => {
@@ -636,23 +640,17 @@ function handleConfirmCreateFolder() {
 }
 
 // Create new directory with module (new module system)
-async function handleCreateModuleDirectory() {
-  const name = prompt('Enter directory name:')
-  if (!name) return
+function handleCreateModuleDirectory() {
+  showCreateDirectoryDialog.value = true
+}
 
-  const moduleId = prompt('Enter module type (git, task, file):')
-  if (!moduleId) return
-
-  const validModules = ['git', 'task', 'file']
-  if (!validModules.includes(moduleId)) {
-    alert('Invalid module type. Use: git, task, or file')
-    return
-  }
+async function handleConfirmCreateDirectory(data: { name: string; moduleId: string }) {
+  showCreateDirectoryDialog.value = false
 
   const result = await createDirectory({
-    name,
-    relativePath: name.toLowerCase().replace(/\s+/g, '-'),
-    moduleId: `builtin:${moduleId}`,
+    name: data.name,
+    relativePath: data.name.toLowerCase().replace(/\s+/g, '-'),
+    moduleId: data.moduleId,
   })
 
   if (result) {
@@ -877,5 +875,11 @@ onMounted(async () => {
         <ModuleContentArea v-else :directory="currentDirectory" />
       </div>
     </div>
+
+    <!-- Create Directory Dialog -->
+    <CreateDirectoryDialog
+      v-model="showCreateDirectoryDialog"
+      @confirm="handleConfirmCreateDirectory"
+    />
   </div>
 </template>
