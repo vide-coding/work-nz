@@ -100,7 +100,9 @@
     "directories": "目录",
     "addDirectory": "+ 添加",
     "noDirectories": "暂无目录",
-    "createFirstDirectory": "创建首个目录"
+    "createFirstDirectory": "创建首个目录",
+    "readme": "查看 README",
+    "openInTerminal": "在终端中打开"
   },
   "projects": {
     "title": "项目总览",

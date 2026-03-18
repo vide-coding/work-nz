@@ -100,7 +100,9 @@
     "directories": "Directories",
     "addDirectory": "+ Add",
     "noDirectories": "No directories yet",
-    "createFirstDirectory": "Create First Directory"
+    "createFirstDirectory": "Create First Directory",
+    "readme": "View README",
+    "openInTerminal": "Open in Terminal"
   },
   "projects": {
     "title": "Projects",

@@ -72,7 +72,7 @@ function getModuleIcon(key: string) {
 <template>
   <BaseDialog
     :model-value="modelValue"
-    :title="t('projectWorkspace.createDirectory')"
+    :title="t('workspace.createDirectory')"
     width="max-w-md"
     @update:model-value="emit('update:modelValue', $event)"
   >
@@ -80,13 +80,13 @@ function getModuleIcon(key: string) {
       <!-- Directory Name -->
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          {{ t('projectWorkspace.directoryName') }}
+          {{ t('workspace.directoryName') }}
         </label>
         <input
           v-model="name"
           type="text"
           class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-          :placeholder="t('projectWorkspace.directoryNamePlaceholder')"
+          :placeholder="t('workspace.directoryNamePlaceholder')"
           @keyup="handleKeyup"
           autofocus
         />
@@ -95,7 +95,7 @@ function getModuleIcon(key: string) {
       <!-- Module Type Selection -->
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          {{ t('projectWorkspace.moduleType') }}
+          {{ t('workspace.moduleType') }}
         </label>
         <div class="space-y-2">
           <label
