@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import type { Project } from '@/types'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   project: Project | null
@@ -18,12 +21,12 @@ function formatDate(dateStr: string): string {
   const hours = Math.floor(diff / 3600000)
   const days = Math.floor(diff / 86400000)
 
-  if (minutes < 1) return '刚刚'
-  if (minutes < 60) return `${minutes} 分钟前`
-  if (hours < 24) return `${hours} 小时前`
-  if (days < 7) return `${days} 天前`
+  if (minutes < 1) return t('time.justNow')
+  if (minutes < 60) return t('time.minutesAgo', { n: minutes })
+  if (hours < 24) return t('time.hoursAgo', { n: hours })
+  if (days < 7) return t('time.daysAgo', { n: days })
 
-  return date.toLocaleDateString('zh-CN')
+  return date.toLocaleDateString()
 }
 </script>
 
@@ -32,14 +35,14 @@ function formatDate(dateStr: string): string {
     class="w-80 border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-auto"
   >
     <div v-if="loading" class="flex items-center justify-center h-full">
-      <div class="text-gray-500 dark:text-gray-400">加载中...</div>
+      <div class="text-gray-500 dark:text-gray-400">{{ t('common.loading') }}</div>
     </div>
 
     <div
       v-else-if="!project"
       class="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400"
     >
-      <p>选择项目查看详情</p>
+      <p>{{ t('projects.selectToView') }}</p>
     </div>
 
     <div v-else class="p-6">
@@ -57,7 +60,7 @@ function formatDate(dateStr: string): string {
           {{ project.name }}
         </h2>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          {{ project.description || '暂无描述' }}
+          {{ project.description || t('projects.noDescription') }}
         </p>
       </div>
 
@@ -65,7 +68,7 @@ function formatDate(dateStr: string): string {
       <div class="space-y-4">
         <div>
           <label class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-            路径
+            {{ t('projects.path') }}
           </label>
           <p class="text-sm text-gray-900 dark:text-white mt-1 break-all">
             {{ project.projectPath }}
@@ -74,7 +77,7 @@ function formatDate(dateStr: string): string {
 
         <div>
           <label class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-            更新时间
+            {{ t('projects.updatedAt') }}
           </label>
           <p class="text-sm text-gray-900 dark:text-white mt-1">
             {{ formatDate(project.updatedAt) }}
@@ -87,7 +90,7 @@ function formatDate(dateStr: string): string {
             class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
             @click="emit('open-workspace')"
           >
-            进入工作区
+            {{ t('projects.openWorkspace') }}
           </button>
         </div>
       </div>

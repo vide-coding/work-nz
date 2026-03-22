@@ -41,7 +41,7 @@ function confirm() {
               :value="cloneUrl"
               type="text"
               class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-              placeholder="https://github.com/..."
+              :placeholder="$t('workspace.cloneUrlPlaceholder')"
               @input="emit('update:cloneUrl', ($event.target as HTMLInputElement).value)"
             />
           </div>
@@ -54,7 +54,7 @@ function confirm() {
               :value="cloneTargetDir"
               type="text"
               class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-              placeholder="my-repo"
+              :placeholder="$t('workspace.cloneTargetPlaceholder')"
               @input="emit('update:cloneTargetDir', ($event.target as HTMLInputElement).value)"
             />
           </div>

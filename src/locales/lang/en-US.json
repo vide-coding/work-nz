@@ -13,7 +13,8 @@
     "create": "Create",
     "creating": "Creating...",
     "cloning": "Cloning...",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "loading": "Loading..."
   },
   "workspace": {
     "description": "Select a workspace folder, app data and projects will be stored here",
@@ -41,6 +42,10 @@
     "uiDesign": "UI Design",
     "projectPlanning": "Project Planning",
     "projectWorkspace": "Project Workspace",
+    "createDirectory": "Create Directory",
+    "directoryName": "Directory Name",
+    "directoryNamePlaceholder": "Enter directory name",
+    "moduleType": "Module Type",
     "switchWorkspace": "Switch Workspace",
     "openInIde": "Open in IDE",
     "codeOverview": "Code Overview",
@@ -48,6 +53,13 @@
     "designOverview": "Design Overview",
     "repositories": "repositories",
     "directories": "directories",
+    "gitProjects": "Git Projects",
+    "taskModules": "Task Modules",
+    "fileModules": "File Modules",
+    "moduleOverview": "Module Overview",
+    "items": "items",
+    "noModule": "No module",
+    "noModules": "No modules yet",
     "codeRepositories": "Code Repositories",
     "cloneNewRepo": "Clone New Repo",
     "noRepos": "No repositories yet",
@@ -78,7 +90,19 @@
     "editRepo": "Edit Repository",
     "description": "Description",
     "rename": "Rename",
-    "aliasHint": "Alias will replace path in the list"
+    "aliasHint": "Alias will replace path in the list",
+    "selectOrCreate": "Select or Create Workspace",
+    "delete": "Delete",
+    "setAlias": "Set Alias",
+    "aliasPlaceholder": "Enter alias (optional)",
+    "cloneUrlPlaceholder": "https://github.com/...",
+    "cloneTargetPlaceholder": "my-repo",
+    "directories": "Directories",
+    "addDirectory": "+ Add",
+    "noDirectories": "No directories yet",
+    "createFirstDirectory": "Create First Directory",
+    "readme": "View README",
+    "openInTerminal": "Open in Terminal"
   },
   "projects": {
     "title": "Projects",
@@ -98,7 +122,12 @@
     "projectName": "Project Name",
     "projectNamePlaceholder": "Enter project name",
     "description": "Description",
-    "descriptionPlaceholder": "Enter project description (optional)"
+    "descriptionPlaceholder": "Enter project description (optional)",
+    "selectToView": "Select a project to view details",
+    "updatedAt": "Updated at",
+    "openWorkspace": "Enter Workspace",
+    "defaultTitle": "Project",
+    "hideConfirm": "Are you sure you want to hide this project? You can restore it from the workspace data file."
   },
   "project": {
     "edit": "Edit Project",
@@ -142,6 +171,10 @@
     "defaultIdeDescription": "Select the default IDE for opening projects",
     "detectedIdes": "Detected IDEs",
     "noIdesDetected": "No IDEs detected",
+    "supportedIdes": "Available",
+    "available": "Available",
+    "notInstalledIdes": "Not Installed",
+    "notInstalled": "Not Installed",
     "customIde": "Custom IDE",
     "addCustomIde": "Add Custom IDE",
     "ideName": "Name",
@@ -171,5 +204,39 @@
     "minutesAgo": "{n} minutes ago",
     "hoursAgo": "{n} hours ago",
     "daysAgo": "{n} days ago"
+  },
+  "template": {
+    "selectTitle": "Select Template",
+    "searchPlaceholder": "Search templates...",
+    "loading": "Loading templates...",
+    "applying": "Applying...",
+    "apply": "Apply",
+    "itemCount": "{n} directories",
+    "moreItems": "+{n} more",
+    "noResults": "No templates found",
+    "scopeAll": "All Templates",
+    "scopeOfficial": "Official",
+    "scopeProject": "Project",
+    "scopeLocal": "Local"
+  },
+  "git": {
+    "title": "Git Repositories",
+    "cloneButton": "+ Clone Repository",
+    "directory": "Directory:",
+    "loading": "Loading repositories...",
+    "noRepos": "No Git repositories in this directory",
+    "noReposHint": "Click \"Clone Repository\" to add one",
+    "readme": "README",
+    "noReadme": "No README found"
+  },
+  "module": {
+    "noModule": "No module enabled",
+    "selectHint": "Select a module to enable additional functionality for this directory.",
+    "taskEnabled": "Task management enabled",
+    "taskHint": "Create and manage tasks with priorities and assignments",
+    "fileEnabled": "File browsing enabled",
+    "fileHint": "Browse and manage files in this directory",
+    "notImplemented": "This module type is not yet implemented in the UI",
+    "capabilities": "Capabilities:"
   }
 }

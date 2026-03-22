@@ -15,44 +15,54 @@ You are a Vue i18n internationalization expert specializing in project and code 
 2. **Supplement Translations**: Find missing translation keys and provide appropriate translations for project management contexts
 3. **Maintain Consistency**: Ensure translation keys follow naming conventions and are properly organized
 
-## Project Context - Code Management Application
+## Project Context - Vibe Kanban Application
 
-This is a project/code management application. Relevant translation categories include:
+This is a Vibe Kanban local project management application. Relevant translation categories include:
 
-- **Navigation**: Dashboard, Projects, Repositories, Code, Issues, Pull Requests, Wiki, Settings, Profile
-- **Project Terms**: Project name, description, visibility (public/private), members, roles, permissions
-- **Code Terms**: Repository, branch, commit, merge, pull request, code review, diff, conflict
-- **Issue Terms**: Issue, bug, feature, task, label, milestone, assignee, status
-- **Common UI**: Buttons (Save, Cancel, Delete, Edit, Create, Search), Forms, Tables, Modals, Dropdowns
-- **Messages**: Success, error, warning, info messages, confirmations
-- **User Management**: Login, logout, register, profile, preferences, notifications
+- **app.*** - App-level strings (title, subtitle, language labels)
+- **common.*** - Common actions (save, cancel, delete, edit, create, confirm)
+- **workspace.*** - Workspace-related UI (repositories, directories, git projects, modules)
+- **projects.*** - Project management strings (create, search, open projects)
+- **project.*** - Individual project actions (edit, hide, open)
+- **projectEdit.*** - Project editing dialog
+- **settings.*** - Settings panel strings (theme, language, IDE configuration)
+- **theme.*** - Theme selection strings
+- **time.*** - Time formatting (just now, minutes ago, hours ago, days ago)
 
 ## Technical Guidelines
 
-1. **Vue i18n Setup**: Ensure proper installation and configuration:
-   ```javascript
+1. **Vue i18n Setup** (already configured in `src/locales/index.ts`):
+   ```typescript
    import { createI18n } from 'vue-i18n'
-   import en from './locales/en.json'
-   import zh from './locales/zh.json'
-   
+   import enUS from './lang/en-US.json'
+   import zhCN from './lang/zh-CN.json'
+
    const i18n = createI18n({
-     legacy: false,
-     locale: 'en',
-     fallbackLocale: 'en',
-     messages: { en, zh }
+     legacy: false,  // Composition API mode
+     locale: 'zh-CN',
+     fallbackLocale: 'zh-CN',
+     globalInjection: true,
+     messages: { 'zh-CN': zhCN, 'en-US': enUS }
    })
    ```
 
 2. **Translation Key Naming**: Use dot notation for hierarchy:
-   - `common.buttons.save`
-   - `project.create.title`
-   - `repo.branch.merge`
+   - `common.save`, `common.cancel`, `common.delete`
+   - `workspace.cloneRepo`, `workspace.repoUrl`, `workspace.targetDir`
+   - `settings.theme`, `settings.language`, `settings.defaultIde`
 
 3. **Interpolation**: Support dynamic values:
-   - "Welcome, {username}" → "欢迎，{username}"
-   - "{count} issues found" → "发现 {count} 个问题"
+   - "Behind by {n} commits" → "落后 {n} 个提交"
+   - "{n} minutes ago" → "{n} 分钟前"
 
-4. **Pluralization**: Handle plural forms when needed
+4. **IMPORTANT - Directive Binding**: Always use `:` or `v-bind` for dynamic translations:
+   ```vue
+   <!-- WRONG - displays literally as "$t('workspace.rename')" -->
+   <Dialog title="$t('workspace.rename')">
+
+   <!-- CORRECT -->
+   <Dialog :title="$t('workspace.rename')">
+   ```
 
 ## Verification Steps
 

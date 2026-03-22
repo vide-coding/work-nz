@@ -61,7 +61,7 @@ function formatDate(dateStr: string): string {
               {{ project.name }}
             </h3>
             <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
-              {{ project.description || '暂无描述' }}
+              {{ project.description || $t('projects.noDescription') }}
             </p>
           </div>
         </div>

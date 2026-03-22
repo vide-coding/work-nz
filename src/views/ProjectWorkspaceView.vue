@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import draggable from 'vuedraggable'
 import { useLocale } from '@/locales/useLocale'
@@ -13,7 +14,7 @@ import {
   workspaceApi,
   previewApi,
 } from '@/composables/useApi'
-import { useDirectoryNavigation } from '@/composables/useDirectoryNavigation'
+import { useDirectoryNavigation, type DirectoryNavItem } from '@/composables/useDirectoryNavigation'
 import { moduleRegistry } from '@/composables/useModuleRegistry'
 import type {
   Project,
@@ -49,6 +50,7 @@ import CodeRepositories from '@/components/workspace/CodeRepositories.vue'
 import FileBrowser from '@/components/workspace/FileBrowser.vue'
 import ReadmePreview from '@/components/workspace/ReadmePreview.vue'
 import ModuleContentArea from '@/components/module/ModuleContentArea.vue'
+import CreateDirectoryDialog from '@/components/project/CreateDirectoryDialog.vue'
 
 const props = defineProps<{
   id: string
@@ -57,6 +59,7 @@ const props = defineProps<{
 const router = useRouter()
 const route = useRoute()
 const { locale, changeLocale } = useLocale()
+const { t } = useI18n()
 
 // Type-safe theme mode for ThemeToggle (only used in template)
 const themeMode = computed(() => {
@@ -100,6 +103,11 @@ function getModuleIcon(moduleKey?: string) {
   }
 }
 
+// Go to home page (ProjectIntro)
+function goToHome() {
+  selectDirectory(null)
+}
+
 // Show module-based directory list (always use new system)
 const showModuleNav = computed(() => true)
 
@@ -113,6 +121,7 @@ const settings = ref<WorkspaceSettings>({ themeMode: 'system' })
 const loading = ref(false)
 const error = ref('')
 const isEditing = ref(false)
+const editName = ref('')
 const editDescription = ref('')
 const currentWorkspace = ref<WorkspaceInfo | null>(null)
 
@@ -186,6 +195,9 @@ const editRepoName = ref('')
 const editRepoDescription = ref('')
 const isUpdatingRepo = ref(false)
 
+// Create directory dialog
+const showCreateDirectoryDialog = ref(false)
+
 // Navigation items (legacy fallback)
 const navItems = computed(() => {
   const items = [
@@ -211,6 +223,7 @@ async function loadProject() {
     loading.value = true
     error.value = ''
     project.value = await projectApi.get(projectId.value)
+    editName.value = project.value.name
     editDescription.value = project.value.description || ''
   } catch (e: any) {
     error.value = e.message || String(e)
@@ -440,6 +453,7 @@ async function updateProject() {
 
   try {
     const updated = await projectApi.update(projectId.value, {
+      name: editName.value,
       description: editDescription.value,
     })
     // 使用后端返回的完整数据更新前端状态
@@ -583,6 +597,10 @@ function handleSaveProject() {
   updateProject()
 }
 
+function handleUpdateName(value: string) {
+  editName.value = value
+}
+
 function handleUpdateDescription(value: string) {
   editDescription.value = value
 }
@@ -624,23 +642,17 @@ function handleConfirmCreateFolder() {
 }
 
 // Create new directory with module (new module system)
-async function handleCreateModuleDirectory() {
-  const name = prompt('Enter directory name:')
-  if (!name) return
+function handleCreateModuleDirectory() {
+  showCreateDirectoryDialog.value = true
+}
 
-  const moduleId = prompt('Enter module type (git, task, file):')
-  if (!moduleId) return
-
-  const validModules = ['git', 'task', 'file']
-  if (!validModules.includes(moduleId)) {
-    alert('Invalid module type. Use: git, task, or file')
-    return
-  }
+async function handleConfirmCreateDirectory(data: { name: string; moduleId: string }) {
+  showCreateDirectoryDialog.value = false
 
   const result = await createDirectory({
-    name,
-    relativePath: name.toLowerCase().replace(/\s+/g, '-'),
-    moduleId: `builtin:${moduleId}`,
+    name: data.name,
+    relativePath: data.name.toLowerCase().replace(/\s+/g, '-'),
+    moduleId: data.moduleId,
   })
 
   if (result) {
@@ -649,20 +661,15 @@ async function handleCreateModuleDirectory() {
 }
 
 // Handle directory reorder (drag and drop)
-const isReordering = ref(false)
 const draggedDirectories = ref<Directory[]>([])
 
-// One-time sync when directories first load
-let hasInitialized = false
+// Sync draggedDirectories when directories change
 watch(
   directories,
   (newDirs) => {
-    if (!hasInitialized && newDirs.length > 0) {
-      draggedDirectories.value = [...newDirs]
-      hasInitialized = true
-    }
+    draggedDirectories.value = [...newDirs]
   },
-  { immediate: true }
+  { immediate: true, deep: true }
 )
 
 // Handle drag events
@@ -705,27 +712,19 @@ function onDragEnd() {
     draggedDirectories.value.map((d) => d.name)
   )
 
-  if (isReordering.value || reorderTimeout) return
+  if (reorderTimeout) return
 
   // Wait for drag animation to complete (200ms)
   reorderTimeout = setTimeout(async () => {
     reorderTimeout = null
-    isReordering.value = true
     try {
       const orderedIds = draggedDirectories.value.map((dir) => dir.id)
       console.log('Saving order:', orderedIds)
       const reordered = await reorderDirectories(orderedIds)
       console.log('Reorder result:', reordered)
-      if (reordered) {
-        // Reload to get fresh data from server
-        await loadDirectories()
-        // Reset initialized flag to allow re-sync
-        hasInitialized = false
-      }
+      // 不刷新列表，保持当前排序状态
     } catch (e) {
       console.error('Failed to reorder directories:', e)
-    } finally {
-      isReordering.value = false
     }
   }, 250)
 }
@@ -769,25 +768,32 @@ onMounted(async () => {
       >
         <!-- Project Header -->
         <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-            {{ project?.name || 'Project' }}
+          <h2
+            class="text-lg font-semibold text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+            @click="goToHome"
+          >
+            {{ project?.name || t('projects.defaultTitle') }}
           </h2>
         </div>
 
         <!-- Directories List -->
         <div class="flex-1 overflow-y-auto p-4">
           <div class="flex justify-between items-center mb-4">
-            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Directories</h3>
+            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              {{ t('workspace.directories') }}
+            </h3>
             <button
               class="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               @click="handleCreateModuleDirectory"
             >
-              + Add
+              {{ t('workspace.addDirectory') }}
             </button>
           </div>
 
           <!-- Loading State -->
-          <div v-if="dirLoading" class="text-center py-4 text-gray-500">Loading...</div>
+          <div v-if="dirLoading" class="text-center py-4 text-gray-500">
+            {{ t('common.loading') }}
+          </div>
 
           <!-- Error State -->
           <div v-else-if="dirError" class="text-center py-4 text-red-500">
@@ -803,6 +809,7 @@ onMounted(async () => {
             ghost-class="opacity-50"
             animation="200"
             force-fallback="true"
+            handle=".drag-handle"
             @start="onDragStart"
             @end="onDragEnd"
           >
@@ -833,7 +840,7 @@ onMounted(async () => {
                     <div v-if="dir.moduleId" class="text-xs text-gray-500">
                       {{ moduleRegistry.get(dir.moduleId)?.name }}
                     </div>
-                    <div v-else class="text-xs text-gray-400">No module</div>
+                    <div v-else class="text-xs text-gray-400">{{ t('workspace.noModule') }}</div>
                   </div>
                 </div>
               </div>
@@ -843,16 +850,42 @@ onMounted(async () => {
           <!-- Empty State -->
           <div v-if="directories.length === 0" class="text-center py-8">
             <Folder class="w-12 h-12 mx-auto text-gray-300 mb-3" />
-            <p class="text-gray-500 text-sm mb-4">No directories yet</p>
+            <p class="text-gray-500 text-sm mb-4">{{ t('workspace.noDirectories') }}</p>
             <button
               class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
               @click="handleCreateModuleDirectory"
             >
-              Create First Directory
+              {{ t('workspace.createFirstDirectory') }}
             </button>
           </div>
         </div>
       </div>
+
+      <!-- Main Content Area -->
+      <div class="flex-1 overflow-hidden bg-white dark:bg-gray-800">
+        <!-- Show ProjectIntro as home page when no directory is selected -->
+        <ProjectIntro
+          v-if="!currentDirectory"
+          :project="project"
+          :directories="directories"
+          :repos="repos"
+          :is-editing="isEditing"
+          :edit-name="editName"
+          :edit-description="editDescription"
+          @start-edit="handleStartEdit"
+          @cancel-edit="handleCancelEdit"
+          @save-project="handleSaveProject"
+          @update-name="handleUpdateName"
+          @update-description="handleUpdateDescription"
+        />
+        <ModuleContentArea v-else :directory="currentDirectory" />
+      </div>
     </div>
+
+    <!-- Create Directory Dialog -->
+    <CreateDirectoryDialog
+      v-model="showCreateDirectoryDialog"
+      @confirm="handleConfirmCreateDirectory"
+    />
   </div>
 </template>

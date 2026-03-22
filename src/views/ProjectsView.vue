@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useLocale } from '@/locales/useLocale'
 import { projectApi, gitApi, workspaceApi } from '@/composables/useApi'
@@ -17,6 +18,7 @@ import LanguageSelector from '@/components/common/LanguageSelector.vue'
 
 const router = useRouter()
 const { locale, changeLocale } = useLocale()
+const { t } = useI18n()
 
 // Type-safe theme mode for ThemeToggle
 const themeMode = computed(() => {
@@ -154,13 +156,7 @@ async function handleCreateProject(name: string, description: string) {
 }
 
 async function hideProject(project: Project) {
-  if (
-    !confirm(
-      locale.value === 'zh-CN'
-        ? '确定隐藏此项目吗？隐藏后可在工作区数据文件中恢复。'
-        : 'Are you sure you want to hide this project? You can restore it from the workspace data file.'
-    )
-  ) {
+  if (!confirm(t('projects.hideConfirm'))) {
     return
   }
 

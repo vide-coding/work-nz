@@ -8,6 +8,8 @@ export type IdeConfig = {
   name: string
   command: string
   args?: string[]
+  /** Whether the IDE is available on the system (has a working CLI command) */
+  available?: boolean
 }
 
 export type WorkspaceSettings = {

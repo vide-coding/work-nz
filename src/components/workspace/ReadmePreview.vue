@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { Loader2, FileText, X } from 'lucide-vue-next'
+import { useI18n } from 'vue-i18n'
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
 import type { GitRepository } from '@/types'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   selectedRepo: GitRepository | null
@@ -27,7 +30,7 @@ function close() {
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
           <FileText class="w-5 h-5 text-gray-500" />
-          <span class="font-medium text-gray-900 dark:text-white"> README </span>
+          <span class="font-medium text-gray-900 dark:text-white">{{ t('git.readme') }}</span>
         </div>
         <button
           class="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
@@ -50,7 +53,7 @@ function close() {
       </div>
       <div v-else class="text-center py-8 text-gray-500 dark:text-gray-400">
         <FileText class="w-12 h-12 mx-auto mb-4 opacity-50" />
-        <p>No README found</p>
+        <p>{{ t('git.noReadme') }}</p>
       </div>
     </div>
   </aside>
