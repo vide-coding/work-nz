@@ -6,12 +6,10 @@ import { clearMocks, mockIPC } from '@tauri-apps/api/mocks'
  * 为测试环境补齐 WebCrypto 的 getRandomValues（Vitest 的 DOM 环境可能缺失该实现）。
  */
 function installWebCryptoPolyfill(): void {
-  if (typeof window === 'undefined')
-    return
+  if (typeof window === 'undefined') return
 
   const hasGetRandomValues = typeof window.crypto?.getRandomValues === 'function'
-  if (hasGetRandomValues)
-    return
+  if (hasGetRandomValues) return
 
   Object.defineProperty(window, 'crypto', {
     value: {

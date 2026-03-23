@@ -46,8 +46,11 @@ pub fn run() {
             project_fs_tree,
             fs_read_text,
             fs_create_dir,
+            fs_create_file,
             fs_delete,
             fs_rename,
+            fs_open_external,
+            fs_copy_file,
             // Directory type commands
             dir_types_list,
             dir_type_create_custom,

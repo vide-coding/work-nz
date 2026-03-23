@@ -3256,6 +3256,7 @@ dependencies = [
  "git2",
  "log",
  "once_cell",
+ "open",
  "rusqlite",
  "serde",
  "serde_json",

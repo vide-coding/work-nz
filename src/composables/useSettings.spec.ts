@@ -49,4 +49,3 @@ describe('useSettings', () => {
     expect(settings.globalSettings.value.language).toBe('en-US')
   })
 })
-

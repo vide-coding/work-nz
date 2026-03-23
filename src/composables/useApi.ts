@@ -150,23 +150,35 @@ export const gitApi = {
 // Filesystem API
 export const fsApi = {
   async tree(projectId: string, relativeRoot: string): Promise<FileNode> {
-    return invoke('project_fs_tree', { id: projectId, relativeRoot })
+    return invoke('project_fs_tree', { projectId, relativeRoot })
   },
 
   async readText(path: string): Promise<{ content: string }> {
     return invoke('fs_read_text', { path })
   },
 
-  async createDir(path: string): Promise<FsResult> {
-    return invoke('fs_create_dir', { path })
+  async createDir(projectId: string, relativePath: string): Promise<FsResult> {
+    return invoke('fs_create_dir', { projectId, relativePath })
+  },
+
+  async createFile(projectId: string, relativePath: string): Promise<FsResult> {
+    return invoke('fs_create_file', { projectId, relativePath })
   },
 
   async delete(path: string): Promise<FsResult> {
     return invoke('fs_delete', { path })
   },
 
-  async rename(oldPath: string, newPath: string): Promise<FsResult> {
-    return invoke('fs_rename', { oldPath, newPath })
+  async rename(oldPath: string, newName: string): Promise<FsResult> {
+    return invoke('fs_rename', { oldPath, newName })
+  },
+
+  async openExternal(path: string): Promise<FsResult> {
+    return invoke('fs_open_external', { path })
+  },
+
+  async copyFile(sourcePath: string, targetPath: string, overwrite: boolean): Promise<FsResult> {
+    return invoke('fs_copy_file', { sourcePath, targetPath, overwrite })
   },
 }
 

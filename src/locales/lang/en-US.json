@@ -14,7 +14,8 @@
     "creating": "Creating...",
     "cloning": "Cloning...",
     "confirm": "Confirm",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "back": "Back"
   },
   "workspace": {
     "description": "Select a workspace folder, app data and projects will be stored here",
@@ -241,5 +242,18 @@
     "fileHint": "Browse and manage files in this directory",
     "notImplemented": "This module type is not yet implemented in the UI",
     "capabilities": "Capabilities:"
+  },
+  "file": {
+    "title": "File Manager",
+    "newFile": "New File",
+    "newFolder": "New Folder",
+    "fileNamePlaceholder": "Enter file name (e.g., readme.md)",
+    "open": "Open",
+    "openInExplorer": "Open in Explorer",
+    "rename": "Rename",
+    "delete": "Delete",
+    "deleteConfirm": "Are you sure you want to delete",
+    "deleteFolderWarning": "This folder and all its contents will be permanently deleted.",
+    "dropToImport": "Drop files here to import"
   }
 }

@@ -14,7 +14,8 @@
     "creating": "创建中...",
     "cloning": "克隆中...",
     "confirm": "确认",
-    "loading": "加载中..."
+    "loading": "加载中...",
+    "back": "返回"
   },
   "workspace": {
     "description": "请选择工作区文件夹，应用数据与项目均存于此处",
@@ -241,5 +242,18 @@
     "fileHint": "浏览和管理此目录中的文件",
     "notImplemented": "此模块类型尚未在 UI 中实现",
     "capabilities": "功能："
+  },
+  "file": {
+    "title": "文件管理器",
+    "newFile": "新建文件",
+    "newFolder": "新建文件夹",
+    "fileNamePlaceholder": "输入文件名（例如：readme.md）",
+    "open": "打开",
+    "openInExplorer": "在文件资源管理器中打开",
+    "rename": "重命名",
+    "delete": "删除",
+    "deleteConfirm": "确定要删除",
+    "deleteFolderWarning": "此文件夹及其所有内容将被永久删除。",
+    "dropToImport": "拖放文件到此处导入"
   }
 }

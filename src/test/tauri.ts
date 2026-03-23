@@ -9,10 +9,8 @@ export type IpcRouteHandler = (args: Record<string, unknown>) => unknown | Promi
 export function mockTauriIpc(routes: Record<string, IpcRouteHandler>): void {
   mockIPC(async (cmd, args) => {
     const handler = routes[cmd]
-    if (!handler)
-      throw new Error(`未为 IPC 命令提供 mock: ${cmd}`)
+    if (!handler) throw new Error(`未为 IPC 命令提供 mock: ${cmd}`)
 
     return handler((args ?? {}) as Record<string, unknown>)
   })
 }
-
