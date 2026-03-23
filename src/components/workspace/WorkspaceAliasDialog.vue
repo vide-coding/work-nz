@@ -46,16 +46,16 @@ function handleCancel() {
     <div class="space-y-4">
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          {{ $t('workspace.aliasPlaceholder') }}
+          {{ $t('workspace.namePlaceholder') }}
         </label>
         <input
           v-model="aliasInput"
           type="text"
-          :placeholder="$t('workspace.aliasPlaceholder')"
+          :placeholder="$t('workspace.namePlaceholder')"
           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
           @keyup.enter="handleSave"
         />
-        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ $t('workspace.aliasHint') }}</p>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ $t('workspace.nameHint') }}</p>
       </div>
     </div>
 
