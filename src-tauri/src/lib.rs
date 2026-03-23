@@ -34,6 +34,7 @@ pub fn run() {
             git_repo_create,
             git_repo_clone,
             git_repo_update,
+            git_repo_reorder,
             git_extract_repo_name,
             git_repo_pull,
             git_repo_status_get,

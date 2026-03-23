@@ -102,7 +102,10 @@
     "noDirectories": "No directories yet",
     "createFirstDirectory": "Create First Directory",
     "readme": "View README",
-    "openInTerminal": "Open in Terminal"
+    "openInTerminal": "Open in Terminal",
+    "retry": "Retry",
+    "pullFailed": "Pull failed",
+    "retryCount": "Retry {n} times"
   },
   "projects": {
     "title": "Projects",

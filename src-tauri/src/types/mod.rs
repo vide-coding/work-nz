@@ -100,6 +100,8 @@ pub struct GitRepository {
     pub last_status_checked_at: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ide_override: Option<IdeConfig>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sort_order: Option<i32>,
 }
 
 /// 网络状态
@@ -171,6 +173,30 @@ pub struct GitCloneInput {
     pub name: Option<String>,
 }
 
+/// Git 克隆阶段
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum GitCloneStage {
+    Starting,
+    Connecting,
+    Receiving,
+    Resolving,
+    CheckingOut,
+    Completed,
+    Failed,
+}
+
+/// Git 克隆进度
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitCloneProgress {
+    pub stage: GitCloneStage,
+    pub progress: Option<f32>,
+    pub message: String,
+    pub retry_count: u32,
+    pub error: Option<String>,
+}
+
 /// Git 拉取结果
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -180,6 +206,8 @@ pub struct GitPullResult {
     pub message: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub synced_at: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
 }
 
 /// 目录类型种类
@@ -281,6 +309,7 @@ mod tests {
             ok: true,
             message: Some("Pull successful".to_string()),
             synced_at: Some("2024-01-01T00:00:00Z".to_string()),
+            error: None,
         };
 
         let json = serde_json::to_string(&result).unwrap();

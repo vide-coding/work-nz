@@ -114,6 +114,10 @@ export const gitApi = {
     return invoke('git_repo_update', { repoId, patch })
   },
 
+  async repoReorder(projectId: string, orderedIds: string[]): Promise<GitRepository[]> {
+    return invoke('git_repo_reorder', { projectId, orderedIds })
+  },
+
   async extractRepoName(remoteUrl: string): Promise<string> {
     return invoke('git_extract_repo_name', { remoteUrl })
   },
