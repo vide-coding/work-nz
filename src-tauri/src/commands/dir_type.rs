@@ -278,8 +278,18 @@ pub fn preview_detect(path: String) -> Result<PreviewDetectResult, String> {
         .unwrap_or_default();
 
     let kind = match extension.as_str() {
-        "png" | "jpg" | "jpeg" | "gif" | "webp" | "svg" | "bmp" => PreviewKind::Image,
-        "md" | "markdown" => PreviewKind::Markdown,
+        // 图片格式
+        "png" | "jpg" | "jpeg" | "gif" | "webp" | "svg" | "bmp" | "ico" | "tiff" | "tif"
+        | " BMP" => PreviewKind::Image,
+        // Markdown
+        "md" | "markdown" | "mdown" | "mkd" => PreviewKind::Markdown,
+        // PDF
+        "pdf" => PreviewKind::Pdf,
+        // Word 文档
+        "doc" | "docx" | "rtf" | "odt" => PreviewKind::Word,
+        // Excel 表格
+        "xls" | "xlsx" | "xlsm" | "xlsb" | "ods" => PreviewKind::Excel,
+        // 纯文本（默认）
         _ => PreviewKind::Text,
     };
 
@@ -294,9 +304,24 @@ pub fn ide_list_supported() -> Result<Vec<IdeConfig>, String> {
     // 定义所有支持的 IDE 列表
     let all_supported_ides: Vec<(&str, SupportedIdeKind, &str, Option<Vec<&str>>)> = vec![
         // 主流 IDE
-        ("code", SupportedIdeKind::Vscode, "VS Code", Some(vec!["--reuse-window"])),
-        ("code-insiders", SupportedIdeKind::Vscode, "VS Code Insiders", Some(vec!["--reuse-window"])),
-        ("cursor", SupportedIdeKind::Custom, "Cursor", Some(vec!["--reuse-window"])),
+        (
+            "code",
+            SupportedIdeKind::Vscode,
+            "VS Code",
+            Some(vec!["--reuse-window"]),
+        ),
+        (
+            "code-insiders",
+            SupportedIdeKind::Vscode,
+            "VS Code Insiders",
+            Some(vec!["--reuse-window"]),
+        ),
+        (
+            "cursor",
+            SupportedIdeKind::Custom,
+            "Cursor",
+            Some(vec!["--reuse-window"]),
+        ),
         ("zed", SupportedIdeKind::Custom, "Zed", None),
         ("idea", SupportedIdeKind::Jetbrains, "IntelliJ IDEA", None),
         ("webstorm", SupportedIdeKind::Jetbrains, "WebStorm", None),
@@ -310,7 +335,12 @@ pub fn ide_list_supported() -> Result<Vec<IdeConfig>, String> {
         ("appcode", SupportedIdeKind::Jetbrains, "AppCode", None),
         ("aqua", SupportedIdeKind::Jetbrains, "Aqua", None),
         ("fleet", SupportedIdeKind::Jetbrains, "Fleet", None),
-        ("devenv", SupportedIdeKind::VisualStudio, "Visual Studio", None),
+        (
+            "devenv",
+            SupportedIdeKind::VisualStudio,
+            "Visual Studio",
+            None,
+        ),
         // 其他编辑器
         ("subl", SupportedIdeKind::Custom, "Sublime Text", None),
         ("atom", SupportedIdeKind::Custom, "Atom", None),

@@ -113,7 +113,7 @@ export type ProjectDirectory = {
   updatedAt: string
 }
 
-export type PreviewKind = 'image' | 'markdown' | 'text'
+export type PreviewKind = 'image' | 'markdown' | 'text' | 'pdf' | 'word' | 'excel'
 
 // API input types
 export type ProjectCreateInput = {

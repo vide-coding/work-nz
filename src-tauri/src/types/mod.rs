@@ -226,6 +226,9 @@ pub enum PreviewKind {
     Image,
     Markdown,
     Text,
+    Pdf,
+    Word,
+    Excel,
 }
 
 /// 预览检测结果
@@ -407,8 +410,14 @@ mod tests {
 
     #[test]
     fn test_module_capability_from_str() {
-        assert_eq!(ModuleCapability::from_str("git.clone"), Some(ModuleCapability::GitClone));
-        assert_eq!(ModuleCapability::from_str("git.pull"), Some(ModuleCapability::GitPull));
+        assert_eq!(
+            ModuleCapability::from_str("git.clone"),
+            Some(ModuleCapability::GitClone)
+        );
+        assert_eq!(
+            ModuleCapability::from_str("git.pull"),
+            Some(ModuleCapability::GitPull)
+        );
         assert_eq!(ModuleCapability::from_str("invalid"), None);
     }
 
@@ -458,14 +467,12 @@ mod tests {
             description: Some("A test template".to_string()),
             scope: TemplateScope::Project,
             project_id: Some("proj-1".to_string()),
-            items: vec![
-                DirectoryTemplateItem {
-                    name: "src".to_string(),
-                    relative_path: "src".to_string(),
-                    module_id: "builtin:git".to_string(),
-                    module_config: None,
-                },
-            ],
+            items: vec![DirectoryTemplateItem {
+                name: "src".to_string(),
+                relative_path: "src".to_string(),
+                module_id: "builtin:git".to_string(),
+                module_config: None,
+            }],
             created_by: Some("user".to_string()),
             created_at: "2024-01-01T00:00:00Z".to_string(),
             updated_at: "2024-01-01T00:00:00Z".to_string(),

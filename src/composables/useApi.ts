@@ -153,6 +153,10 @@ export const fsApi = {
     return invoke('fs_read_text', { path })
   },
 
+  async readBinary(path: string): Promise<{ data: string }> {
+    return invoke('fs_read_binary', { path })
+  },
+
   async createDir(path: string): Promise<FsResult> {
     return invoke('fs_create_dir', { path })
   },
