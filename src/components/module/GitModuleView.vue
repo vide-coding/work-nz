@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { listen, UnlistenFn } from '@tauri-apps/api/event'
 import { debounce } from '@/composables/useDebounce'
-import type { Directory, GitRepository, GitRepoStatus } from '@/types'
+import { Loader2, GitBranch, X } from 'lucide-vue-next'
+import draggable from 'vuedraggable'
+import type { Directory, GitRepository, GitRepoStatus, GitCloneProgress } from '@/types'
 import { gitApi, ideApi, fsApi } from '@/composables/useApi'
 import RepoCard from '@/components/workspace/RepoCard.vue'
 import ReadmePreview from '@/components/workspace/ReadmePreview.vue'
@@ -23,12 +26,32 @@ const repoStatuses = ref<Record<string, GitRepoStatus>>({})
 const loading = ref(false)
 const error = ref('')
 
+// Drag and drop state
+const draggedRepos = ref<GitRepository[]>([])
+
 // Clone dialog state
 const showCloneDialog = ref(false)
 const cloneUrl = ref('')
 const cloneTargetDir = ref('')
 const cloneRepoName = ref('')
-const isCloning = ref(false)
+
+// Clone progress tracking
+interface CloneTask {
+  targetDirName: string
+  remoteUrl: string
+  progress: GitCloneProgress | null
+  status: 'cloning' | 'completed' | 'failed'
+}
+const cloneTasks = ref<Record<string, CloneTask>>({})
+let unlistenCloneProgress: UnlistenFn | null = null
+
+// Check if there's any active cloning
+const hasActiveCloning = computed(() => {
+  return Object.values(cloneTasks.value).some((task) => task.status === 'cloning')
+})
+
+// Pull retry tracking
+const pullRetryCount = ref<Record<string, number>>({})
 
 // Auto extract repo name from URL when clone URL changes
 const debouncedExtractRepoName = debounce(async (newUrl: string) => {
@@ -99,7 +122,7 @@ async function loadRepositories() {
     repositories.value = repos
 
     // Load status for each repo
-    for (const repo of filteredRepos.value) {
+    for (const repo of repos) {
       await loadRepoStatus(repo.id)
     }
   } catch (e: any) {
@@ -123,28 +146,102 @@ async function loadRepoStatus(repoId: string) {
 async function handleClone() {
   if (!props.directory.projectId) return
 
-  isCloning.value = true
+  const targetDirName = cloneTargetDir.value
+  const remoteUrl = cloneUrl.value
+  const repoName = cloneRepoName.value
   error.value = ''
+
+  // Close the dialog immediately
+  showCloneDialog.value = false
+  cloneUrl.value = ''
+  cloneTargetDir.value = ''
+  cloneRepoName.value = ''
+
+  // Track the clone task
+  const taskKey = `clone-${targetDirName}`
+  cloneTasks.value[taskKey] = {
+    targetDirName,
+    remoteUrl,
+    progress: null,
+    status: 'cloning',
+  }
+
   try {
     const newRepo = await gitApi.repoClone(props.directory.projectId, {
-      remoteUrl: cloneUrl.value,
-      targetDirName: cloneTargetDir.value,
+      remoteUrl: remoteUrl,
+      targetDirName: targetDirName,
       targetDirectory: props.directory.relativePath || undefined,
-      name: cloneRepoName.value || undefined,
+      name: repoName || undefined,
     })
-    repositories.value.push(newRepo)
-    showCloneDialog.value = false
-    cloneUrl.value = ''
-    cloneTargetDir.value = ''
-    cloneRepoName.value = ''
-
-    // Load status for new repo
+    // Add to the beginning of the list
+    repositories.value.unshift(newRepo)
+    draggedRepos.value.unshift(newRepo)
     await loadRepoStatus(newRepo.id)
   } catch (e: any) {
     error.value = e.message || 'Failed to clone repository'
-  } finally {
-    isCloning.value = false
+    if (cloneTasks.value[taskKey]) {
+      cloneTasks.value[taskKey].status = 'failed'
+      cloneTasks.value[taskKey].progress = {
+        stage: 'failed',
+        message: error.value,
+        retryCount: 0,
+        error: error.value,
+      }
+    }
   }
+}
+
+// Retry failed clone
+async function retryClone(targetDirName: string) {
+  const taskKey = Object.keys(cloneTasks.value).find(
+    (key) => cloneTasks.value[key].targetDirName === targetDirName
+  )
+  if (!taskKey) return
+
+  const task = cloneTasks.value[taskKey]
+  if (task.status !== 'failed' || !props.directory.projectId) return
+
+  cloneTasks.value[taskKey].status = 'cloning'
+  cloneTasks.value[taskKey].progress = null
+  error.value = ''
+
+  try {
+    const newRepo = await gitApi.repoClone(props.directory.projectId, {
+      remoteUrl: task.remoteUrl,
+      targetDirName: targetDirName,
+      targetDirectory: props.directory.relativePath || undefined,
+    })
+    repositories.value.push(newRepo)
+    delete cloneTasks.value[taskKey]
+    await loadRepoStatus(newRepo.id)
+  } catch (e: any) {
+    error.value = e.message || 'Failed to clone repository'
+    cloneTasks.value[taskKey].status = 'failed'
+    cloneTasks.value[taskKey].progress = {
+      stage: 'failed',
+      message: error.value,
+      retryCount: (task.progress?.retryCount || 0) + 1,
+      error: error.value,
+    }
+  }
+}
+
+// Cancel clone task
+function cancelClone(targetDirName: string) {
+  const taskKey = Object.keys(cloneTasks.value).find(
+    (key) => cloneTasks.value[key].targetDirName === targetDirName
+  )
+  if (!taskKey) return
+  delete cloneTasks.value[taskKey]
+}
+
+// Delete clone task
+function deleteCloneTask(targetDirName: string) {
+  const taskKey = Object.keys(cloneTasks.value).find(
+    (key) => cloneTasks.value[key].targetDirName === targetDirName
+  )
+  if (!taskKey) return
+  delete cloneTasks.value[taskKey]
 }
 
 // Update repository
@@ -173,13 +270,28 @@ async function handleUpdateRepo() {
 
 // Pull changes
 async function handlePull(repo: GitRepository) {
+  const retryCount = pullRetryCount.value[repo.id] || 0
   try {
-    await gitApi.repoPull(repo.id)
-    // Refresh status after pull
-    await loadRepoStatus(repo.id)
+    const result = await gitApi.repoPull(repo.id)
+    if (result.ok) {
+      // Refresh status after pull
+      await loadRepoStatus(repo.id)
+      // Clear retry count on success
+      delete pullRetryCount.value[repo.id]
+    } else {
+      // Increment retry count
+      pullRetryCount.value[repo.id] = retryCount + 1
+    }
   } catch (e) {
     console.error('Failed to pull:', e)
+    pullRetryCount.value[repo.id] = retryCount + 1
   }
+}
+
+// Retry pull for a specific repo
+async function handleRetryPull(repo: GitRepository) {
+  delete pullRetryCount.value[repo.id]
+  await handlePull(repo)
 }
 
 // Open in IDE
@@ -206,6 +318,29 @@ async function handleOpenInTerminal(repo: GitRepository) {
 async function handleDeleteRepo(repo: GitRepository) {
   // TODO: Implement
   console.log('Delete repo:', repo)
+}
+
+// Drag and drop handlers
+function onModelValueUpdate(newList: GitRepository[]) {
+  draggedRepos.value = newList
+}
+
+async function onDragEnd() {
+  if (!props.directory.projectId) return
+
+  // Update the main repositories list to match the new order
+  const nonFilteredRepos = repositories.value.filter(
+    (r) => !filteredRepos.value.some((fr) => fr.id === r.id)
+  )
+  repositories.value = [...draggedRepos.value, ...nonFilteredRepos]
+
+  // Save the new order to backend
+  try {
+    const orderedIds = draggedRepos.value.map((r) => r.id)
+    await gitApi.repoReorder(props.directory.projectId, orderedIds)
+  } catch (e) {
+    console.error('Failed to save reorder:', e)
+  }
 }
 
 // Load README
@@ -267,9 +402,45 @@ function closeEditDialog() {
   editRepoDescription.value = ''
 }
 
+// Sync draggedRepos when repositories change
+watch(
+  () => repositories.value,
+  (newRepos) => {
+    if (draggedRepos.value.length === 0 || draggedRepos.value.length !== newRepos.length) {
+      draggedRepos.value = [...newRepos]
+    }
+  },
+  { immediate: true, deep: true }
+)
+
 // Load on mount and when directory changes
-onMounted(() => {
+onMounted(async () => {
   loadRepositories()
+  // Listen for clone progress events
+  unlistenCloneProgress = await listen<GitCloneProgress>('git:clone:progress', (event) => {
+    const progress = event.payload
+    // Find the active clone task
+    const activeTaskKey = Object.keys(cloneTasks.value).find(
+      (key) => cloneTasks.value[key].status === 'cloning'
+    )
+
+    if (activeTaskKey) {
+      cloneTasks.value[activeTaskKey].progress = progress
+      if (progress.stage === 'completed') {
+        // Remove completed task immediately
+        delete cloneTasks.value[activeTaskKey]
+        loadRepositories()
+      } else if (progress.stage === 'failed') {
+        cloneTasks.value[activeTaskKey].status = 'failed'
+      }
+    }
+  })
+})
+
+onUnmounted(() => {
+  if (unlistenCloneProgress) {
+    unlistenCloneProgress()
+  }
 })
 
 watch(
@@ -297,28 +468,101 @@ watch(
         <span class="git-module__path-value">{{ directory.relativePath }}</span>
       </div>
 
-      <!-- Loading state -->
-      <div v-if="loading" class="git-module__loading">{{ t('git.loading') }}</div>
-
       <!-- Error state -->
-      <div v-else-if="error" class="git-module__error">
+      <div v-if="error" class="git-module__error">
         {{ error }}
       </div>
 
-      <!-- Repository list -->
-      <div v-else-if="filteredRepos.length > 0" class="git-module__list">
-        <RepoCard
-          v-for="repo in filteredRepos"
-          :key="repo.id"
-          :repo="repo"
-          :status="repoStatuses[repo.id]"
-          @view-readme="handleLoadReadme"
-          @pull="handlePull"
-          @open-in-ide="handleOpenInIde"
-          @open-in-terminal="handleOpenInTerminal"
-          @edit="openEditDialog"
-          @delete-repo="handleDeleteRepo"
-        />
+      <!-- Clone progress items -->
+      <div v-if="Object.keys(cloneTasks).length > 0" class="git-module__list">
+        <div
+          v-for="(task, taskId) in cloneTasks"
+          :key="'clone-' + taskId"
+          class="git-module__clone-card"
+        >
+          <div class="flex items-center gap-3">
+            <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+              <Loader2
+                v-if="task.status === 'cloning'"
+                class="w-5 h-5 text-blue-600 dark:text-blue-400 animate-spin"
+              />
+              <GitBranch
+                v-else-if="task.status === 'completed'"
+                class="w-5 h-5 text-green-600 dark:text-green-400"
+              />
+              <span v-else class="text-red-600 dark:text-red-400 text-lg">✕</span>
+            </div>
+            <div class="flex-1">
+              <p class="font-medium text-gray-900 dark:text-white">
+                {{ task.targetDirName }}
+              </p>
+              <p class="text-sm text-gray-500 dark:text-gray-400">
+                {{ task.progress?.message || $t('common.cloning') }}
+              </p>
+              <div
+                v-if="task.progress?.retryCount && task.progress.retryCount > 0"
+                class="text-xs text-orange-500 mt-1"
+              >
+                {{ $t('workspace.retryCount', { n: task.progress.retryCount }) }}
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <!-- Cloning: show cancel button -->
+              <button
+                v-if="task.status === 'cloning'"
+                class="p-1.5 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                :title="$t('common.cancel')"
+                @click="cancelClone(task.targetDirName)"
+              >
+                <X class="w-4 h-4" />
+              </button>
+              <!-- Failed: show retry and delete buttons -->
+              <template v-else-if="task.status === 'failed'">
+                <button
+                  class="px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded-lg transition-colors"
+                  @click="retryClone(task.targetDirName)"
+                >
+                  {{ $t('workspace.retry') }}
+                </button>
+                <button
+                  class="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white text-sm rounded-lg transition-colors"
+                  @click="deleteCloneTask(task.targetDirName)"
+                >
+                  {{ $t('common.delete') }}
+                </button>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Repository list with drag and drop -->
+      <div v-if="draggedRepos.length > 0" class="git-module__list">
+        <draggable
+          :model-value="draggedRepos"
+          @update:model-value="onModelValueUpdate"
+          item-key="id"
+          ghost-class="opacity-50"
+          :animation="200"
+          force-fallback="true"
+          handle=".git-module__drag-handle"
+          @end="onDragEnd"
+        >
+          <template #item="{ element: repo }">
+            <RepoCard
+              :repo="repo"
+              :status="repoStatuses[repo.id]"
+              :pull-error="pullRetryCount[repo.id] ? $t('workspace.pullFailed') : undefined"
+              @view-readme="handleLoadReadme"
+              @pull="handlePull"
+              @retry-pull="handleRetryPull"
+              @open-in-ide="handleOpenInIde"
+              @open-in-terminal="handleOpenInTerminal"
+              @edit="openEditDialog"
+              @delete-repo="handleDeleteRepo"
+            />
+          </template>
+        </draggable>
       </div>
 
       <!-- Empty state -->
@@ -343,7 +587,7 @@ watch(
       :clone-url="cloneUrl"
       :clone-target-dir="cloneTargetDir"
       :clone-repo-name="cloneRepoName"
-      :is-cloning="isCloning"
+      :is-cloning="false"
       :error="error"
       @update:clone-url="cloneUrl = $event"
       @update:clone-target-dir="cloneTargetDir = $event"
@@ -445,6 +689,28 @@ watch(
 
 .git-module__list {
   flex: 1;
+}
+
+.git-module__clone-card {
+  background: white;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  margin-bottom: 0.75rem;
+}
+
+.dark .git-module__clone-card {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+.git-module__ghost {
+  opacity: 0.5;
+  background: #dbeafe;
+}
+
+.dark .git-module__ghost {
+  background: #1e3a8a;
 }
 
 .git-module__empty {

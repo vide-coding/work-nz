@@ -43,6 +43,7 @@ export type GitRepository = {
   lastSyncAt?: string
   lastStatusCheckedAt?: string
   ideOverride?: IdeConfig
+  sortOrder?: number
 }
 
 export type NetworkState = 'online' | 'offline' | 'unknown'
@@ -89,6 +90,24 @@ export type GitPullResult = {
   ok: boolean
   message?: string
   syncedAt?: string
+  error?: string
+}
+
+export type GitCloneStage =
+  | 'starting'
+  | 'connecting'
+  | 'receiving'
+  | 'resolving'
+  | 'checking_out'
+  | 'completed'
+  | 'failed'
+
+export type GitCloneProgress = {
+  stage: GitCloneStage
+  progress?: number
+  message: string
+  retryCount: number
+  error?: string
 }
 
 // Directory types

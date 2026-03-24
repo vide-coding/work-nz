@@ -7,6 +7,8 @@ import {
   Edit3,
   Trash2,
   Terminal,
+  RotateCw,
+  GripVertical,
 } from 'lucide-vue-next'
 import Tooltip from '@/components/common/Tooltip.vue'
 import type { GitRepository, GitRepoStatus } from '@/types'
@@ -14,11 +16,13 @@ import type { GitRepository, GitRepoStatus } from '@/types'
 const props = defineProps<{
   repo: GitRepository
   status?: GitRepoStatus
+  pullError?: string
 }>()
 
 const emit = defineEmits<{
   viewReadme: [repo: GitRepository]
   pull: [repo: GitRepository]
+  retryPull: [repo: GitRepository]
   openInIde: [repo: GitRepository]
   openInTerminal: [repo: GitRepository]
   edit: [repo: GitRepository]
@@ -35,6 +39,10 @@ function viewReadme() {
 
 function pull() {
   emit('pull', props.repo)
+}
+
+function retryPull() {
+  emit('retryPull', props.repo)
 }
 
 function openInIde() {
@@ -58,6 +66,12 @@ function deleteRepo() {
   <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
     <div class="flex items-start justify-between">
       <div class="flex items-start gap-3">
+        <!-- Drag handle -->
+        <div
+          class="git-module__drag-handle p-1 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+        >
+          <GripVertical class="w-4 h-4" />
+        </div>
         <div class="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
           <GitBranch class="w-5 h-5 text-gray-600 dark:text-gray-400" />
         </div>
@@ -94,6 +108,12 @@ function deleteRepo() {
                 })
               }}
             </span>
+            <span
+              v-if="pullError"
+              class="text-xs px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded"
+            >
+              {{ $t('workspace.pullFailed') }}
+            </span>
           </div>
         </div>
       </div>
@@ -107,12 +127,18 @@ function deleteRepo() {
             <FileText class="w-4 h-4" />
           </button>
         </Tooltip>
-        <Tooltip :text="$t('workspace.pull')">
+        <Tooltip :text="pullError ? $t('common.retry') : $t('workspace.pull')">
           <button
-            class="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            @click="pull"
+            class="p-2 rounded-lg transition-colors"
+            :class="
+              pullError
+                ? 'text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/30'
+                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+            "
+            @click="pullError ? retryPull() : pull"
           >
-            <GitPullRequest class="w-4 h-4" />
+            <RotateCw v-if="pullError" class="w-4 h-4" />
+            <GitPullRequest v-else class="w-4 h-4" />
           </button>
         </Tooltip>
         <Tooltip :text="$t('workspace.openInIde')">

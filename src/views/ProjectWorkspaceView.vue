@@ -878,7 +878,11 @@ onMounted(async () => {
           @update-name="handleUpdateName"
           @update-description="handleUpdateDescription"
         />
-        <ModuleContentArea v-else :directory="currentDirectory" />
+        <ModuleContentArea
+          v-else
+          :directory="currentDirectory"
+          :project-path="project?.projectPath ?? ''"
+        />
       </div>
     </div>
 

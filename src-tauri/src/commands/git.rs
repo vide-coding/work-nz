@@ -6,6 +6,8 @@ use git2::Repository;
 use rusqlite::params;
 use std::fs;
 use std::path::Path;
+use tauri::{AppHandle, Emitter};
+use std::time::Duration;
 
 /// 列出项目的 Git 仓库
 #[tauri::command]
@@ -15,8 +17,8 @@ pub fn git_repo_list(project_id: String) -> Result<Vec<GitRepository>, String> {
 
     let mut stmt = conn
         .prepare(
-            "SELECT id, project_id, name, path, remote_url, branch, description, last_sync_at, last_status_checked_at, ide_override_json
-             FROM git_repositories WHERE project_id = ?1",
+            "SELECT id, project_id, name, path, remote_url, branch, description, last_sync_at, last_status_checked_at, ide_override_json, sort_order
+             FROM git_repositories WHERE project_id = ?1 ORDER BY sort_order ASC, created_at DESC",
         )
         .map_err(|e| format!("查询失败: {}", e))?;
 
@@ -34,6 +36,7 @@ pub fn git_repo_list(project_id: String) -> Result<Vec<GitRepository>, String> {
                 last_sync_at: row.get(7)?,
                 last_status_checked_at: row.get(8)?,
                 ide_override: ide_override_json.and_then(|j| serde_json::from_str(&j).ok()),
+                sort_order: row.get(10)?,
             })
         })
         .map_err(|e| format!("查询失败: {}", e))?
@@ -79,24 +82,37 @@ pub async fn git_repo_create(project_id: String, name: String) -> Result<GitRepo
     let now = Utc::now().to_rfc3339();
 
     // 数据库操作 - 在单独作用域中释放连接
-    {
+    let sort_order = {
         let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
         let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
 
+        // Get the next sort_order (max + 1)
+        let max_sort: Option<i32> = conn
+            .query_row(
+                "SELECT MAX(sort_order) FROM git_repositories WHERE project_id = ?1",
+                params![project_id],
+                |row| row.get(0),
+            )
+            .unwrap_or(None);
+        let next_sort = max_sort.unwrap_or(0) + 1;
+
         conn.execute(
-            "INSERT INTO git_repositories (id, project_id, name, path, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            "INSERT INTO git_repositories (id, project_id, name, path, created_at, updated_at, sort_order)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
             params![
                 id,
                 project_id,
                 name,
                 repo_path.to_string_lossy().to_string(),
                 now,
-                now
+                now,
+                next_sort
             ],
         )
         .map_err(|e| format!("保存仓库失败: {}", e))?;
-    }
+
+        next_sort
+    };
 
     Ok(GitRepository {
         id,
@@ -109,12 +125,17 @@ pub async fn git_repo_create(project_id: String, name: String) -> Result<GitRepo
         last_sync_at: None,
         last_status_checked_at: None,
         ide_override: None,
+        sort_order: Some(sort_order),
     })
 }
 
-/// 从 URL 克隆 Git 仓库
+/// 从 URL 克隆 Git 仓库（支持进度和重试）
 #[tauri::command]
-pub async fn git_repo_clone(project_id: String, input: GitCloneInput) -> Result<GitRepository, String> {
+pub async fn git_repo_clone(
+    app_handle: AppHandle,
+    project_id: String,
+    input: GitCloneInput,
+) -> Result<GitRepository, String> {
     let _workspace_path = get_workspace_path().ok_or("未打开工作区")?;
 
     // 获取项目路径 - 在单独作用域中释放数据库连接
@@ -137,40 +158,127 @@ pub async fn git_repo_clone(project_id: String, input: GitCloneInput) -> Result<
 
     let repo_path = target_base.join(&input.target_dir_name);
     let remote_url = input.remote_url.clone();
-
-    // 克隆仓库 - 在阻塞线程中执行
     let repo_path_clone = repo_path.clone();
-    let remote_url_clone = remote_url.clone();
-    tokio::task::spawn_blocking(move || {
-        // 克隆仓库 - 使用简化方式
-        let mut callbacks = git2::RemoteCallbacks::new();
-        callbacks.credentials(|_url, _username_from_url, _allowed_types| git2::Cred::default());
+    let app_handle_clone = app_handle.clone();
 
-        let mut fetch_opts = git2::FetchOptions::new();
-        fetch_opts.remote_callbacks(callbacks);
+    // 生成临时克隆任务 ID
+    let clone_task_id = uuid::Uuid::new_v4().to_string();
 
-        // 构建回调并克隆
-        match Repository::clone(&remote_url_clone, &repo_path_clone) {
-            Ok(_) => {}
-            Err(e) => {
-                // 如果克隆失败，尝试使用 checkout
+    // 发射开始事件
+    let _ = app_handle.emit(
+        "git:clone:progress",
+        GitCloneProgress {
+            stage: GitCloneStage::Starting,
+            progress: None,
+            message: format!("开始克隆仓库 {}", input.target_dir_name),
+            retry_count: 0,
+            error: None,
+        },
+    );
+
+    // 执行克隆操作（带重试逻辑）
+    let max_retries = 3;
+    let mut last_error = String::new();
+
+    for attempt in 0..max_retries {
+        // 发射重试事件
+        if attempt > 0 {
+            let _ = app_handle.emit(
+                "git:clone:progress",
+                GitCloneProgress {
+                    stage: GitCloneStage::Starting,
+                    progress: None,
+                    message: format!(
+                        "重试克隆 ({}/{}): {}",
+                        attempt + 1,
+                        max_retries,
+                        input.target_dir_name
+                    ),
+                    retry_count: attempt as u32,
+                    error: Some(last_error.clone()),
+                },
+            );
+            // 等待 2 秒后重试
+            tokio::time::sleep(Duration::from_secs(2)).await;
+        }
+
+        // 克隆仓库 - 在阻塞线程中执行
+        let result = tokio::task::spawn_blocking({
+            let repo_path_clone = repo_path_clone.clone();
+            let remote_url = remote_url.clone();
+            let app_handle_clone = app_handle_clone.clone();
+            let _clone_task_id = clone_task_id.clone();
+
+            move || {
+                // 发射连接中事件
+                let _ = app_handle_clone.emit(
+                    "git:clone:progress",
+                    GitCloneProgress {
+                        stage: GitCloneStage::Connecting,
+                        progress: Some(0.0),
+                        message: "正在连接远程仓库...".to_string(),
+                        retry_count: attempt as u32,
+                        error: None,
+                    },
+                );
+
+                // 清理可能存在的残留目录
                 if repo_path_clone.exists() {
-                    // 目录已存在，尝试打开
-                    let _ = Repository::open(&repo_path_clone);
-                } else {
-                    return Err(format!("克隆仓库失败: {}", e));
+                    let _ = fs::remove_dir_all(&repo_path_clone);
+                }
+
+                // 克隆仓库
+                match Repository::clone(&remote_url, &repo_path_clone) {
+                    Ok(_) => {
+                        let _ = app_handle_clone.emit(
+                            "git:clone:progress",
+                            GitCloneProgress {
+                                stage: GitCloneStage::Completed,
+                                progress: Some(100.0),
+                                message: "克隆完成".to_string(),
+                                retry_count: attempt as u32,
+                                error: None,
+                            },
+                        );
+                        Ok(())
+                    }
+                    Err(e) => {
+                        let error_msg = format!("克隆失败: {}", e);
+                        let _ = app_handle_clone.emit(
+                            "git:clone:progress",
+                            GitCloneProgress {
+                                stage: GitCloneStage::Failed,
+                                progress: None,
+                                message: error_msg.clone(),
+                                retry_count: attempt as u32,
+                                error: Some(error_msg),
+                            },
+                        );
+                        Err(e)
+                    }
                 }
             }
+        })
+        .await
+        .map_err(|e| format!("任务执行失败: {}", e))?;
+
+        match result {
+            Ok(()) => break,
+            Err(_) if attempt < max_retries - 1 => {
+                last_error = format!("尝试 {} 失败", attempt + 1);
+                continue;
+            }
+            Err(e) => {
+                last_error = format!("克隆失败: {}", e);
+                return Err(last_error);
+            }
         }
-        Ok(())
-    })
-    .await
-    .map_err(|e| format!("任务执行失败: {}", e))??;
+    }
 
     // 获取分支信息
-    let repo_path_clone = repo_path.clone();
+    let repo_path_clone2 = repo_path.clone();
     let (branch_name, remote_url_result) = tokio::task::spawn_blocking(move || {
-        let repo = Repository::open(&repo_path_clone).map_err(|e| format!("打开仓库失败: {}", e))?;
+        let repo = Repository::open(&repo_path_clone2).map_err(|e| format!("打开仓库失败: {}", e))?;
         let head = repo.head().ok();
         let branch = head.as_ref().and_then(|h| h.shorthand().map(String::from));
 
@@ -195,13 +303,23 @@ pub async fn git_repo_clone(project_id: String, input: GitCloneInput) -> Result<
     let repo_name = input.name.unwrap_or_else(|| input.target_dir_name.clone());
 
     // 数据库操作 - 在单独作用域中释放连接
-    {
+    let sort_order = {
         let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
         let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
 
+        // Get the next sort_order (max + 1)
+        let max_sort: Option<i32> = conn
+            .query_row(
+                "SELECT MAX(sort_order) FROM git_repositories WHERE project_id = ?1",
+                params![project_id],
+                |row| row.get(0),
+            )
+            .unwrap_or(None);
+        let next_sort = max_sort.unwrap_or(0) + 1;
+
         conn.execute(
-            "INSERT INTO git_repositories (id, project_id, name, path, remote_url, branch, last_sync_at, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            "INSERT INTO git_repositories (id, project_id, name, path, remote_url, branch, last_sync_at, created_at, updated_at, sort_order)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
             params![
                 id,
                 project_id,
@@ -211,11 +329,14 @@ pub async fn git_repo_clone(project_id: String, input: GitCloneInput) -> Result<
                 branch_name,
                 now,
                 now,
-                now
+                now,
+                next_sort
             ],
         )
         .map_err(|e| format!("保存仓库失败: {}", e))?;
-    }
+
+        next_sort
+    };
 
     Ok(GitRepository {
         id,
@@ -228,6 +349,7 @@ pub async fn git_repo_clone(project_id: String, input: GitCloneInput) -> Result<
         last_sync_at: Some(now),
         last_status_checked_at: None,
         ide_override: None,
+        sort_order: Some(sort_order),
     })
 }
 
@@ -254,7 +376,7 @@ pub fn git_repo_update(
     // 获取当前仓库信息
     let current_repo: GitRepository = conn
         .query_row(
-            "SELECT id, project_id, name, path, remote_url, branch, description, last_sync_at, last_status_checked_at, ide_override_json
+            "SELECT id, project_id, name, path, remote_url, branch, description, last_sync_at, last_status_checked_at, ide_override_json, sort_order
              FROM git_repositories WHERE id = ?1",
             params![repo_id],
             |row| {
@@ -270,6 +392,7 @@ pub fn git_repo_update(
                     last_sync_at: row.get(7)?,
                     last_status_checked_at: row.get(8)?,
                     ide_override: ide_override_json.and_then(|j| serde_json::from_str(&j).ok()),
+                    sort_order: row.get(10)?,
                 })
             },
         )
@@ -294,7 +417,7 @@ pub fn git_repo_update(
     // 查询更新后的仓库信息
     let mut stmt = conn
         .prepare(
-            "SELECT id, project_id, name, path, remote_url, branch, description, last_sync_at, last_status_checked_at, ide_override_json
+            "SELECT id, project_id, name, path, remote_url, branch, description, last_sync_at, last_status_checked_at, ide_override_json, sort_order
              FROM git_repositories WHERE id = ?1",
         )
         .map_err(|e| format!("查询失败: {}", e))?;
@@ -313,11 +436,71 @@ pub fn git_repo_update(
                 last_sync_at: row.get(7)?,
                 last_status_checked_at: row.get(8)?,
                 ide_override: ide_override_json.and_then(|j| serde_json::from_str(&j).ok()),
+                sort_order: row.get(10)?,
             })
         })
         .map_err(|e| format!("读取仓库失败: {}", e))?;
 
     Ok(repo)
+}
+
+/// 重新排序 Git 仓库
+#[tauri::command]
+pub fn git_repo_reorder(project_id: String, ordered_ids: Vec<String>) -> Result<Vec<GitRepository>, String> {
+    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
+    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
+
+    // Start transaction
+    conn.execute("BEGIN TRANSACTION", params![])
+        .map_err(|e| format!("开始事务失败: {}", e))?;
+
+    // Update sort_order for each repo based on its position in the list
+    for (index, repo_id) in ordered_ids.iter().enumerate() {
+        let sort_order = index as i32;
+        conn.execute(
+            "UPDATE git_repositories SET sort_order = ?1 WHERE id = ?2 AND project_id = ?3",
+            params![sort_order, repo_id, project_id],
+        )
+        .map_err(|e| {
+            let _ = conn.execute("ROLLBACK", params![]);
+            format!("更新排序失败: {}", e)
+        })?;
+    }
+
+    // Commit transaction
+    conn.execute("COMMIT", params![])
+        .map_err(|e| format!("提交事务失败: {}", e))?;
+
+    // Return updated repos
+    let mut stmt = conn
+        .prepare(
+            "SELECT id, project_id, name, path, remote_url, branch, description, last_sync_at, last_status_checked_at, ide_override_json, sort_order
+             FROM git_repositories WHERE project_id = ?1 ORDER BY sort_order ASC",
+        )
+        .map_err(|e| format!("查询失败: {}", e))?;
+
+    let repos = stmt
+        .query_map(params![project_id], |row| {
+            let ide_override_json: Option<String> = row.get(9)?;
+            Ok(GitRepository {
+                id: row.get(0)?,
+                project_id: row.get(1)?,
+                name: row.get(2)?,
+                path: row.get(3)?,
+                remote_url: row.get(4)?,
+                branch: row.get(5)?,
+                description: row.get(6)?,
+                last_sync_at: row.get(7)?,
+                last_status_checked_at: row.get(8)?,
+                ide_override: ide_override_json.and_then(|j| serde_json::from_str(&j).ok()),
+                sort_order: row.get(10)?,
+            })
+        })
+        .map_err(|e| format!("查询失败: {}", e))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("读取数据失败: {}", e))?;
+
+    Ok(repos)
 }
 
 /// 从 URL 提取仓库名称
@@ -367,21 +550,37 @@ pub fn git_repo_pull(repo_id: String) -> Result<GitPullResult, String> {
     let repo = Repository::open(&path).map_err(|e| format!("打开仓库失败: {}", e))?;
 
     // 获取默认远程
-    let mut remote = repo
-        .find_remote("origin")
-        .map_err(|e| format!("找不到远程: {}", e))?;
+    let mut remote = match repo.find_remote("origin") {
+        Ok(r) => r,
+        Err(e) => {
+            return Ok(GitPullResult {
+                ok: false,
+                message: None,
+                synced_at: None,
+                error: Some(format!("找不到远程 origin: {}", e)),
+            });
+        }
+    };
 
     // 尝试连接并拉取
     let mut callbacks = git2::RemoteCallbacks::new();
     callbacks.credentials(|_url, _username_from_url, _allowed_types| git2::Cred::default());
 
-    remote
-        .fetch(
-            &["main", "master"],
-            Some(&mut git2::FetchOptions::new().remote_callbacks(callbacks)),
-            None,
-        )
-        .map_err(|e| format!("拉取失败: {}", e))?;
+    match remote.fetch(
+        &["main", "master"],
+        Some(&mut git2::FetchOptions::new().remote_callbacks(callbacks)),
+        None,
+    ) {
+        Ok(_) => {}
+        Err(e) => {
+            return Ok(GitPullResult {
+                ok: false,
+                message: None,
+                synced_at: None,
+                error: Some(format!("拉取失败: {}", e)),
+            });
+        }
+    }
 
     // 尝试快速合并
     let now = Utc::now().to_rfc3339();
@@ -396,6 +595,7 @@ pub fn git_repo_pull(repo_id: String) -> Result<GitPullResult, String> {
         ok: true,
         message: Some("拉取成功".to_string()),
         synced_at: Some(now),
+        error: None,
     })
 }
 

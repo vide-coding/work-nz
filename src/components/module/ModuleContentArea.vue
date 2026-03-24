@@ -4,11 +4,14 @@ import { useI18n } from 'vue-i18n'
 import type { Directory } from '@/types'
 import { moduleRegistry } from '@/composables/useModuleRegistry'
 import GitModuleView from './GitModuleView.vue'
+import FileModuleView from './FileModuleView.vue'
 
 const { t } = useI18n()
 
 interface Props {
   directory: Directory
+  /** The project root path for file operations */
+  projectPath: string
 }
 
 const props = defineProps<Props>()
@@ -76,10 +79,7 @@ const capabilities = computed(() => {
 
         <!-- File Module Content -->
         <template v-else-if="moduleType === 'file'">
-          <div class="module-content-area__files">
-            <p>{{ t('module.fileEnabled') }}</p>
-            <p class="module-content-area__hint">{{ t('module.fileHint') }}</p>
-          </div>
+          <FileModuleView :directory="props.directory" :project-path="props.projectPath" />
         </template>
 
         <!-- Unknown module type -->

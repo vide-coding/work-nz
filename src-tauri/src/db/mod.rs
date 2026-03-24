@@ -76,6 +76,23 @@ fn run_migrations(conn: &Connection) -> Result<()> {
     // 迁移 3: 添加 visible 列到 projects 表
     migrate_add_visible_column(conn)?;
 
+    // 迁移 4: 添加 sort_order 列到 git_repositories 表
+    let has_sort_order = conn
+        .query_row(
+            "SELECT COUNT(*) FROM pragma_table_info('git_repositories') WHERE name = 'sort_order'",
+            [],
+            |row| row.get::<_, i32>(0),
+        )
+        .unwrap_or(0)
+        > 0;
+
+    if !has_sort_order {
+        conn.execute(
+            "ALTER TABLE git_repositories ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0",
+            [],
+        )?;
+    }
+
     Ok(())
 }
 
