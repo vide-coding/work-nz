@@ -17,6 +17,14 @@
     "loading": "加载中...",
     "back": "返回"
   },
+  "dialog": {
+    "confirmTitle": "确认",
+    "openLink": "是否打开此链接？",
+    "openFile": "是否打开此文件？",
+    "openCodeFile": "是否使用 IDE 打开此代码文件？",
+    "openDirectory": "是否打开此目录？",
+    "undoWarning": "此操作无法撤销"
+  },
   "workspace": {
     "description": "请选择工作区文件夹，应用数据与项目均存于此处",
     "recentWorkspaces": "最近工作区",

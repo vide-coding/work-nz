@@ -17,6 +17,14 @@
     "loading": "Loading...",
     "back": "Back"
   },
+  "dialog": {
+    "confirmTitle": "Confirm",
+    "openLink": "Open this link?",
+    "openFile": "Open this file?",
+    "openCodeFile": "Open this code file with IDE?",
+    "openDirectory": "Open this directory?",
+    "undoWarning": "This action cannot be undone"
+  },
   "workspace": {
     "description": "Select a workspace folder, app data and projects will be stored here",
     "recentWorkspaces": "Recent Workspaces",

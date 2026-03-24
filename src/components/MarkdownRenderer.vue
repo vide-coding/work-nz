@@ -2,15 +2,26 @@
   <div
     :class="['markdown-body', `markdown-theme-${theme}`, { 'markdown-body-compact': compact }]"
     v-html="htmlContent"
+    @click="handleContentClick"
+  />
+
+  <!-- 确认对话框 -->
+  <ConfirmDialog
+    v-model="confirmDialog.visible"
+    :file-type="confirmDialog.fileType"
+    :title="confirmDialog.title"
+    @confirm="handleConfirmOpen"
   />
 </template>
 
 <script setup lang="ts">
 import { marked, type Renderer, type Tokens } from 'marked'
-import { computed, watch, ref } from 'vue'
+import { computed, watch, ref, reactive } from 'vue'
 import { convertFileSrc } from '@tauri-apps/api/core'
 import type { ThemeName } from '@/types/theme'
 import { useMarkdownHighlight } from '@/composables/useMarkdownHighlight'
+import { useMarkdownLinkHandler, parseLink } from '@/composables/useMarkdownLinkHandler'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -34,6 +45,19 @@ const emit = defineEmits<{
 
 // 代码高亮 composable
 const { highlightCode: highlightCodeAsync } = useMarkdownHighlight()
+
+// 链接处理 composable
+const { handleExternalLink, handleLocalLink } = useMarkdownLinkHandler()
+
+// 确认对话框状态
+const confirmDialog = reactive({
+  visible: false,
+  title: '',
+  fileType: 'link' as 'code' | 'link' | 'directory',
+})
+
+// 待处理的链接信息
+let pendingLinkInfo: ReturnType<typeof parseLink> = null
 
 // 同步版本的 highlightCode（向后兼容）
 function highlightCode(code: string, language: string): string {
@@ -126,7 +150,8 @@ function createRenderer(): Renderer {
   renderer.link = ({ href, title, text }: Tokens.Link) => {
     const isExternal = href && (href.startsWith('http://') || href.startsWith('https://'))
     const targetAttr = isExternal ? ' target="_blank" rel="noopener noreferrer"' : ''
-    return `<a href="${href}" title="${title || ''}"${targetAttr}>${text}</a>`
+    const classAttr = isExternal ? ' class="external-link"' : ' class="internal-link"'
+    return `<a href="${href}" title="${title || ''}"${targetAttr}${classAttr}>${text}</a>`
   }
 
   // 重写代码块渲染 - 支持语法高亮
@@ -225,6 +250,51 @@ watch(
 
 // 暴露给模板使用
 const htmlContent = computed(() => _html.value)
+
+// 处理内容点击事件
+async function handleContentClick(event: MouseEvent) {
+  const target = event.target as HTMLElement
+
+  // 检查是否点击了链接
+  const link = target.closest('a')
+  if (!link) return
+
+  // 阻止默认行为
+  event.preventDefault()
+
+  const href = link.getAttribute('href')
+  if (!href) return
+
+  // 外部链接直接打开
+  if (href.startsWith('http://') || href.startsWith('https://')) {
+    await handleExternalLink(href)
+    return
+  }
+
+  // 本地链接需要确认
+  const linkInfo = parseLink(href, props.basePath || '')
+  if (!linkInfo) return
+
+  pendingLinkInfo = linkInfo
+
+  if (linkInfo.isCodeFile) {
+    confirmDialog.fileType = 'code'
+  } else if (linkInfo.isDirectory) {
+    confirmDialog.fileType = 'directory'
+  } else {
+    confirmDialog.fileType = 'link'
+  }
+
+  confirmDialog.visible = true
+}
+
+// 确认打开文件
+async function handleConfirmOpen() {
+  if (pendingLinkInfo) {
+    await handleLocalLink(pendingLinkInfo)
+    pendingLinkInfo = null
+  }
+}
 
 // 代码复制功能
 watch(

@@ -37,6 +37,15 @@ const imageUrl = computed(() => {
   return convertFileSrc(fullFilePath.value)
 })
 
+// Markdown 文件的基础路径（文件所在目录）
+const markdownBasePath = computed(() => {
+  if (!fullFilePath.value) return ''
+  // 获取文件所在的目录路径
+  const lastSlash = fullFilePath.value.lastIndexOf('/')
+  if (lastSlash === -1) return ''
+  return fullFilePath.value.substring(0, lastSlash)
+})
+
 // PDF URL
 const pdfUrl = computed(() => {
   if (props.previewKind !== 'pdf' || !fullFilePath.value) return ''
@@ -141,7 +150,7 @@ function onExcelError(e: any) {
 
       <!-- Markdown Preview -->
       <div v-else-if="previewKind === 'markdown'" class="prose dark:prose-invert max-w-none">
-        <MarkdownRenderer :content="fileContent" :base-path="currentDirPath" />
+        <MarkdownRenderer :content="fileContent" :base-path="markdownBasePath" />
       </div>
 
       <!-- Text Preview -->
