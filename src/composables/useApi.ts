@@ -138,6 +138,10 @@ export const gitApi = {
     return invoke('git_repo_status_check', { repoId })
   },
 
+  async repoDelete(repoId: string, deleteLocal: boolean = false): Promise<{ ok: boolean }> {
+    return invoke('git_repo_delete', { repoId, deleteLocal })
+  },
+
   async statusWatchStart(repoId?: string): Promise<{ ok: boolean }> {
     return invoke('git_status_watch_start', { repoId })
   },
