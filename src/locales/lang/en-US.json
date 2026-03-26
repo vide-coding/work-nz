@@ -258,6 +258,10 @@
     "delete": "Delete",
     "deleteConfirm": "Are you sure you want to delete",
     "deleteFolderWarning": "This folder and all its contents will be permanently deleted.",
-    "dropToImport": "Drop files here to import"
+    "dropToImport": "Drop files here to import",
+    "name": "Name",
+    "size": "Size",
+    "modified": "Modified",
+    "itemCount": "items"
   }
 }

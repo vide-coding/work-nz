@@ -258,6 +258,10 @@
     "delete": "删除",
     "deleteConfirm": "确定要删除",
     "deleteFolderWarning": "此文件夹及其所有内容将被永久删除。",
-    "dropToImport": "拖放文件到此处导入"
+    "dropToImport": "拖放文件到此处导入",
+    "name": "名称",
+    "size": "大小",
+    "modified": "修改日期",
+    "itemCount": "项"
   }
 }
