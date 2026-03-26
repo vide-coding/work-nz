@@ -522,7 +522,7 @@ async function createFolder() {
 
   try {
     const fullPath = currentDirPath.value + '/' + newFolderName.value.trim()
-    await fsApi.createDir(fullPath)
+    await fsApi.createDir(projectId.value, fullPath)
     await loadFileTree(currentDirPath.value)
     newFolderName.value = ''
     isCreatingFolder.value = false
@@ -867,7 +867,7 @@ onMounted(async () => {
         <ProjectIntro
           v-if="!currentDirectory"
           :project="project"
-          :directories="directories"
+          :directories="moduleNavItems"
           :repos="repos"
           :is-editing="isEditing"
           :edit-name="editName"

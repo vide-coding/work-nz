@@ -575,17 +575,80 @@
   padding: 1rem;
   text-align: center;
   overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.markdown-body .mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Mermaid error display */
+.markdown-body .mermaid-error {
+  background-color: rgba(207, 34, 46, 0.1);
+  border: 1px solid var(--md-accent-error);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+  text-align: left;
+}
+
+.markdown-body .mermaid-error-title {
+  color: var(--md-accent-error);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.markdown-body .mermaid-error-code {
+  background-color: var(--md-bg-secondary);
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.875em;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 
 /* ==================== 数学公式 ==================== */
 
-.markdown-body .math {
-  font-family: 'KaTeX_Math', 'Times New Roman', serif;
+/* Import KaTeX fonts if needed, but we'll use CDN or let KaTeX handle it */
+.markdown-body .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5rem 0;
+}
+
+.markdown-body .katex {
+  font-size: 1.1em;
+}
+
+.markdown-body .katex-display > .katex {
+  display: block;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .markdown-body .math-block {
+  display: block;
+  text-align: center;
+  padding: 1rem;
+  margin: 1rem 0;
+  background-color: var(--md-bg-secondary);
+  border-radius: 8px;
   overflow-x: auto;
-  padding: 1rem 0;
+}
+
+.markdown-body .math-inline {
+  display: inline;
+}
+
+.markdown-body .math-error {
+  color: var(--md-accent-error);
+  background-color: rgba(207, 34, 46, 0.1);
+  padding: 0.1em 0.3em;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.875em;
 }
 
 /* ==================== 响应式调整 ==================== */

@@ -21,6 +21,7 @@ import { convertFileSrc } from '@tauri-apps/api/core'
 import type { ThemeName } from '@/types/theme'
 import { useMarkdownHighlight } from '@/composables/useMarkdownHighlight'
 import { useMarkdownLinkHandler, parseLink } from '@/composables/useMarkdownLinkHandler'
+import { processMarkdownExtensions } from '@/composables/useMarkdownExtensions'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 
 const props = withDefaults(
@@ -228,7 +229,10 @@ async function renderMarkdown(): Promise<string> {
     })
 
     // 后处理：异步高亮代码块
-    const processedHtml = await postProcessHtml(html)
+    let processedHtml = await postProcessHtml(html)
+
+    // 后处理：处理 mermaid 图表和数学公式
+    processedHtml = await processMarkdownExtensions(processedHtml)
 
     // 发出渲染完成事件
     emit('rendered', processedHtml)

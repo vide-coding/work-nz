@@ -252,7 +252,7 @@ export function useFileModule(directory: Directory) {
         ? `${directory.relativePath}/${currentPath.value}/${name}`
         : `${currentPath.value}/${name}`
 
-      const result = await fsApi.createDir(fullPath)
+      const result = await fsApi.createDir(directory.projectId, fullPath)
       if (result.ok) {
         await loadFiles(currentPath.value)
         return true

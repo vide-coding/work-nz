@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Edit3, Save, Folder, GitBranch, CheckSquare, Files } from 'lucide-vue-next'
-import type { Project, DirectoryNavItem, GitRepository } from '@/types'
+import type { Project, GitRepository } from '@/types'
+import { useDirectoryNavigation, type DirectoryNavItem } from '@/composables/useDirectoryNavigation'
 
 const props = defineProps<{
   project: Project | null

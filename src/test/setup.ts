@@ -13,7 +13,6 @@ function installWebCryptoPolyfill(): void {
 
   Object.defineProperty(window, 'crypto', {
     value: {
-      // @ts-expect-error test polyfill
       getRandomValues: (buffer: Uint8Array) => randomFillSync(buffer),
     },
   })

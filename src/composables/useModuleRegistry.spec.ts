@@ -6,7 +6,7 @@ import {
   directoryHasCapability,
   getDirectoryCapabilities,
 } from './useModuleRegistry'
-import type { Module, Directory } from '@/types'
+import type { Module, Directory, ModuleCapability } from '@/types'
 
 describe('useModuleRegistry', () => {
   beforeEach(() => {
@@ -63,7 +63,9 @@ describe('useModuleRegistry', () => {
         name: 'Custom Module',
         description: 'A custom test module',
         version: '1.0.0',
-        capabilities: ['custom.action'],
+        capabilities: ['custom.action'] as unknown as ModuleCapability[],
+        configSchema: { type: 'object', properties: {} },
+        defaultConfig: {},
         isBuiltIn: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -82,6 +84,8 @@ describe('useModuleRegistry', () => {
         description: 'Duplicate key',
         version: '1.0.0',
         capabilities: [],
+        configSchema: { type: 'object', properties: {} },
+        defaultConfig: {},
         isBuiltIn: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -124,6 +128,8 @@ describe('useModuleRegistry', () => {
         description: 'Will be removed',
         version: '1.0.0',
         capabilities: [],
+        configSchema: { type: 'object', properties: {} },
+        defaultConfig: {},
         isBuiltIn: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -167,7 +173,9 @@ describe('useModuleRegistry', () => {
 
     it('should return false for non-existent module', () => {
       const registry = new ModuleRegistry()
-      expect(registry.hasCapability('non-existent', 'any.capability')).toBe(false)
+      expect(registry.hasCapability('non-existent', 'any.capability' as ModuleCapability)).toBe(
+        false
+      )
     })
 
     it('should work with full module id', () => {
@@ -251,13 +259,13 @@ describe('useModuleRegistry', () => {
     describe('directoryHasCapability', () => {
       it('should return true when directory has capability', () => {
         const directory = {
-          id: 1,
-          projectId: 1,
+          id: '1',
+          projectId: 'proj1',
           name: 'test',
-          path: '/test',
+          relativePath: '/test',
           moduleId: 'builtin:git',
           moduleConfig: {},
-          order: 0,
+          sortOrder: 0,
           createdAt: '',
           updatedAt: '',
         } as Directory
@@ -267,12 +275,12 @@ describe('useModuleRegistry', () => {
 
       it('should return false when directory has no module', () => {
         const directory = {
-          id: 1,
-          projectId: 1,
+          id: '1',
+          projectId: 'proj1',
           name: 'test',
-          path: '/test',
-          moduleId: null,
-          order: 0,
+          relativePath: '/test',
+          moduleId: undefined,
+          sortOrder: 0,
           createdAt: '',
           updatedAt: '',
         } as Directory
@@ -284,13 +292,13 @@ describe('useModuleRegistry', () => {
     describe('getDirectoryCapabilities', () => {
       it('should return module capabilities', () => {
         const directory = {
-          id: 1,
-          projectId: 1,
+          id: '1',
+          projectId: 'proj1',
           name: 'test',
-          path: '/test',
+          relativePath: '/test',
           moduleId: 'builtin:git',
           moduleConfig: {},
-          order: 0,
+          sortOrder: 0,
           createdAt: '',
           updatedAt: '',
         } as Directory
@@ -302,12 +310,12 @@ describe('useModuleRegistry', () => {
 
       it('should return empty array when no module', () => {
         const directory = {
-          id: 1,
-          projectId: 1,
+          id: '1',
+          projectId: 'proj1',
           name: 'test',
-          path: '/test',
-          moduleId: null,
-          order: 0,
+          relativePath: '/test',
+          moduleId: undefined,
+          sortOrder: 0,
           createdAt: '',
           updatedAt: '',
         } as Directory

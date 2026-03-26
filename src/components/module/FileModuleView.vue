@@ -583,7 +583,7 @@ watch([() => props.directory.id, () => currentPath.value], () => {
 
     <!-- Delete Confirmation Dialog -->
     <BaseDialog
-      v-if="showDeleteDialog"
+      v-model="showDeleteDialog"
       :title="$t('common.delete')"
       @close="showDeleteDialog = false"
     >
