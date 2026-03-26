@@ -1,7 +1,7 @@
 // Theme and IDE types
 export type ThemeMode = 'light' | 'dark' | 'system' | 'custom'
 
-export type SupportedIdeKind = 'vscode' | 'visual_studio' | 'jetbrains' | 'custom'
+export type SupportedIdeKind = 'vscode' | 'idea' | 'webstorm' | 'trae' | 'zed' | 'pycharm' | 'other'
 
 export type IdeConfig = {
   kind: SupportedIdeKind
