@@ -278,8 +278,18 @@ pub fn preview_detect(path: String) -> Result<PreviewDetectResult, String> {
         .unwrap_or_default();
 
     let kind = match extension.as_str() {
-        "png" | "jpg" | "jpeg" | "gif" | "webp" | "svg" | "bmp" => PreviewKind::Image,
-        "md" | "markdown" => PreviewKind::Markdown,
+        // 图片格式
+        "png" | "jpg" | "jpeg" | "gif" | "webp" | "svg" | "bmp" | "ico" | "tiff" | "tif"
+        | " BMP" => PreviewKind::Image,
+        // Markdown
+        "md" | "markdown" | "mdown" | "mkd" => PreviewKind::Markdown,
+        // PDF
+        "pdf" => PreviewKind::Pdf,
+        // Word 文档
+        "doc" | "docx" | "rtf" | "odt" => PreviewKind::Word,
+        // Excel 表格
+        "xls" | "xlsx" | "xlsm" | "xlsb" | "ods" => PreviewKind::Excel,
+        // 纯文本（默认）
         _ => PreviewKind::Text,
     };
 

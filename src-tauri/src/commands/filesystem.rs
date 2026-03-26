@@ -422,3 +422,41 @@ mod tests {
         fs::remove_dir(&dir_path).unwrap();
     }
 }
+
+/// 读取二进制文件（用于文档预览）
+#[tauri::command]
+pub fn fs_read_binary(path: String) -> Result<serde_json::Value, String> {
+    let bytes = fs::read(&path).map_err(|e| format!("读取文件失败: {}", e))?;
+    // 将字节转换为 Base64 编码
+    let base64 = base64_encode(&bytes);
+    Ok(serde_json::json!({ "data": base64 }))
+}
+
+/// Base64 编码函数
+fn base64_encode(data: &[u8]) -> String {
+    const ALPHABET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut result = String::new();
+
+    for chunk in data.chunks(3) {
+        let b0 = chunk[0] as usize;
+        let b1 = chunk.get(1).copied().unwrap_or(0) as usize;
+        let b2 = chunk.get(2).copied().unwrap_or(0) as usize;
+
+        result.push(ALPHABET[b0 >> 2] as char);
+        result.push(ALPHABET[((b0 & 0x03) << 4) | (b1 >> 4)] as char);
+
+        if chunk.len() > 1 {
+            result.push(ALPHABET[((b1 & 0x0f) << 2) | (b2 >> 6)] as char);
+        } else {
+            result.push('=');
+        }
+
+        if chunk.len() > 2 {
+            result.push(ALPHABET[b2 & 0x3f] as char);
+        } else {
+            result.push('=');
+        }
+    }
+
+    result
+}

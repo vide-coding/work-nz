@@ -17,6 +17,14 @@
     "loading": "Loading...",
     "back": "Back"
   },
+  "dialog": {
+    "confirmTitle": "Confirm",
+    "openLink": "Open this link?",
+    "openFile": "Open this file?",
+    "openCodeFile": "Open this code file with IDE?",
+    "openDirectory": "Open this directory?",
+    "undoWarning": "This action cannot be undone"
+  },
   "workspace": {
     "description": "Select a workspace folder, app data and projects will be stored here",
     "recentWorkspaces": "Recent Workspaces",
@@ -80,6 +88,9 @@
     "folder": "Folder",
     "file": "File",
     "imagePreview": "Image Preview",
+    "pdfPreview": "PDF Preview",
+    "wordPreview": "Word Document Preview",
+    "excelPreview": "Excel Spreadsheet Preview",
     "noPreview": "Preview not supported",
     "searchRepos": "Search repositories (alias/name)...",
     "noReposFound": "No matching repositories found",
