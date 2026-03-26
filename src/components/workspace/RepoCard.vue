@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import {
   GitBranch,
-  FileText,
   GitPullRequest,
   ExternalLink,
   Edit3,
@@ -17,10 +16,11 @@ const props = defineProps<{
   repo: GitRepository
   status?: GitRepoStatus
   pullError?: string
+  selected?: boolean
 }>()
 
 const emit = defineEmits<{
-  viewReadme: [repo: GitRepository]
+  select: [repo: GitRepository]
   pull: [repo: GitRepository]
   retryPull: [repo: GitRepository]
   openInIde: [repo: GitRepository]
@@ -33,8 +33,8 @@ function getRepoDisplayName(repo: GitRepository): string {
   return repo.name
 }
 
-function viewReadme() {
-  emit('viewReadme', props.repo)
+function select() {
+  emit('select', props.repo)
 }
 
 function pull() {
@@ -63,12 +63,21 @@ function deleteRepo() {
 </script>
 
 <template>
-  <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+  <div
+    class="bg-white dark:bg-gray-800 rounded-xl p-4 border cursor-pointer transition-all"
+    :class="
+      selected
+        ? 'border-blue-500 dark:border-blue-400 ring-2 ring-blue-500/20'
+        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+    "
+    @click="select"
+  >
     <div class="flex items-start justify-between">
       <div class="flex items-start gap-3">
         <!-- Drag handle -->
         <div
           class="git-module__drag-handle p-1 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          @click.stop
         >
           <GripVertical class="w-4 h-4" />
         </div>
@@ -118,15 +127,7 @@ function deleteRepo() {
         </div>
       </div>
 
-      <div class="flex items-center gap-2">
-        <Tooltip :text="$t('workspace.readme')">
-          <button
-            class="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            @click="viewReadme"
-          >
-            <FileText class="w-4 h-4" />
-          </button>
-        </Tooltip>
+      <div class="flex items-center gap-2" @click.stop>
         <Tooltip :text="pullError ? $t('common.retry') : $t('workspace.pull')">
           <button
             class="p-2 rounded-lg transition-colors"
