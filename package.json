@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
     "lint": "oxlint .",
     "lint:fix": "oxlint . --fix",
     "format": "oxfmt .",
