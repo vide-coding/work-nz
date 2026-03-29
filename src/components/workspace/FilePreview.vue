@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { Loader2 } from 'lucide-vue-next'
+import { Loader2, X } from 'lucide-vue-next'
 import { convertFileSrc } from '@tauri-apps/api/core'
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
 import VueOfficeDocx from '@vue-office/docx'
@@ -113,6 +113,10 @@ function onExcelRendered() {
 function onExcelError(e: any) {
   console.error('Excel error:', e)
 }
+
+const emit = defineEmits<{
+  close: []
+}>()
 </script>
 
 <template>
@@ -131,6 +135,13 @@ function onExcelError(e: any) {
             {{ selectedFile.kind === 'dir' ? $t('workspace.folder') : $t('workspace.file') }}
           </p>
         </div>
+        <button
+          class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+          :title="$t('common.close')"
+          @click="emit('close')"
+        >
+          <X class="w-5 h-5" />
+        </button>
       </div>
 
       <!-- Preview Content -->

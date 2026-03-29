@@ -117,7 +117,11 @@
     "openInTerminal": "Open in Terminal",
     "retry": "Retry",
     "pullFailed": "Pull failed",
-    "retryCount": "Retry {n} times"
+    "retryCount": "Retry {n} times",
+    "deleteRepo": "Delete Repository",
+    "deleteRepoConfirm": "Are you sure you want to delete the repository \"{name}\"?",
+    "deleteLocalFiles": "Also delete local files",
+    "deleteLocalWarning": "This will permanently delete the repository directory from your disk."
   },
   "projects": {
     "title": "Projects",
@@ -265,6 +269,10 @@
     "delete": "Delete",
     "deleteConfirm": "Are you sure you want to delete",
     "deleteFolderWarning": "This folder and all its contents will be permanently deleted.",
-    "dropToImport": "Drop files here to import"
+    "dropToImport": "Drop files here to import",
+    "name": "Name",
+    "size": "Size",
+    "modified": "Modified",
+    "itemCount": "items"
   }
 }

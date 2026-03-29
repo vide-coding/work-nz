@@ -49,6 +49,7 @@ pub fn run() {
             git_status_watch_start,
             git_status_watch_stop,
             git_repo_scan,
+            git_repo_delete,
             // Filesystem commands
             project_fs_tree,
             fs_read_text,

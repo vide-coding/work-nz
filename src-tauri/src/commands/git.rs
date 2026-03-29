@@ -733,6 +733,40 @@ pub fn git_status_watch_stop(_repo_id: Option<String>) -> Result<serde_json::Val
     Ok(serde_json::json!({ "ok": true }))
 }
 
+/// 删除 Git 仓库（仅从数据库删除记录，保留本地目录）
+#[tauri::command]
+pub fn git_repo_delete(repo_id: String, delete_local: bool) -> Result<serde_json::Value, String> {
+    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
+    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
+
+    // 获取仓库信息（用于删除本地目录）
+    let (path, name): (String, String) = conn
+        .query_row(
+            "SELECT path, name FROM git_repositories WHERE id = ?1",
+            params![repo_id],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .map_err(|e| format!("仓库不存在: {}", e))?;
+
+    // 从数据库删除记录
+    conn.execute("DELETE FROM git_repositories WHERE id = ?1", params![repo_id])
+        .map_err(|e| format!("删除仓库记录失败: {}", e))?;
+
+    // 如果 delete_local 为 true，删除本地目录
+    if delete_local {
+        let repo_path = Path::new(&path);
+        if repo_path.exists() {
+            fs::remove_dir_all(repo_path).map_err(|e| format!("删除本地目录失败: {}", e))?;
+        }
+    }
+
+    Ok(serde_json::json!({
+        "ok": true,
+        "deleted": name,
+        "local_deleted": delete_local
+    }))
+}
+
 /// 扫描 code 目录下的 Git 仓库并自动导入数据库
 #[tauri::command]
 pub fn git_repo_scan(project_id: String) -> Result<serde_json::Value, String> {

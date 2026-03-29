@@ -16,12 +16,14 @@ import {
   Trash2,
   Pencil,
   ExternalLink,
+  X,
 } from 'lucide-vue-next'
-import type { Directory, FileNode } from '@/types'
-import { fsApi } from '@/composables/useApi'
+import type { Directory, FileNode, PreviewKind } from '@/types'
+import { fsApi, previewApi } from '@/composables/useApi'
 import CreateFolderDialog from '@/components/workspace/CreateFolderDialog.vue'
 import CreateFileDialog from './CreateFileDialog.vue'
 import BaseDialog from '@/components/common/BaseDialog.vue'
+import FilePreview from '@/components/workspace/FilePreview.vue'
 
 const { t } = useI18n()
 
@@ -59,6 +61,12 @@ const error = ref('')
 // View mode
 const viewMode = ref<'grid' | 'list'>('grid')
 
+// Preview state
+const previewFile = ref<FileNode | null>(null)
+const previewContent = ref('')
+const previewKind = ref<PreviewKind | null>(null)
+const isLoadingPreview = ref(false)
+
 // Dialog states
 const showCreateFolderDialog = ref(false)
 const showCreateFileDialog = ref(false)
@@ -85,6 +93,12 @@ const isDraggingOver = ref(false)
 const currentDirPath = computed(() => {
   if (!props.directory.relativePath) return ''
   return props.directory.relativePath + (currentPath.value ? '/' + currentPath.value : '')
+})
+
+// File count for current directory
+const fileCount = computed(() => {
+  const count = sortedFiles.value.length
+  return count
 })
 
 // Normalize node.path to be relative to MODULE root, not project root.
@@ -126,6 +140,29 @@ function getFileIcon(node: FileNode) {
   return File
 }
 
+// Format file size
+function formatFileSize(bytes: number | undefined): string {
+  if (bytes === undefined || bytes === 0) return '—'
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+  return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB'
+}
+
+// Format date
+function formatDate(dateStr: string | undefined): string {
+  if (!dateStr) return '—'
+  try {
+    const date = new Date(dateStr)
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  } catch {
+    return '—'
+  }
+}
+
 // Load file tree
 async function loadFileTree() {
   if (!props.directory.projectId) return
@@ -159,6 +196,8 @@ function navigateToParent() {
 function navigateIntoFolder(node: FileNode) {
   if (node.kind !== 'dir') return
   currentPath.value = node.path
+  // Clear preview when navigating
+  previewFile.value = null
 }
 
 // Open file with system default app
@@ -181,6 +220,67 @@ async function openInExplorer(node: FileNode) {
   } catch (e) {
     console.error('Failed to open in explorer:', e)
   }
+}
+
+// Single click - preview file
+async function handleSingleClick(node: FileNode) {
+  if (node.kind === 'dir') return
+  previewFile.value = node
+}
+
+// Load preview content
+async function loadPreviewContent(node: FileNode) {
+  if (node.kind !== 'file') {
+    previewContent.value = ''
+    previewKind.value = null
+    return
+  }
+
+  isLoadingPreview.value = true
+  try {
+    const fullPath = getFullPath(node.path)
+
+    // Detect preview kind
+    try {
+      const kindResult = await previewApi.detect(fullPath)
+      previewKind.value = kindResult.kind
+    } catch {
+      previewKind.value = null
+    }
+
+    // Load content for text-based previews
+    if (previewKind.value === 'markdown' || previewKind.value === 'text') {
+      try {
+        const result = await fsApi.readText(fullPath)
+        previewContent.value = result.content
+      } catch {
+        previewContent.value = ''
+      }
+    } else {
+      previewContent.value = ''
+    }
+  } catch (e) {
+    console.error('Failed to load preview:', e)
+    previewContent.value = ''
+    previewKind.value = null
+  } finally {
+    isLoadingPreview.value = false
+  }
+}
+
+// Watch preview file changes
+watch(previewFile, (newFile) => {
+  if (newFile) {
+    loadPreviewContent(newFile)
+  } else {
+    previewContent.value = ''
+    previewKind.value = null
+  }
+})
+
+// Close preview
+function closePreview() {
+  previewFile.value = null
 }
 
 // Create folder
@@ -271,6 +371,10 @@ async function handleDelete() {
     await fsApi.delete(fullPath)
     showDeleteDialog.value = false
     deleteTarget.value = null
+    // Clear preview if deleted file was being previewed
+    if (previewFile.value?.path === deleteTarget.value.path) {
+      previewFile.value = null
+    }
     await loadFileTree()
   } catch (e: any) {
     error.value = e.message || 'Failed to delete'
@@ -345,7 +449,7 @@ async function handleDrop(event: DragEvent) {
   await loadFileTree()
 }
 
-// Double click handler
+// Double click handler - opens file or navigates into folder
 function handleDoubleClick(node: FileNode) {
   if (node.kind === 'dir') {
     navigateIntoFolder(node)
@@ -425,84 +529,60 @@ watch([() => props.directory.id, () => currentPath.value], () => {
       </div>
     </div>
 
-    <!-- File Browser -->
-    <div
-      class="file-module__content"
-      :class="{ 'file-module__content--drag-over': isDraggingOver }"
-      @dragover="handleDragOver"
-      @dragleave="handleDragLeave"
-      @drop="handleDrop"
-    >
-      <!-- Loading state -->
-      <div v-if="isLoadingTree" class="file-module__loading">
-        <Loader2 class="w-8 h-8 animate-spin" />
-      </div>
-
-      <!-- Error state -->
-      <div v-else-if="error" class="file-module__error">
-        {{ error }}
-      </div>
-
-      <!-- Empty state -->
-      <div v-else-if="sortedFiles.length === 0" class="file-module__empty">
-        <Folder class="w-16 h-16 opacity-50" />
-        <p>{{ $t('workspace.emptyDirectory') }}</p>
-        <div class="file-module__empty-actions">
-          <button class="file-module__btn-primary" @click="showCreateFileDialog = true">
-            <FilePlus class="w-4 h-4" />
-            {{ $t('file.newFile') }}
-          </button>
-          <button class="file-module__btn-primary" @click="showCreateFolderDialog = true">
-            <FolderPlus class="w-4 h-4" />
-            {{ $t('workspace.createFolder') }}
-          </button>
+    <!-- Main Content Area -->
+    <div class="file-module__main">
+      <!-- File Browser -->
+      <div
+        class="file-module__content"
+        :class="{ 'file-module__content--drag-over': isDraggingOver }"
+        @dragover="handleDragOver"
+        @dragleave="handleDragLeave"
+        @drop="handleDrop"
+      >
+        <!-- Loading state -->
+        <div v-if="isLoadingTree" class="file-module__loading">
+          <Loader2 class="w-8 h-8 animate-spin" />
         </div>
-      </div>
 
-      <!-- Grid View -->
-      <div v-else-if="viewMode === 'grid'" class="file-module__grid">
-        <div
-          v-for="node in sortedFiles"
-          :key="node.path"
-          class="file-module__grid-item"
-          :class="{ 'file-module__grid-item--renaming': renamingNode?.path === node.path }"
-          @click="handleDoubleClick(node)"
-          @contextmenu="showMenu($event, node)"
-          @dblclick.stop="startRename(node)"
-        >
-          <!-- Rename input -->
-          <input
-            v-if="renamingNode?.path === node.path"
-            v-model="renameValue"
-            class="file-module__rename-input"
-            @keyup.enter="confirmRename"
-            @keyup.escape="cancelRename"
-            @blur="confirmRename"
-            @click.stop
-            autofocus
-          />
-          <template v-else>
-            <component :is="getFileIcon(node)" class="file-module__icon" />
-            <span class="file-module__name">{{ node.name }}</span>
-          </template>
+        <!-- Error state -->
+        <div v-else-if="error" class="file-module__error">
+          {{ error }}
         </div>
-      </div>
 
-      <!-- List View -->
-      <div v-else class="file-module__list">
-        <div
-          v-for="node in sortedFiles"
-          :key="node.path"
-          class="file-module__list-item"
-          :class="{ 'file-module__list-item--renaming': renamingNode?.path === node.path }"
-          @click="handleDoubleClick(node)"
-          @contextmenu="showMenu($event, node)"
-          @dblclick.stop="startRename(node)"
-        >
-          <!-- Rename input -->
-          <template v-if="renamingNode?.path === node.path">
-            <component :is="getFileIcon(node)" class="file-module__list-icon" />
+        <!-- Empty state -->
+        <div v-else-if="sortedFiles.length === 0" class="file-module__empty">
+          <Folder class="w-16 h-16 opacity-50" />
+          <p>{{ $t('workspace.emptyDirectory') }}</p>
+          <div class="file-module__empty-actions">
+            <button class="file-module__btn-primary" @click="showCreateFileDialog = true">
+              <FilePlus class="w-4 h-4" />
+              {{ $t('file.newFile') }}
+            </button>
+            <button class="file-module__btn-primary" @click="showCreateFolderDialog = true">
+              <FolderPlus class="w-4 h-4" />
+              {{ $t('workspace.createFolder') }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Grid View -->
+        <div v-else-if="viewMode === 'grid'" class="file-module__grid">
+          <div
+            v-for="node in sortedFiles"
+            :key="node.path"
+            class="file-module__grid-item"
+            :class="{
+              'file-module__grid-item--renaming': renamingNode?.path === node.path,
+              'file-module__grid-item--selected':
+                previewFile?.path === node.path && node.kind === 'file',
+            }"
+            @click="handleSingleClick(node)"
+            @dblclick.stop="handleDoubleClick(node)"
+            @contextmenu="showMenu($event, node)"
+          >
+            <!-- Rename input -->
             <input
+              v-if="renamingNode?.path === node.path"
               v-model="renameValue"
               class="file-module__rename-input"
               @keyup.enter="confirmRename"
@@ -511,24 +591,89 @@ watch([() => props.directory.id, () => currentPath.value], () => {
               @click.stop
               autofocus
             />
-          </template>
-          <template v-else>
-            <component :is="getFileIcon(node)" class="file-module__list-icon" />
-            <span class="file-module__list-name">{{ node.name }}</span>
-            <span class="file-module__list-type">
-              {{ node.kind === 'dir' ? $t('workspace.folder') : $t('workspace.file') }}
-            </span>
-          </template>
+            <template v-else>
+              <component :is="getFileIcon(node)" class="file-module__icon" />
+              <span class="file-module__name">{{ node.name }}</span>
+            </template>
+          </div>
+        </div>
+
+        <!-- List View -->
+        <div v-else class="file-module__list">
+          <!-- Header -->
+          <div class="file-module__list-header">
+            <span class="file-module__list-col-name">{{ $t('file.name') }}</span>
+            <span class="file-module__list-col-size">{{ $t('file.size') }}</span>
+            <span class="file-module__list-col-date">{{ $t('file.modified') }}</span>
+          </div>
+          <!-- Items -->
+          <div
+            v-for="node in sortedFiles"
+            :key="node.path"
+            class="file-module__list-item"
+            :class="{
+              'file-module__list-item--renaming': renamingNode?.path === node.path,
+              'file-module__list-item--selected':
+                previewFile?.path === node.path && node.kind === 'file',
+            }"
+            @click="handleSingleClick(node)"
+            @dblclick.stop="handleDoubleClick(node)"
+            @contextmenu="showMenu($event, node)"
+          >
+            <!-- Rename input -->
+            <template v-if="renamingNode?.path === node.path">
+              <component :is="getFileIcon(node)" class="file-module__list-icon" />
+              <input
+                v-model="renameValue"
+                class="file-module__rename-input"
+                @keyup.enter="confirmRename"
+                @keyup.escape="cancelRename"
+                @blur="confirmRename"
+                @click.stop
+                autofocus
+              />
+              <span class="file-module__list-col-size">—</span>
+              <span class="file-module__list-col-date">—</span>
+            </template>
+            <template v-else>
+              <div class="file-module__list-item-main">
+                <component :is="getFileIcon(node)" class="file-module__list-icon" />
+                <span class="file-module__list-name">{{ node.name }}</span>
+              </div>
+              <span class="file-module__list-col-size">
+                {{ node.kind === 'dir' ? '—' : formatFileSize((node as any).size) }}
+              </span>
+              <span class="file-module__list-col-date">
+                {{ formatDate((node as any).modifiedAt) }}
+              </span>
+            </template>
+          </div>
+        </div>
+
+        <!-- Drag over indicator -->
+        <div v-if="isDraggingOver" class="file-module__drop-overlay">
+          <div class="file-module__drop-content">
+            <FilePlus class="w-12 h-12" />
+            <p>{{ $t('file.dropToImport') }}</p>
+          </div>
         </div>
       </div>
 
-      <!-- Drag over indicator -->
-      <div v-if="isDraggingOver" class="file-module__drop-overlay">
-        <div class="file-module__drop-content">
-          <FilePlus class="w-12 h-12" />
-          <p>{{ $t('file.dropToImport') }}</p>
-        </div>
-      </div>
+      <!-- Preview Panel -->
+      <FilePreview
+        v-if="previewFile"
+        :selected-file="previewFile"
+        :file-content="previewContent"
+        :preview-kind="previewKind"
+        :is-loading-preview="isLoadingPreview"
+        :current-dir-path="currentDirPath"
+        @close="closePreview"
+      />
+    </div>
+
+    <!-- Footer with file count -->
+    <div v-if="!isLoadingTree && sortedFiles.length > 0" class="file-module__footer">
+      <span>{{ fileCount }} {{ $t('file.itemCount') }}</span>
     </div>
 
     <!-- Context Menu -->
@@ -708,6 +853,12 @@ watch([() => props.directory.id, () => currentPath.value], () => {
   color: rgb(249 250 251);
 }
 
+.file-module__main {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
 .file-module__content {
   flex: 1;
   overflow: auto;
@@ -787,8 +938,16 @@ watch([() => props.directory.id, () => currentPath.value], () => {
   background-color: rgb(243 244 246);
 }
 
+.file-module__grid-item--selected {
+  background-color: rgb(238 242 255);
+}
+
 :deep(.dark) .file-module__grid-item:hover {
   background-color: rgb(55 65 81);
+}
+
+:deep(.dark) .file-module__grid-item--selected {
+  background-color: rgb(67 56 202);
 }
 
 .file-module__icon {
@@ -815,6 +974,39 @@ watch([() => props.directory.id, () => currentPath.value], () => {
   gap: 4px;
 }
 
+.file-module__list-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgb(107 114 128);
+  border-bottom: 1px solid rgb(229 231 239);
+  margin-bottom: 4px;
+}
+
+:deep(.dark) .file-module__list-header {
+  color: rgb(156 163 175);
+  border-bottom-color: rgb(55 65 81);
+}
+
+.file-module__list-col-name {
+  flex: 1;
+}
+
+.file-module__list-col-size {
+  width: 80px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.file-module__list-col-date {
+  width: 100px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
 .file-module__list-item {
   display: flex;
   align-items: center;
@@ -829,8 +1021,24 @@ watch([() => props.directory.id, () => currentPath.value], () => {
   background-color: rgb(243 244 246);
 }
 
+.file-module__list-item--selected {
+  background-color: rgb(238 242 255);
+}
+
 :deep(.dark) .file-module__list-item:hover {
   background-color: rgb(55 65 81);
+}
+
+:deep(.dark) .file-module__list-item--selected {
+  background-color: rgb(67 56 202);
+}
+
+.file-module__list-item-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
 }
 
 .file-module__list-icon {
@@ -841,18 +1049,26 @@ watch([() => props.directory.id, () => currentPath.value], () => {
 }
 
 .file-module__list-name {
-  flex: 1;
   font-size: 14px;
   color: rgb(17 24 39);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 :deep(.dark) .file-module__list-name {
   color: rgb(249 250 251);
 }
 
-.file-module__list-type {
-  font-size: 12px;
+.file-module__list-item .file-module__list-col-size,
+.file-module__list-item .file-module__list-col-date {
+  font-size: 13px;
   color: rgb(107 114 128);
+}
+
+:deep(.dark) .file-module__list-item .file-module__list-col-size,
+:deep(.dark) .file-module__list-item .file-module__list-col-date {
+  color: rgb(156 163 175);
 }
 
 .file-module__rename-input {
@@ -894,6 +1110,22 @@ watch([() => props.directory.id, () => currentPath.value], () => {
 .file-module__drop-content p {
   font-size: 15px;
   font-weight: 500;
+}
+
+.file-module__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 16px;
+  background-color: rgb(255 255 255);
+  border-top: 1px solid rgb(229 231 239);
+  font-size: 13px;
+  color: rgb(107 114 128);
+}
+
+:deep(.dark) .file-module__footer {
+  background-color: rgb(31 41 55);
+  border-top-color: rgb(55 65 81);
+  color: rgb(156 163 175);
 }
 
 .file-module__context-menu {

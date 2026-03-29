@@ -185,36 +185,23 @@ function createRenderer(): Renderer {
     return `<blockquote>${text}</blockquote>`
   }
 
-  // 表格渲染 - 使用 v17 正确的 token 结构
-  // Tokens.Table 有 header (string) 和 rows (string[])
-  renderer.table = (token: Tokens.Table) => {
-    const rows = token.rows
-      .map((row) => {
-        const cells = row.map((cell) => `<td>${cell}</td>`).join('')
-        return `<tr>${cells}</tr>`
-      })
-      .join('')
-
-    return `<div class="table-wrapper">
-      <table>
-        <thead>${token.header}</thead>
-        <tbody>${rows}</tbody>
-      </table>
-    </div>`
-  }
-
-  // 重写列表项渲染 - 支持任务列表
-  renderer.listitem = ({ text, task, checked }: Tokens.ListItem) => {
-    if (task) {
-      return `<li class="task-list-item">
-        <input type="checkbox" ${checked ? 'checked' : ''} disabled />
-        <span>${text}</span>
-      </li>`
-    }
-    return `<li>${text}</li>`
-  }
-
   return renderer
+}
+
+// 任务列表扩展 - 使用 Marked v17 extensions API
+const taskListExtension = {
+  name: 'taskList',
+  renderer: {
+    listitem: (token: Tokens.ListItem): false | string => {
+      if (token.task) {
+        return `<li class="task-list-item">
+        <input type="checkbox" ${token.checked ? 'checked' : ''} disabled />
+        <span>${token.text}</span>
+      </li>`
+      }
+      return false // 返回 false 使用默认渲染
+    },
+  },
 }
 
 // 异步渲染 Markdown
@@ -225,6 +212,7 @@ async function renderMarkdown(): Promise<string> {
     // Marked v17: gfm 选项仍然可用，但默认启用
     const html = await marked(props.content, {
       renderer,
+      extensions: [taskListExtension],
       gfm: true,
     })
 

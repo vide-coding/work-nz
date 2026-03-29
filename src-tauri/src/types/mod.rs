@@ -21,9 +21,12 @@ impl Default for ThemeMode {
 #[serde(rename_all = "snake_case")]
 pub enum SupportedIdeKind {
     Vscode,
-    VisualStudio,
-    Jetbrains,
-    Custom,
+    Idea,
+    Webstorm,
+    Trae,
+    Zed,
+    Pycharm,
+    Other,
 }
 
 /// IDE 配置
@@ -354,9 +357,12 @@ mod tests {
     #[test]
     fn test_supported_ide_kind() {
         let _ = SupportedIdeKind::Vscode;
-        let _ = SupportedIdeKind::VisualStudio;
-        let _ = SupportedIdeKind::Jetbrains;
-        let _ = SupportedIdeKind::Custom;
+        let _ = SupportedIdeKind::Idea;
+        let _ = SupportedIdeKind::Webstorm;
+        let _ = SupportedIdeKind::Trae;
+        let _ = SupportedIdeKind::Zed;
+        let _ = SupportedIdeKind::Pycharm;
+        let _ = SupportedIdeKind::Other;
     }
 
     #[test]

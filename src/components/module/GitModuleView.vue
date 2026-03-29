@@ -11,6 +11,7 @@ import RepoCard from '@/components/workspace/RepoCard.vue'
 import ReadmePreview from '@/components/workspace/ReadmePreview.vue'
 import CloneRepoDialog from '@/components/workspace/CloneRepoDialog.vue'
 import EditRepoDialog from '@/components/workspace/EditRepoDialog.vue'
+import BaseDialog from '@/components/common/BaseDialog.vue'
 
 const { t } = useI18n()
 
@@ -90,6 +91,13 @@ const editRepoName = ref('')
 const editRepoDescription = ref('')
 const isUpdating = ref(false)
 const editRepoError = ref('')
+
+// Delete dialog state
+const showDeleteDialog = ref(false)
+const deletingRepo = ref<GitRepository | null>(null)
+const deleteLocalFiles = ref(false)
+const isDeleting = ref(false)
+const deleteError = ref('')
 
 // README preview state
 const selectedRepo = ref<GitRepository | null>(null)
@@ -315,9 +323,40 @@ async function handleOpenInTerminal(repo: GitRepository) {
 }
 
 // Delete repository
-async function handleDeleteRepo(repo: GitRepository) {
-  // TODO: Implement
-  console.log('Delete repo:', repo)
+function openDeleteDialog(repo: GitRepository) {
+  deletingRepo.value = repo
+  deleteLocalFiles.value = false
+  deleteError.value = ''
+  showDeleteDialog.value = true
+}
+
+async function handleDeleteRepo() {
+  if (!deletingRepo.value) return
+
+  isDeleting.value = true
+  deleteError.value = ''
+
+  try {
+    await gitApi.repoDelete(deletingRepo.value.id, deleteLocalFiles.value)
+    // Remove from the list
+    repositories.value = repositories.value.filter((r) => r.id !== deletingRepo.value!.id)
+    draggedRepos.value = draggedRepos.value.filter((r) => r.id !== deletingRepo.value!.id)
+    // Clean up status
+    delete repoStatuses.value[deletingRepo.value.id]
+    showDeleteDialog.value = false
+    deletingRepo.value = null
+  } catch (e: any) {
+    deleteError.value = e.message || 'Failed to delete repository'
+  } finally {
+    isDeleting.value = false
+  }
+}
+
+function closeDeleteDialog() {
+  showDeleteDialog.value = false
+  deletingRepo.value = null
+  deleteLocalFiles.value = false
+  deleteError.value = ''
 }
 
 // Drag and drop handlers
@@ -553,13 +592,14 @@ watch(
               :repo="repo"
               :status="repoStatuses[repo.id]"
               :pull-error="pullRetryCount[repo.id] ? $t('workspace.pullFailed') : undefined"
-              @view-readme="handleLoadReadme"
+              :selected="selectedRepo?.id === repo.id"
+              @select="handleLoadReadme"
               @pull="handlePull"
               @retry-pull="handleRetryPull"
               @open-in-ide="handleOpenInIde"
               @open-in-terminal="handleOpenInTerminal"
               @edit="openEditDialog"
-              @delete-repo="handleDeleteRepo"
+              @delete-repo="openDeleteDialog"
             />
           </template>
         </draggable>
@@ -609,6 +649,52 @@ watch(
       @close="closeEditDialog"
       @confirm="handleUpdateRepo"
     />
+
+    <!-- Delete Confirmation Dialog -->
+    <BaseDialog
+      v-if="showDeleteDialog"
+      v-model="showDeleteDialog"
+      :title="$t('workspace.deleteRepo')"
+      width="max-w-sm"
+      @close="closeDeleteDialog"
+    >
+      <div class="space-y-4">
+        <p class="text-gray-700 dark:text-gray-300">
+          {{ $t('workspace.deleteRepoConfirm', { name: deletingRepo?.name }) }}
+        </p>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input
+            v-model="deleteLocalFiles"
+            type="checkbox"
+            class="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600"
+          />
+          <span class="text-sm text-gray-600 dark:text-gray-400">
+            {{ $t('workspace.deleteLocalFiles') }}
+          </span>
+        </label>
+        <p v-if="deleteLocalFiles" class="text-sm text-orange-600 dark:text-orange-400">
+          {{ $t('workspace.deleteLocalWarning') }}
+        </p>
+        <p v-if="deleteError" class="text-sm text-red-600 dark:text-red-400">
+          {{ deleteError }}
+        </p>
+      </div>
+      <template #footer>
+        <button
+          class="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+          @click="closeDeleteDialog"
+        >
+          {{ $t('common.cancel') }}
+        </button>
+        <button
+          class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          :disabled="isDeleting"
+          @click="handleDeleteRepo"
+        >
+          {{ isDeleting ? $t('common.loading') : $t('common.delete') }}
+        </button>
+      </template>
+    </BaseDialog>
   </div>
 </template>
 

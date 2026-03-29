@@ -23,7 +23,7 @@ const isLoading = ref(false)
 // 自定义IDE编辑状态
 const isEditing = ref(false)
 const editingIde = ref<IdeConfig>({
-  kind: 'custom',
+  kind: 'other',
   name: '',
   command: '',
   args: [],
@@ -77,7 +77,7 @@ function clearSelection() {
 function startAddCustom() {
   isEditing.value = true
   editingIde.value = {
-    kind: 'custom',
+    kind: 'other',
     name: '',
     command: '',
     args: [],
@@ -110,7 +110,7 @@ function saveCustomIde() {
     .filter((a) => a.length > 0)
 
   const newIde: IdeConfig = {
-    kind: 'custom',
+    kind: 'other',
     name: editingIde.value.name.trim(),
     command: editingIde.value.command.trim(),
     args: args.length > 0 ? args : undefined,
@@ -131,11 +131,15 @@ function getIdeColor(kind: SupportedIdeKind): string {
   switch (kind) {
     case 'vscode':
       return 'bg-blue-500'
-    case 'jetbrains':
+    case 'idea':
+    case 'webstorm':
+    case 'pycharm':
       return 'bg-purple-500'
-    case 'visual_studio':
-      return 'bg-indigo-500'
-    case 'custom':
+    case 'trae':
+      return 'bg-orange-500'
+    case 'zed':
+      return 'bg-black'
+    case 'other':
       return 'bg-gray-500'
     default:
       return 'bg-gray-500'
@@ -244,7 +248,7 @@ onMounted(() => {
       </div>
 
       <!-- 自定义IDE -->
-      <div v-if="selectedIde?.kind === 'custom'" class="mt-4">
+      <div v-if="selectedIde?.kind === 'other'" class="mt-4">
         <div class="text-xs text-gray-500 dark:text-gray-400 mb-2">
           {{ t('settings.customIde') }}
         </div>
@@ -283,7 +287,7 @@ onMounted(() => {
 
       <!-- 添加自定义IDE按钮 -->
       <button
-        v-if="!selectedIde || selectedIde.kind !== 'custom'"
+        v-if="!selectedIde || selectedIde.kind !== 'other'"
         @click="startAddCustom"
         :disabled="disabled"
         class="flex items-center gap-2 px-3 py-2 text-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"

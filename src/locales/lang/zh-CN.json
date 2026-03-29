@@ -117,7 +117,11 @@
     "openInTerminal": "在终端中打开",
     "retry": "重试",
     "pullFailed": "拉取失败",
-    "retryCount": "已重试 {n} 次"
+    "retryCount": "已重试 {n} 次",
+    "deleteRepo": "删除仓库",
+    "deleteRepoConfirm": "确定要删除仓库「{name}」吗？",
+    "deleteLocalFiles": "同时删除本地文件",
+    "deleteLocalWarning": "这将永久删除磁盘上的仓库目录。"
   },
   "projects": {
     "title": "项目总览",
@@ -265,6 +269,10 @@
     "delete": "删除",
     "deleteConfirm": "确定要删除",
     "deleteFolderWarning": "此文件夹及其所有内容将被永久删除。",
-    "dropToImport": "拖放文件到此处导入"
+    "dropToImport": "拖放文件到此处导入",
+    "name": "名称",
+    "size": "大小",
+    "modified": "修改日期",
+    "itemCount": "项"
   }
 }
