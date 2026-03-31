@@ -26,6 +26,7 @@ const repositories = ref<GitRepository[]>([])
 const repoStatuses = ref<Record<string, GitRepoStatus>>({})
 const loading = ref(false)
 const scanning = ref(false)
+const refreshing = ref(false)
 const error = ref('')
 
 // Drag and drop state
@@ -167,6 +168,34 @@ async function handleScan() {
     error.value = e.message || 'Failed to scan repositories'
   } finally {
     scanning.value = false
+  }
+}
+
+// Refresh all repository statuses (with network check)
+async function refreshAllRepoStatuses() {
+  if (!props.directory.projectId || refreshing.value) return
+
+  refreshing.value = true
+  try {
+    const repos = await gitApi.repoList(props.directory.projectId)
+    // Refresh status for each repo with network check
+    await Promise.all(
+      repos.map(async (repo) => {
+        try {
+          const status = await gitApi.repoStatusCheck(repo.id)
+          repoStatuses.value[repo.id] = status
+        } catch (e) {
+          console.error(`Failed to refresh status for repo ${repo.id}:`, e)
+          // Fall back to local status
+          const status = await gitApi.repoStatusGet(repo.id)
+          repoStatuses.value[repo.id] = status
+        }
+      })
+    )
+  } catch (e) {
+    console.error('Failed to refresh repo statuses:', e)
+  } finally {
+    refreshing.value = false
   }
 }
 
@@ -516,9 +545,17 @@ watch(
       <!-- Header -->
       <div class="git-module__header">
         <h3 class="git-module__title">{{ t('git.title') }}</h3>
-        <div class="git-module__actions">
+        <div class="git-module__header-actions">
           <button
             class="git-module__refresh-btn"
+            :disabled="refreshing"
+            :title="$t('git.refresh')"
+            @click="refreshAllRepoStatuses"
+          >
+            <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': refreshing }" />
+          </button>
+          <button
+            class="git-module__scan-btn"
             :disabled="scanning"
             :title="$t('git.scan')"
             @click="handleScan"
@@ -751,12 +788,53 @@ watch(
   margin-bottom: 16px;
 }
 
-.git-module__actions {
+.git-module__header-actions {
   display: flex;
+  align-items: center;
   gap: 8px;
 }
 
+.git-module__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+}
+
 .git-module__refresh-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  background-color: transparent;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.git-module__refresh-btn:hover:not(:disabled) {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.git-module__refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dark .git-module__refresh-btn {
+  border-color: #4b5563;
+  color: #9ca3af;
+}
+
+.dark .git-module__refresh-btn:hover:not(:disabled) {
+  background-color: #374151;
+  color: #f3f4f6;
+}
+
+.git-module__scan-btn {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -770,20 +848,13 @@ watch(
   transition: background-color 0.2s;
 }
 
-.git-module__refresh-btn:hover:not(:disabled) {
+.git-module__scan-btn:hover:not(:disabled) {
   background-color: #4b5563;
 }
 
-.git-module__refresh-btn:disabled {
+.git-module__scan-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-.git-module__title {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #111827;
 }
 
 .git-module__clone-btn {

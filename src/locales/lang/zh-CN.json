@@ -15,7 +15,9 @@
     "cloning": "克隆中...",
     "confirm": "确认",
     "loading": "加载中...",
-    "back": "返回"
+    "back": "返回",
+    "yes": "是",
+    "no": "否"
   },
   "dialog": {
     "confirmTitle": "确认",
@@ -208,7 +210,9 @@
     "ideCommandPlaceholder": "例如：code, zed, idea",
     "ideArgs": "启动参数（可选）",
     "ideArgsPlaceholder": "例如：--reuse-window",
-    "ideArgsHint": "多个参数用空格分隔"
+    "ideArgsHint": "多个参数用空格分隔",
+    "autoFetchGitProjects": "自动获取项目更新",
+    "autoFetchGitProjectsDesc": "定期检查 Git 仓库状态是否有更新"
   },
   "theme": {
     "select": "选择主题",
@@ -247,7 +251,8 @@
     "noRepos": "此目录中没有 Git 仓库",
     "noReposHint": "点击「克隆仓库」添加",
     "readme": "README",
-    "noReadme": "未找到 README"
+    "noReadme": "未找到 README",
+    "refresh": "刷新"
   },
   "module": {
     "noModule": "未启用模块",

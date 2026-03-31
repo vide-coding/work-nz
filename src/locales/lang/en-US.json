@@ -15,7 +15,9 @@
     "cloning": "Cloning...",
     "confirm": "Confirm",
     "loading": "Loading...",
-    "back": "Back"
+    "back": "Back",
+    "yes": "Yes",
+    "no": "No"
   },
   "dialog": {
     "confirmTitle": "Confirm",
@@ -202,7 +204,9 @@
     "ideCommandPlaceholder": "e.g., code, zed, idea",
     "ideArgs": "Launch Args (optional)",
     "ideArgsPlaceholder": "e.g., --reuse-window",
-    "ideArgsHint": "Separate multiple args with spaces"
+    "ideArgsHint": "Separate multiple args with spaces",
+    "autoFetchGitProjects": "Auto-fetch Project Updates",
+    "autoFetchGitProjectsDesc": "Periodically check git repository status for updates"
   },
   "theme": {
     "select": "Select Theme",
@@ -247,7 +251,8 @@
     "noRepos": "No Git repositories in this directory",
     "noReposHint": "Click \"Clone Repository\" to add one",
     "readme": "README",
-    "noReadme": "No README found"
+    "noReadme": "No README found",
+    "refresh": "Refresh"
   },
   "module": {
     "noModule": "No module enabled",

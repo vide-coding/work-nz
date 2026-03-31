@@ -212,6 +212,11 @@ pub fn workspace_settings_update(patch: serde_json::Value) -> Result<WorkspaceSe
         if let Some(default_ide) = obj.get("defaultIde").or(obj.get("default_ide")) {
             settings.default_ide = serde_json::from_value(default_ide.clone()).ok();
         }
+        if let Some(auto_fetch) = obj.get("autoFetchGitProjects").or(obj.get("auto_fetch_git_projects")) {
+            if let Some(val) = auto_fetch.as_bool() {
+                settings.auto_fetch_git_projects = Some(val);
+            }
+        }
     }
 
     // 保存设置
@@ -314,6 +319,7 @@ pub struct GlobalSettings {
     pub language: String,
     pub font_size: String,
     pub default_ide: Option<IdeConfig>,
+    pub auto_fetch_git_projects: Option<bool>,
 }
 
 impl Default for GlobalSettings {
@@ -323,6 +329,7 @@ impl Default for GlobalSettings {
             language: "zh-CN".to_string(),
             font_size: "medium".to_string(),
             default_ide: None,
+            auto_fetch_git_projects: None,
         }
     }
 }
@@ -395,6 +402,11 @@ pub fn global_settings_update(patch: serde_json::Value) -> Result<GlobalSettings
         }
         if let Some(default_ide) = obj.get("defaultIde").or(obj.get("default_ide")) {
             settings.default_ide = serde_json::from_value(default_ide.clone()).ok();
+        }
+        if let Some(auto_fetch) = obj.get("autoFetchGitProjects").or(obj.get("auto_fetch_git_projects")) {
+            if let Some(val) = auto_fetch.as_bool() {
+                settings.auto_fetch_git_projects = Some(val);
+            }
         }
     }
 

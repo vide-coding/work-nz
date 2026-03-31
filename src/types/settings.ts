@@ -20,6 +20,7 @@ export type GlobalSettings = {
   fontSize: FontSize
   defaultIde?: IdeConfig
   markdownTheme?: MarkdownThemeConfig
+  autoFetchGitProjects?: boolean
 }
 
 /**

@@ -16,6 +16,7 @@ export type WorkspaceSettings = {
   themeMode: ThemeMode
   customThemeId?: string
   defaultIde?: IdeConfig
+  autoFetchGitProjects?: boolean
 }
 
 export type WorkspaceInfo = {

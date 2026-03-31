@@ -50,6 +50,7 @@ pub struct WorkspaceSettings {
     pub theme_mode: ThemeMode,
     pub custom_theme_id: Option<String>,
     pub default_ide: Option<IdeConfig>,
+    pub auto_fetch_git_projects: Option<bool>,
 }
 
 impl Default for WorkspaceSettings {
@@ -58,6 +59,7 @@ impl Default for WorkspaceSettings {
             theme_mode: ThemeMode::System,
             custom_theme_id: None,
             default_ide: None,
+            auto_fetch_git_projects: None,
         }
     }
 }
