@@ -55,7 +55,7 @@ const workspaceDisplayName = computed(() => {
 async function updateWindowTitle(title: string | null) {
   try {
     const window = getCurrentWindow()
-    await window.setTitle(title || 'Vibe Kanban')
+    await window.setTitle(title || 'MyFlow')
   } catch (e) {
     console.error('Failed to update window title:', e)
   }

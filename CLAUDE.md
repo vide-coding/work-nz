@@ -1,8 +1,8 @@
-# Vibe Kanban - Local Project Manager
+# MyFlow (迈流) - Local Project Manager
 
 ## Project Overview
 
-Vibe Kanban is a Tauri + Vue 3 + TypeScript desktop application for managing local projects with Git integration, file management, and task tracking.
+MyFlow (迈流) is a Tauri + Vue 3 + TypeScript desktop application for managing local projects with Git integration, file management, and task tracking.
 
 ## Tech Stack
 

@@ -1,6 +1,6 @@
 ## Context
 
-Vibe Kanban 是一个 Tauri + Vue 3 项目，目前 Workspace 页面已有 FileBrowser 组件支持文件夹浏览和创建，但项目页面缺少独立的文件管理能力。
+MyFlow (迈流) 是一个 Tauri + Vue 3 项目，目前 Workspace 页面已有 FileBrowser 组件支持文件夹浏览和创建，但项目页面缺少独立的文件管理能力。
 
 现有代码基础：
 

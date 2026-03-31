@@ -142,7 +142,7 @@ async function updateWindowTitle(title: string | null) {
     if (title) {
       await window.setTitle(title)
     } else {
-      await window.setTitle('Vibe Kanban')
+      await window.setTitle('MyFlow')
     }
   } catch (e) {
     console.error('Failed to update window title:', e)

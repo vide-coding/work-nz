@@ -1,6 +1,6 @@
 # Directory Module System
 
-A flexible, pluggable module system for managing directory capabilities in Vibe Kanban.
+A flexible, pluggable module system for managing directory capabilities in MyFlow (迈流).
 
 ## Overview
 
