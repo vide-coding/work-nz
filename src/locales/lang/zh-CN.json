@@ -240,6 +240,7 @@
   },
   "git": {
     "title": "Git 仓库",
+    "scan": "扫描",
     "cloneButton": "+ 克隆仓库",
     "directory": "目录：",
     "loading": "加载仓库中...",

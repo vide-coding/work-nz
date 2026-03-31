@@ -240,6 +240,7 @@
   },
   "git": {
     "title": "Git Repositories",
+    "scan": "Scan",
     "cloneButton": "+ Clone Repository",
     "directory": "Directory:",
     "loading": "Loading repositories...",

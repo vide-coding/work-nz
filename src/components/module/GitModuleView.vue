@@ -3,7 +3,7 @@ import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { listen, UnlistenFn } from '@tauri-apps/api/event'
 import { debounce } from '@/composables/useDebounce'
-import { Loader2, GitBranch, X } from 'lucide-vue-next'
+import { Loader2, GitBranch, X, RefreshCw } from 'lucide-vue-next'
 import draggable from 'vuedraggable'
 import type { Directory, GitRepository, GitRepoStatus, GitCloneProgress } from '@/types'
 import { gitApi, ideApi, fsApi } from '@/composables/useApi'
@@ -25,6 +25,7 @@ const props = defineProps<Props>()
 const repositories = ref<GitRepository[]>([])
 const repoStatuses = ref<Record<string, GitRepoStatus>>({})
 const loading = ref(false)
+const scanning = ref(false)
 const error = ref('')
 
 // Drag and drop state
@@ -147,6 +148,25 @@ async function loadRepoStatus(repoId: string) {
     repoStatuses.value[repoId] = status
   } catch (e) {
     console.error('Failed to load repo status:', e)
+  }
+}
+
+// Scan for new repositories
+async function handleScan() {
+  if (!props.directory.projectId) return
+
+  scanning.value = true
+  error.value = ''
+  try {
+    const result = await gitApi.scan(props.directory.projectId)
+    if (result.scanned && result.scanned.length > 0) {
+      // Reload repositories to include newly scanned ones
+      await loadRepositories()
+    }
+  } catch (e: any) {
+    error.value = e.message || 'Failed to scan repositories'
+  } finally {
+    scanning.value = false
   }
 }
 
@@ -496,9 +516,20 @@ watch(
       <!-- Header -->
       <div class="git-module__header">
         <h3 class="git-module__title">{{ t('git.title') }}</h3>
-        <button class="git-module__clone-btn" @click="showCloneDialog = true">
-          {{ t('git.cloneButton') }}
-        </button>
+        <div class="git-module__actions">
+          <button
+            class="git-module__refresh-btn"
+            :disabled="scanning"
+            :title="$t('git.scan')"
+            @click="handleScan"
+          >
+            <RefreshCw :class="{ 'animate-spin': scanning }" class="w-4 h-4" />
+            <span v-if="!scanning">{{ t('git.scan') }}</span>
+          </button>
+          <button class="git-module__clone-btn" @click="showCloneDialog = true">
+            {{ t('git.cloneButton') }}
+          </button>
+        </div>
       </div>
 
       <!-- Directory path -->
@@ -718,6 +749,34 @@ watch(
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
+}
+
+.git-module__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.git-module__refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background-color: #6b7280;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.git-module__refresh-btn:hover:not(:disabled) {
+  background-color: #4b5563;
+}
+
+.git-module__refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .git-module__title {
