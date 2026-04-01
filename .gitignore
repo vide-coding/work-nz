@@ -24,7 +24,11 @@ dist-ssr
 *.sln
 *.sw?
 
+playwright-report
 .playwright-cli
+.playwright-*
+test-results
+
 
 # Auto-generated type definitions
 src/auto-imports.d.ts
