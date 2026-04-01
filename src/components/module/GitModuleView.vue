@@ -106,18 +106,14 @@ const selectedRepo = ref<GitRepository | null>(null)
 const readmeContent = ref('')
 const isLoadingReadme = ref(false)
 
-// Filter repos by directory path
+// Filter repos by directory folder
 const filteredRepos = computed(() => {
   const dirPath = props.directory.relativePath
   if (!dirPath) return repositories.value
 
-  // repo.path is absolute, need to check if it contains the relative path as a segment
-  // e.g., repo.path = "C:/projects/project/src/my-repo" and dirPath = "src"
-  // We need to match paths that end with "/src" or contain "/src/"
-  const pathSegment = dirPath.replace(/\\/g, '/')
+  // Filter by folder field (matches directory relativePath)
   return repositories.value.filter((repo) => {
-    const normalizedPath = repo.path.replace(/\\/g, '/')
-    return normalizedPath.includes(`/${pathSegment}/`) || normalizedPath.endsWith(`/${pathSegment}`)
+    return repo.folder === dirPath
   })
 })
 
@@ -128,7 +124,7 @@ async function loadRepositories() {
   loading.value = true
   error.value = ''
   try {
-    const repos = await gitApi.repoList(props.directory.projectId)
+    const repos = await gitApi.repoList(props.directory.projectId, props.directory.relativePath || undefined)
     repositories.value = repos
 
     // Load status for each repo
@@ -177,7 +173,7 @@ async function refreshAllRepoStatuses() {
 
   refreshing.value = true
   try {
-    const repos = await gitApi.repoList(props.directory.projectId)
+    const repos = await gitApi.repoList(props.directory.projectId, props.directory.relativePath || undefined)
     // Refresh status for each repo with network check
     await Promise.all(
       repos.map(async (repo) => {
@@ -224,16 +220,13 @@ async function handleClone() {
   }
 
   try {
-    const newRepo = await gitApi.repoClone(props.directory.projectId, {
+    await gitApi.repoClone(props.directory.projectId, {
       remoteUrl: remoteUrl,
       targetDirName: targetDirName,
       targetDirectory: props.directory.relativePath || undefined,
       name: repoName || undefined,
     })
-    // Add to the beginning of the list
-    repositories.value.unshift(newRepo)
-    draggedRepos.value.unshift(newRepo)
-    await loadRepoStatus(newRepo.id)
+    // Clone completes via event - loadRepositories() will be called on 'completed' stage
   } catch (e: any) {
     error.value = e.message || 'Failed to clone repository'
     if (cloneTasks.value[taskKey]) {
@@ -263,14 +256,13 @@ async function retryClone(targetDirName: string) {
   error.value = ''
 
   try {
-    const newRepo = await gitApi.repoClone(props.directory.projectId, {
+    await gitApi.repoClone(props.directory.projectId, {
       remoteUrl: task.remoteUrl,
       targetDirName: targetDirName,
       targetDirectory: props.directory.relativePath || undefined,
     })
-    repositories.value.push(newRepo)
+    // Clone completes via event - loadRepositories() will be called on 'completed' stage
     delete cloneTasks.value[taskKey]
-    await loadRepoStatus(newRepo.id)
   } catch (e: any) {
     error.value = e.message || 'Failed to clone repository'
     cloneTasks.value[taskKey].status = 'failed'

@@ -93,6 +93,62 @@ fn run_migrations(conn: &Connection) -> Result<()> {
         )?;
     }
 
+    // 迁移 5: 添加 folder 列到 git_repositories 表
+    let has_folder = conn
+        .query_row(
+            "SELECT COUNT(*) FROM pragma_table_info('git_repositories') WHERE name = 'folder'",
+            [],
+            |row| row.get::<_, i32>(0),
+        )
+        .unwrap_or(0)
+        > 0;
+
+    if !has_folder {
+        conn.execute(
+            "ALTER TABLE git_repositories ADD COLUMN folder TEXT",
+            [],
+        )?;
+    }
+
+    // 迁移 6: 回填 folder 列（从路径提取）
+    // 检查是否有 NULL folder 且 path 有效
+    let has_null_folder = conn
+        .query_row(
+            "SELECT COUNT(*) FROM git_repositories WHERE folder IS NULL AND path IS NOT NULL",
+            [],
+            |row| row.get::<_, i32>(0),
+        )
+        .unwrap_or(0) > 0;
+
+    if has_null_folder {
+        // 回填 folder - 路径格式通常是 <project_path>/<folder>/<repo_name>
+        // 从路径中提取倒数第二个路径组件作为 folder
+        let mut stmt = conn.prepare(
+            "SELECT id, path FROM git_repositories WHERE folder IS NULL AND path IS NOT NULL"
+        )?;
+        let repos_to_update: Vec<(String, String)> = stmt
+            .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
+            .filter_map(|r| r.ok())
+            .collect();
+
+        for (repo_id, path) in repos_to_update {
+            // 使用 Rust 的 Path 来提取文件夹名
+            let folder = std::path::Path::new(&path)
+                .components()
+                .rev()
+                .nth(1) // 倒数第二个组件是 folder
+                .and_then(|c| c.as_os_str().to_str())
+                .map(|s| s.to_string());
+
+            if let Some(folder_name) = folder {
+                conn.execute(
+                    "UPDATE git_repositories SET folder = ?1 WHERE id = ?2",
+                    params![folder_name, repo_id],
+                )?;
+            }
+        }
+    }
+
     Ok(())
 }
 

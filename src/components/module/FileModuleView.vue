@@ -366,13 +366,14 @@ async function handleDelete() {
   if (!deleteTarget.value) return
 
   const fullPath = getFullPath(deleteTarget.value.path)
+  const deletedPath = deleteTarget.value.path
 
   try {
     await fsApi.delete(fullPath)
     showDeleteDialog.value = false
     deleteTarget.value = null
     // Clear preview if deleted file was being previewed
-    if (previewFile.value?.path === deleteTarget.value.path) {
+    if (previewFile.value?.path === deletedPath) {
       previewFile.value = null
     }
     await loadFileTree()

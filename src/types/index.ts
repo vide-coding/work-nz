@@ -38,6 +38,7 @@ export type GitRepository = {
   projectId: string
   name: string
   path: string
+  folder?: string
   remoteUrl?: string
   branch?: string
   description?: string
