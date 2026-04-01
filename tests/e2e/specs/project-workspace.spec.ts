@@ -172,7 +172,7 @@ test.describe('Project Workspace Page', () => {
       await page.goto(`/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
 
-      const cloneButton = projectPage.getCloneRepoButton()
+      const cloneButton = projectPage.getGitModuleCloneButton()
       const isVisible = await cloneButton.isVisible().catch(() => false)
 
       if (isVisible) {

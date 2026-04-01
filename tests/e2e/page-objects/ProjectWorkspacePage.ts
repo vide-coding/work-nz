@@ -64,32 +64,101 @@ export class ProjectWorkspacePage {
     return this.page.getByRole('button', { name: /用 IDE 打开|Open in IDE/i })
   }
 
+  // Git module
+  getGitModuleCloneButton(): Locator {
+    return this.page.locator('.git-module__clone-btn')
+  }
+
+  getGitModuleScanButton(): Locator {
+    return this.page.locator('.git-module__scan-btn')
+  }
+
+  getGitModuleRefreshButton(): Locator {
+    return this.page.locator('.git-module__refresh-btn')
+  }
+
+  getGitModuleTitle(): Locator {
+    return this.page.locator('.git-module__title')
+  }
+
+  getGitModuleEmptyState(): Locator {
+    return this.page.locator('.git-module__empty')
+  }
+
+  getGitModuleList(): Locator {
+    return this.page.locator('.git-module__list')
+  }
+
+  // Git clone dialog
+  getCloneRepoDialog(): Locator {
+    return this.page.locator('[role="dialog"]').filter({ hasText: /克隆|Clone/i }).first()
+  }
+
+  getCloneUrlInput(): Locator {
+    return this.page.locator('input').first()
+  }
+
+  getCloneTargetDirInput(): Locator {
+    return this.page.locator('input[type="text"]').nth(1)
+  }
+
+  // File module
+  getFileModuleToolbar(): Locator {
+    return this.page.locator('.file-module__toolbar')
+  }
+
+  getFileModuleBackButton(): Locator {
+    return this.page.locator('.file-module__btn-icon').first()
+  }
+
+  getFileModuleNewFileButton(): Locator {
+    return this.page.locator('.file-module__btn-icon').nth(1)
+  }
+
+  getFileModuleNewFolderButton(): Locator {
+    return this.page.locator('.file-module__btn-icon').nth(2)
+  }
+
+  getFileModuleViewToggle(): Locator {
+    return this.page.locator('.file-module__view-toggle')
+  }
+
+  getFileModuleGridView(): Locator {
+    return this.page.locator('.file-module__grid')
+  }
+
+  getFileModuleListView(): Locator {
+    return this.page.locator('.file-module__list')
+  }
+
+  getFileModuleEmptyState(): Locator {
+    return this.page.locator('.file-module__empty')
+  }
+
+  getFileModuleContent(): Locator {
+    return this.page.locator('.file-module__content')
+  }
+
+  getFileModuleFooter(): Locator {
+    return this.page.locator('.file-module__footer')
+  }
+
+  // File module dialogs
+  getCreateFolderDialog(): Locator {
+    return this.page.locator('[role="dialog"]').filter({ hasText: /新建文件夹|New Folder|Create Folder/i }).first()
+  }
+
+  getCreateFileDialog(): Locator {
+    return this.page.locator('[role="dialog"]').filter({ hasText: /新建文件|New File|Create File/i }).first()
+  }
+
+  getDeleteDialog(): Locator {
+    return this.page.locator('[role="dialog"]').filter({ hasText: /删除|Delete/i }).first()
+  }
+
   // Module content area
   getModuleContentArea(): Locator {
     return this.page.locator('[class*="ModuleContentArea"], [class*="module-content"]').first()
-  }
-
-  // Create directory dialog
-  getCreateDirectoryDialog(): Locator {
-    return this.page.locator('[role="dialog"]').filter({ hasText: /创建目录|Create Directory/i }).first()
-  }
-
-  getDirectoryNameInput(): Locator {
-    return this.page.getByPlaceholder(/输入目录名称|Enter directory name/i)
-  }
-
-  // Git repositories
-  getCloneRepoButton(): Locator {
-    return this.page.getByRole('button', { name: /克隆仓库|Clone Repository/i })
-  }
-
-  getRepoList(): Locator {
-    return this.page.locator('[class*="RepoCard"], [class*="CodeRepositories"]')
-  }
-
-  // File browser
-  getFileBrowser(): Locator {
-    return this.page.locator('[class*="FileBrowser"], [class*="file-browser"]').first()
   }
 
   // Loading and error states
@@ -144,7 +213,7 @@ export class ProjectWorkspacePage {
   }
 
   async clickCloneRepo() {
-    await this.getCloneRepoButton().click()
+    await this.getGitModuleCloneButton().click()
   }
 
   // Assertions
