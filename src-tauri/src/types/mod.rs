@@ -94,6 +94,8 @@ pub struct GitRepository {
     pub name: String,
     pub path: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub folder: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub remote_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub branch: Option<String>,

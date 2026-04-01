@@ -15,7 +15,7 @@
 </template>
 
 <script setup lang="ts">
-import { marked, type Renderer, type Tokens } from 'marked'
+import { marked, Marked, type Renderer, type Tokens } from 'marked'
 import { computed, watch, ref, reactive } from 'vue'
 import { convertFileSrc } from '@tauri-apps/api/core'
 import type { ThemeName } from '@/types/theme'
@@ -209,12 +209,10 @@ async function renderMarkdown(): Promise<string> {
   if (!props.content) return ''
   try {
     const renderer = createRenderer()
-    // Marked v17: gfm 选项仍然可用，但默认启用
-    const html = await marked(props.content, {
-      renderer,
-      extensions: [taskListExtension],
-      gfm: true,
-    })
+    // Marked v17: Use Marked class with use() for extensions
+    const markedInstance = new Marked({ renderer, gfm: true })
+    markedInstance.use(taskListExtension)
+    const html = await markedInstance.parse(props.content)
 
     // 后处理：异步高亮代码块
     let processedHtml = await postProcessHtml(html)

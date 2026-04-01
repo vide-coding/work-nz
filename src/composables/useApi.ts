@@ -98,8 +98,8 @@ export type GitRepoUpdateInput = {
 
 // Git API
 export const gitApi = {
-  async repoList(projectId: string): Promise<GitRepository[]> {
-    return invoke('git_repo_list', { projectId })
+  async repoList(projectId: string, folder?: string): Promise<GitRepository[]> {
+    return invoke('git_repo_list', { projectId, folder: folder || null })
   },
 
   async repoCreate(projectId: string, name: string): Promise<GitRepository> {

@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS git_repositories (
   project_id TEXT NOT NULL,
   name TEXT NOT NULL,
   path TEXT NOT NULL,
+  folder TEXT,
   remote_url TEXT,
   branch TEXT,
   custom_name TEXT,

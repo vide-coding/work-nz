@@ -9,39 +9,73 @@ use std::path::Path;
 use tauri::{AppHandle, Emitter};
 use std::time::Duration;
 
-/// 列出项目的 Git 仓库
+/// 列出项目的 Git 仓库（可按目录筛选）
 #[tauri::command]
-pub fn git_repo_list(project_id: String) -> Result<Vec<GitRepository>, String> {
+pub fn git_repo_list(project_id: String, folder: Option<String>) -> Result<Vec<GitRepository>, String> {
     let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
     let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
 
-    let mut stmt = conn
-        .prepare(
-            "SELECT id, project_id, name, path, remote_url, branch, description, last_sync_at, last_status_checked_at, ide_override_json, sort_order
-             FROM git_repositories WHERE project_id = ?1 ORDER BY sort_order ASC, created_at DESC",
-        )
-        .map_err(|e| format!("查询失败: {}", e))?;
+    let repos = if let Some(folder_name) = folder {
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, project_id, name, path, folder, remote_url, branch, description, last_sync_at, last_status_checked_at, ide_override_json, sort_order
+                 FROM git_repositories WHERE project_id = ?1 AND folder = ?2 ORDER BY sort_order ASC, created_at DESC",
+            )
+            .map_err(|e| format!("查询失败: {}", e))?;
 
-    let repos = stmt
-        .query_map(params![project_id], |row| {
-            let ide_override_json: Option<String> = row.get(9)?;
-            Ok(GitRepository {
-                id: row.get(0)?,
-                project_id: row.get(1)?,
-                name: row.get(2)?,
-                path: row.get(3)?,
-                remote_url: row.get(4)?,
-                branch: row.get(5)?,
-                description: row.get(6)?,
-                last_sync_at: row.get(7)?,
-                last_status_checked_at: row.get(8)?,
-                ide_override: ide_override_json.and_then(|j| serde_json::from_str(&j).ok()),
-                sort_order: row.get(10)?,
+        let result: Vec<GitRepository> = stmt
+            .query_map(params![project_id, folder_name], |row| {
+                let ide_override_json: Option<String> = row.get(10)?;
+                Ok(GitRepository {
+                    id: row.get(0)?,
+                    project_id: row.get(1)?,
+                    name: row.get(2)?,
+                    path: row.get(3)?,
+                    folder: row.get(4)?,
+                    remote_url: row.get(5)?,
+                    branch: row.get(6)?,
+                    description: row.get(7)?,
+                    last_sync_at: row.get(8)?,
+                    last_status_checked_at: row.get(9)?,
+                    ide_override: ide_override_json.and_then(|j| serde_json::from_str(&j).ok()),
+                    sort_order: row.get(11)?,
+                })
             })
-        })
-        .map_err(|e| format!("查询失败: {}", e))?
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| format!("读取数据失败: {}", e))?;
+            .map_err(|e| format!("查询失败: {}", e))?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|e| format!("读取数据失败: {}", e))?;
+        result
+    } else {
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, project_id, name, path, folder, remote_url, branch, description, last_sync_at, last_status_checked_at, ide_override_json, sort_order
+                 FROM git_repositories WHERE project_id = ?1 ORDER BY sort_order ASC, created_at DESC",
+            )
+            .map_err(|e| format!("查询失败: {}", e))?;
+
+        let result: Vec<GitRepository> = stmt
+            .query_map(params![project_id], |row| {
+                let ide_override_json: Option<String> = row.get(10)?;
+                Ok(GitRepository {
+                    id: row.get(0)?,
+                    project_id: row.get(1)?,
+                    name: row.get(2)?,
+                    path: row.get(3)?,
+                    folder: row.get(4)?,
+                    remote_url: row.get(5)?,
+                    branch: row.get(6)?,
+                    description: row.get(7)?,
+                    last_sync_at: row.get(8)?,
+                    last_status_checked_at: row.get(9)?,
+                    ide_override: ide_override_json.and_then(|j| serde_json::from_str(&j).ok()),
+                    sort_order: row.get(11)?,
+                })
+            })
+            .map_err(|e| format!("查询失败: {}", e))?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|e| format!("读取数据失败: {}", e))?;
+        result
+    };
 
     Ok(repos)
 }
@@ -82,6 +116,7 @@ pub async fn git_repo_create(project_id: String, name: String) -> Result<GitRepo
     let now = Utc::now().to_rfc3339();
 
     // 数据库操作 - 在单独作用域中释放连接
+    let folder = "code".to_string();
     let sort_order = {
         let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
         let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
@@ -97,13 +132,14 @@ pub async fn git_repo_create(project_id: String, name: String) -> Result<GitRepo
         let next_sort = max_sort.unwrap_or(0) + 1;
 
         conn.execute(
-            "INSERT INTO git_repositories (id, project_id, name, path, created_at, updated_at, sort_order)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            "INSERT INTO git_repositories (id, project_id, name, path, folder, created_at, updated_at, sort_order)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
             params![
                 id,
                 project_id,
                 name,
                 repo_path.to_string_lossy().to_string(),
+                folder,
                 now,
                 now,
                 next_sort
@@ -119,6 +155,7 @@ pub async fn git_repo_create(project_id: String, name: String) -> Result<GitRepo
         project_id,
         name,
         path: repo_path.to_string_lossy().to_string(),
+        folder: Some(folder),
         remote_url: None,
         branch: Some("main".to_string()),
         description: None,
@@ -302,6 +339,15 @@ pub async fn git_repo_clone(
     // Use custom name if provided, otherwise use target_dir_name
     let repo_name = input.name.unwrap_or_else(|| input.target_dir_name.clone());
 
+    // 从实际路径中提取 folder（项目根目录下的直接子目录名）
+    let folder = repo_path
+        .parent()
+        .and_then(|parent| parent.strip_prefix(&project_path).ok())
+        .and_then(|rel| rel.components().next())
+        .and_then(|c| c.as_os_str().to_str())
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| "root".to_string());
+
     // 数据库操作 - 在单独作用域中释放连接
     let sort_order = {
         let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
@@ -318,13 +364,14 @@ pub async fn git_repo_clone(
         let next_sort = max_sort.unwrap_or(0) + 1;
 
         conn.execute(
-            "INSERT INTO git_repositories (id, project_id, name, path, remote_url, branch, last_sync_at, created_at, updated_at, sort_order)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+            "INSERT INTO git_repositories (id, project_id, name, path, folder, remote_url, branch, last_sync_at, created_at, updated_at, sort_order)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
             params![
                 id,
                 project_id,
                 repo_name,
                 repo_path.to_string_lossy().to_string(),
+                folder,
                 remote_url,
                 branch_name,
                 now,
@@ -343,6 +390,7 @@ pub async fn git_repo_clone(
         project_id,
         name: repo_name,
         path: repo_path.to_string_lossy().to_string(),
+        folder: Some(folder),
         remote_url: remote_url_result,
         branch: branch_name,
         description: None,
@@ -376,23 +424,24 @@ pub fn git_repo_update(
     // 获取当前仓库信息
     let current_repo: GitRepository = conn
         .query_row(
-            "SELECT id, project_id, name, path, remote_url, branch, description, last_sync_at, last_status_checked_at, ide_override_json, sort_order
+            "SELECT id, project_id, name, path, folder, remote_url, branch, description, last_sync_at, last_status_checked_at, ide_override_json, sort_order
              FROM git_repositories WHERE id = ?1",
             params![repo_id],
             |row| {
-                let ide_override_json: Option<String> = row.get(9)?;
+                let ide_override_json: Option<String> = row.get(10)?;
                 Ok(GitRepository {
                     id: row.get(0)?,
                     project_id: row.get(1)?,
                     name: row.get(2)?,
                     path: row.get(3)?,
-                    remote_url: row.get(4)?,
-                    branch: row.get(5)?,
-                    description: row.get(6)?,
-                    last_sync_at: row.get(7)?,
-                    last_status_checked_at: row.get(8)?,
+                    folder: row.get(4)?,
+                    remote_url: row.get(5)?,
+                    branch: row.get(6)?,
+                    description: row.get(7)?,
+                    last_sync_at: row.get(8)?,
+                    last_status_checked_at: row.get(9)?,
                     ide_override: ide_override_json.and_then(|j| serde_json::from_str(&j).ok()),
-                    sort_order: row.get(10)?,
+                    sort_order: row.get(11)?,
                 })
             },
         )
@@ -417,26 +466,27 @@ pub fn git_repo_update(
     // 查询更新后的仓库信息
     let mut stmt = conn
         .prepare(
-            "SELECT id, project_id, name, path, remote_url, branch, description, last_sync_at, last_status_checked_at, ide_override_json, sort_order
+            "SELECT id, project_id, name, path, folder, remote_url, branch, description, last_sync_at, last_status_checked_at, ide_override_json, sort_order
              FROM git_repositories WHERE id = ?1",
         )
         .map_err(|e| format!("查询失败: {}", e))?;
 
     let repo = stmt
         .query_row(params![repo_id], |row| {
-            let ide_override_json: Option<String> = row.get(9)?;
+            let ide_override_json: Option<String> = row.get(10)?;
             Ok(GitRepository {
                 id: row.get(0)?,
                 project_id: row.get(1)?,
                 name: row.get(2)?,
                 path: row.get(3)?,
-                remote_url: row.get(4)?,
-                branch: row.get(5)?,
-                description: row.get(6)?,
-                last_sync_at: row.get(7)?,
-                last_status_checked_at: row.get(8)?,
+                folder: row.get(4)?,
+                remote_url: row.get(5)?,
+                branch: row.get(6)?,
+                description: row.get(7)?,
+                last_sync_at: row.get(8)?,
+                last_status_checked_at: row.get(9)?,
                 ide_override: ide_override_json.and_then(|j| serde_json::from_str(&j).ok()),
-                sort_order: row.get(10)?,
+                sort_order: row.get(11)?,
             })
         })
         .map_err(|e| format!("读取仓库失败: {}", e))?;
@@ -474,26 +524,27 @@ pub fn git_repo_reorder(project_id: String, ordered_ids: Vec<String>) -> Result<
     // Return updated repos
     let mut stmt = conn
         .prepare(
-            "SELECT id, project_id, name, path, remote_url, branch, description, last_sync_at, last_status_checked_at, ide_override_json, sort_order
+            "SELECT id, project_id, name, path, folder, remote_url, branch, description, last_sync_at, last_status_checked_at, ide_override_json, sort_order
              FROM git_repositories WHERE project_id = ?1 ORDER BY sort_order ASC",
         )
         .map_err(|e| format!("查询失败: {}", e))?;
 
     let repos = stmt
         .query_map(params![project_id], |row| {
-            let ide_override_json: Option<String> = row.get(9)?;
+            let ide_override_json: Option<String> = row.get(10)?;
             Ok(GitRepository {
                 id: row.get(0)?,
                 project_id: row.get(1)?,
                 name: row.get(2)?,
                 path: row.get(3)?,
-                remote_url: row.get(4)?,
-                branch: row.get(5)?,
-                description: row.get(6)?,
-                last_sync_at: row.get(7)?,
-                last_status_checked_at: row.get(8)?,
+                folder: row.get(4)?,
+                remote_url: row.get(5)?,
+                branch: row.get(6)?,
+                description: row.get(7)?,
+                last_sync_at: row.get(8)?,
+                last_status_checked_at: row.get(9)?,
                 ide_override: ide_override_json.and_then(|j| serde_json::from_str(&j).ok()),
-                sort_order: row.get(10)?,
+                sort_order: row.get(11)?,
             })
         })
         .map_err(|e| format!("查询失败: {}", e))?
@@ -807,10 +858,8 @@ pub fn git_repo_scan_internal(
     project_id: String,
     project_path: &Path,
 ) -> Result<serde_json::Value, String> {
-    let code_dir = project_path.join("code");
-
-    // 如果 code 目录不存在，直接返回
-    if !code_dir.exists() || !code_dir.is_dir() {
+    // 扫描项目根目录下的所有直接子目录（支持多层级目录结构）
+    if !project_path.exists() || !project_path.is_dir() {
         return Ok(serde_json::json!({ "ok": true, "scanned": Vec::<String>::new() }));
     }
 
@@ -828,12 +877,20 @@ pub fn git_repo_scan_internal(
     let mut scanned = Vec::new();
     let now = Utc::now().to_rfc3339();
 
-    // 遍历 code 目录下的所有子目录
-    let entries = fs::read_dir(&code_dir).map_err(|e| format!("读取目录失败：{}", e))?;
+    // 遍历项目根目录下的所有直接子目录
+    let entries = fs::read_dir(project_path).map_err(|e| format!("读取目录失败：{}", e))?;
 
     for entry in entries.filter_map(|e| e.ok()) {
         let path = entry.path();
         if !path.is_dir() {
+            continue;
+        }
+
+        // 跳过隐藏目录（如 .app, .git 等）
+        let dir_name = path.file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("");
+        if dir_name.starts_with('.') {
             continue;
         }
 
@@ -874,16 +931,25 @@ pub fn git_repo_scan_internal(
             .ok()
             .and_then(|h| h.shorthand().map(String::from));
 
+        // 从路径中提取 folder（项目根目录下的直接子目录名）
+        let folder = path
+            .parent()
+            .and_then(|parent| parent.strip_prefix(project_path).ok())
+            .and_then(|rel| rel.components().next())
+            .and_then(|c| c.as_os_str().to_str())
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| "root".to_string());
+
         // 插入数据库
         let id = uuid::Uuid::new_v4().to_string();
         conn.execute(
-            "INSERT INTO git_repositories (id, project_id, name, path, remote_url, branch, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-            params![id, project_id, name, path_str, remote_url, branch, now, now],
+            "INSERT INTO git_repositories (id, project_id, name, path, folder, remote_url, branch, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            params![id, project_id, name, path_str, folder, remote_url, branch, now, now],
         )
         .map_err(|e| format!("保存仓库失败：{}", e))?;
 
-        scanned.push(name);
+        scanned.push(format!("{} ({})", name, folder));
     }
 
     Ok(serde_json::json!({
