@@ -1,3 +1,4 @@
+pub mod db_helpers;
 pub mod dir_type;
 pub mod directory;
 pub mod filesystem;
@@ -7,6 +8,7 @@ pub mod project;
 pub mod template;
 pub mod workspace;
 
+pub use db_helpers::*;
 pub use dir_type::*;
 pub use directory::*;
 pub use filesystem::*;

@@ -1,5 +1,5 @@
 use crate::commands::directory::directory_create;
-use crate::db::get_db;
+use crate::with_db;
 use crate::types::*;
 use chrono::Utc;
 use rusqlite::params;
@@ -10,9 +10,7 @@ pub fn template_list(
     scope: Option<String>,
     project_id: Option<String>,
 ) -> Result<Vec<DirectoryTemplate>, String> {
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
-
+    with_db!(conn, {
     let query = match (&scope, &project_id) {
         (Some(s), None) => format!(
             "SELECT id, name, description, scope, project_id, items_json, created_by, created_at, updated_at
@@ -66,14 +64,13 @@ pub fn template_list(
         .map_err(|e| format!("读取数据失败: {}", e))?;
 
     Ok(templates)
+    })
 }
 
 /// 获取模板
 #[tauri::command]
 pub fn template_get(id: String) -> Result<DirectoryTemplate, String> {
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
-
+    with_db!(conn, {
     conn.query_row(
         "SELECT id, name, description, scope, project_id, items_json, created_by, created_at, updated_at
          FROM directory_templates WHERE id = ?1",
@@ -104,6 +101,7 @@ pub fn template_get(id: String) -> Result<DirectoryTemplate, String> {
         },
     )
     .map_err(|e| format!("模板不存在: {}", e))
+    })
 }
 
 /// 创建模板
@@ -163,9 +161,7 @@ pub fn template_create(input: serde_json::Value) -> Result<DirectoryTemplate, St
     let items_json =
         serde_json::to_string(&items).map_err(|e| format!("序列化失败: {}", e))?;
 
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
-
+    with_db!(conn, {
     conn.execute(
         "INSERT INTO directory_templates (id, name, description, scope, project_id, items_json, created_by, created_at, updated_at)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
@@ -184,6 +180,7 @@ pub fn template_create(input: serde_json::Value) -> Result<DirectoryTemplate, St
         created_at: now.clone(),
         updated_at: now,
     })
+    })
 }
 
 /// 更新模板
@@ -192,9 +189,7 @@ pub fn template_update(
     id: String,
     patch: serde_json::Value,
 ) -> Result<DirectoryTemplate, String> {
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
-
+    with_db!(conn, {
     // 获取当前模板
     let template = template_get(id.clone())?;
 
@@ -248,14 +243,13 @@ pub fn template_update(
         created_at: template.created_at,
         updated_at: now,
     })
+    })
 }
 
 /// 删除模板
 #[tauri::command]
 pub fn template_delete(id: String) -> Result<(), String> {
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
-
+    with_db!(conn, {
     conn.execute(
         "DELETE FROM directory_templates WHERE id = ?1",
         params![id],
@@ -263,6 +257,7 @@ pub fn template_delete(id: String) -> Result<(), String> {
     .map_err(|e| format!("删除模板失败: {}", e))?;
 
     Ok(())
+    })
 }
 
 /// 应用模板到项目

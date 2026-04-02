@@ -1,66 +1,34 @@
-use crate::db::get_db;
 use crate::types::*;
+use crate::with_db;
+use crate::commands::db_helpers::map_module_row;
 use chrono::Utc;
 use rusqlite::params;
 
 /// 列出所有模块
 #[tauri::command]
 pub fn module_list() -> Result<Vec<Module>, String> {
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
+    with_db!(conn, {
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, key, name, description, version, capabilities_json, config_schema_json,
+                        default_config_json, icon, is_built_in, created_at, updated_at
+                 FROM modules ORDER BY is_built_in DESC, name",
+            )
+            .map_err(|e| format!("查询失败: {}", e))?;
 
-    let mut stmt = conn
-        .prepare(
-            "SELECT id, key, name, description, version, capabilities_json, config_schema_json,
-                    default_config_json, icon, is_built_in, created_at, updated_at
-             FROM modules ORDER BY is_built_in DESC, name",
-        )
-        .map_err(|e| format!("查询失败: {}", e))?;
+        let modules = stmt
+            .query_map([], map_module_row)
+            .map_err(|e| format!("查询失败: {}", e))?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|e| format!("读取数据失败: {}", e))?;
 
-    let modules = stmt
-        .query_map([], |row| {
-            let capabilities_json: String = row.get(5)?;
-            let config_schema_json: String = row.get(6)?;
-            let default_config_json: String = row.get(7)?;
+        // 如果数据库中没有模块，返回内置模块
+        if modules.is_empty() {
+            return Ok(get_builtin_modules());
+        }
 
-            let capabilities: Vec<String> =
-                serde_json::from_str(&capabilities_json).unwrap_or_default();
-            let config_schema: ModuleConfigSchema =
-                serde_json::from_str(&config_schema_json).unwrap_or(ModuleConfigSchema {
-                    schema_type: "object".to_string(),
-                    title: None,
-                    description: None,
-                    properties: std::collections::HashMap::new(),
-                    required: None,
-                });
-            let default_config: serde_json::Value =
-                serde_json::from_str(&default_config_json).unwrap_or(serde_json::json!({}));
-
-            Ok(Module {
-                id: row.get(0)?,
-                key: row.get(1)?,
-                name: row.get(2)?,
-                description: row.get(3)?,
-                version: row.get(4)?,
-                capabilities,
-                config_schema,
-                default_config,
-                icon: row.get(8)?,
-                is_built_in: row.get::<_, i32>(9)? != 0,
-                created_at: row.get(10)?,
-                updated_at: row.get(11)?,
-            })
-        })
-        .map_err(|e| format!("查询失败: {}", e))?
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| format!("读取数据失败: {}", e))?;
-
-    // 如果数据库中没有模块，返回内置模块
-    if modules.is_empty() {
-        return Ok(get_builtin_modules());
-    }
-
-    Ok(modules)
+        Ok(modules)
+    })
 }
 
 /// 获取内置模块
@@ -289,121 +257,53 @@ fn get_builtin_modules() -> Vec<Module> {
 /// 根据 ID 获取模块
 #[tauri::command]
 pub fn module_get(id: String) -> Result<Module, String> {
-    // 先尝试从数据库获取
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
+    with_db!(conn, {
+        let result: Result<Module, _> = conn.query_row(
+            "SELECT id, key, name, description, version, capabilities_json, config_schema_json,
+                    default_config_json, icon, is_built_in, created_at, updated_at
+             FROM modules WHERE id = ?1",
+            params![id],
+            map_module_row,
+        );
 
-    let result: Result<Module, _> = conn.query_row(
-        "SELECT id, key, name, description, version, capabilities_json, config_schema_json,
-                default_config_json, icon, is_built_in, created_at, updated_at
-         FROM modules WHERE id = ?1",
-        params![id],
-        |row| {
-            let capabilities_json: String = row.get(5)?;
-            let config_schema_json: String = row.get(6)?;
-            let default_config_json: String = row.get(7)?;
-
-            let capabilities: Vec<String> =
-                serde_json::from_str(&capabilities_json).unwrap_or_default();
-            let config_schema: ModuleConfigSchema =
-                serde_json::from_str(&config_schema_json).unwrap_or(ModuleConfigSchema {
-                    schema_type: "object".to_string(),
-                    title: None,
-                    description: None,
-                    properties: std::collections::HashMap::new(),
-                    required: None,
-                });
-            let default_config: serde_json::Value =
-                serde_json::from_str(&default_config_json).unwrap_or(serde_json::json!({}));
-
-            Ok(Module {
-                id: row.get(0)?,
-                key: row.get(1)?,
-                name: row.get(2)?,
-                description: row.get(3)?,
-                version: row.get(4)?,
-                capabilities,
-                config_schema,
-                default_config,
-                icon: row.get(8)?,
-                is_built_in: row.get::<_, i32>(9)? != 0,
-                created_at: row.get(10)?,
-                updated_at: row.get(11)?,
-            })
-        },
-    );
-
-    match result {
-        Ok(module) => Ok(module),
-        Err(_) => {
-            // 如果数据库中没有，尝试内置模块
-            let builtin = get_builtin_modules();
-            builtin
-                .into_iter()
-                .find(|m| m.id == id)
-                .ok_or_else(|| format!("模块不存在: {}", id))
+        match result {
+            Ok(module) => Ok(module),
+            Err(_) => {
+                // 如果数据库中没有，尝试内置模块
+                let builtin = get_builtin_modules();
+                builtin
+                    .into_iter()
+                    .find(|m| m.id == id)
+                    .ok_or_else(|| format!("模块不存在: {}", id))
+            }
         }
-    }
+    })
 }
 
 /// 根据 key 获取模块
 #[tauri::command]
 pub fn module_get_by_key(key: String) -> Result<Module, String> {
-    // 先尝试从数据库获取
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
+    with_db!(conn, {
+        let result: Result<Module, _> = conn.query_row(
+            "SELECT id, key, name, description, version, capabilities_json, config_schema_json,
+                    default_config_json, icon, is_built_in, created_at, updated_at
+             FROM modules WHERE key = ?1",
+            params![key],
+            map_module_row,
+        );
 
-    let result: Result<Module, _> = conn.query_row(
-        "SELECT id, key, name, description, version, capabilities_json, config_schema_json,
-                default_config_json, icon, is_built_in, created_at, updated_at
-         FROM modules WHERE key = ?1",
-        params![key],
-        |row| {
-            let capabilities_json: String = row.get(5)?;
-            let config_schema_json: String = row.get(6)?;
-            let default_config_json: String = row.get(7)?;
-
-            let capabilities: Vec<String> =
-                serde_json::from_str(&capabilities_json).unwrap_or_default();
-            let config_schema: ModuleConfigSchema =
-                serde_json::from_str(&config_schema_json).unwrap_or(ModuleConfigSchema {
-                    schema_type: "object".to_string(),
-                    title: None,
-                    description: None,
-                    properties: std::collections::HashMap::new(),
-                    required: None,
-                });
-            let default_config: serde_json::Value =
-                serde_json::from_str(&default_config_json).unwrap_or(serde_json::json!({}));
-
-            Ok(Module {
-                id: row.get(0)?,
-                key: row.get(1)?,
-                name: row.get(2)?,
-                description: row.get(3)?,
-                version: row.get(4)?,
-                capabilities,
-                config_schema,
-                default_config,
-                icon: row.get(8)?,
-                is_built_in: row.get::<_, i32>(9)? != 0,
-                created_at: row.get(10)?,
-                updated_at: row.get(11)?,
-            })
-        },
-    );
-
-    match result {
-        Ok(module) => Ok(module),
-        Err(_) => {
-            // 如果数据库中没有，尝试内置模块
-            let builtin = get_builtin_modules();
-            builtin
-                .into_iter()
-                .find(|m| m.key == key)
-                .ok_or_else(|| format!("模块不存在: {}", key))
+        match result {
+            Ok(module) => Ok(module),
+            Err(_) => {
+                // 如果数据库中没有，尝试内置模块
+                let builtin = get_builtin_modules();
+                builtin
+                    .into_iter()
+                    .find(|m| m.key == key)
+                    .ok_or_else(|| format!("模块不存在: {}", key))
+            }
         }
-    }
+    })
 }
 
 /// 创建模块
@@ -509,28 +409,27 @@ pub fn module_create(input: serde_json::Value) -> Result<Module, String> {
     let default_config_json = serde_json::to_string(&default_config)
         .map_err(|e| format!("序列化失败: {}", e))?;
 
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
-
-    conn.execute(
-        "INSERT INTO modules (id, key, name, description, version, capabilities_json,
-                             config_schema_json, default_config_json, icon, is_built_in, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 0, ?10, ?11)",
-        params![
-            id,
-            key,
-            name,
-            description,
-            version,
-            capabilities_json,
-            config_schema_json,
-            default_config_json,
-            icon,
-            now,
-            now
-        ],
-    )
-    .map_err(|e| format!("创建模块失败: {}", e))?;
+    with_db!(conn, {
+        conn.execute(
+            "INSERT INTO modules (id, key, name, description, version, capabilities_json,
+                                 config_schema_json, default_config_json, icon, is_built_in, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 0, ?10, ?11)",
+            params![
+                id,
+                key,
+                name,
+                description,
+                version,
+                capabilities_json,
+                config_schema_json,
+                default_config_json,
+                icon,
+                now.clone(),
+                now.clone()
+            ],
+        )
+        .map_err(|e| format!("创建模块失败: {}", e))?;
+    });
 
     Ok(Module {
         id,
@@ -551,9 +450,6 @@ pub fn module_create(input: serde_json::Value) -> Result<Module, String> {
 /// 更新模块
 #[tauri::command]
 pub fn module_update(id: String, patch: serde_json::Value) -> Result<Module, String> {
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
-
     // 获取当前模块
     let module = module_get(id.clone())?;
 
@@ -649,23 +545,25 @@ pub fn module_update(id: String, patch: serde_json::Value) -> Result<Module, Str
     let default_config_json =
         serde_json::to_string(&default_config).map_err(|e| format!("序列化失败: {}", e))?;
 
-    conn.execute(
-        "UPDATE modules SET name = ?1, description = ?2, version = ?3, capabilities_json = ?4,
-                           config_schema_json = ?5, default_config_json = ?6, icon = ?7, updated_at = ?8
-         WHERE id = ?9",
-        params![
-            name,
-            description,
-            version,
-            capabilities_json,
-            config_schema_json,
-            default_config_json,
-            icon,
-            now,
-            id
-        ],
-    )
-    .map_err(|e| format!("更新模块失败: {}", e))?;
+    with_db!(conn, {
+        conn.execute(
+            "UPDATE modules SET name = ?1, description = ?2, version = ?3, capabilities_json = ?4,
+                               config_schema_json = ?5, default_config_json = ?6, icon = ?7, updated_at = ?8
+             WHERE id = ?9",
+            params![
+                name,
+                description,
+                version,
+                capabilities_json,
+                config_schema_json,
+                default_config_json,
+                icon,
+                now.clone(),
+                id.clone()
+            ],
+        )
+        .map_err(|e| format!("更新模块失败: {}", e))?;
+    });
 
     Ok(Module {
         id,
@@ -691,29 +589,28 @@ pub fn module_delete(id: String) -> Result<(), String> {
         return Err("不能删除内置模块".to_string());
     }
 
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
+    with_db!(conn, {
+        // 检查是否有目录使用此模块
+        let count: i32 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM directories WHERE module_id = ?1",
+                params![id],
+                |row| row.get(0),
+            )
+            .map_err(|e| format!("查询失败: {}", e))?;
 
-    // 检查是否有目录使用此模块
-    let count: i32 = conn
-        .query_row(
-            "SELECT COUNT(*) FROM directories WHERE module_id = ?1",
-            params![id],
-            |row| row.get(0),
-        )
-        .map_err(|e| format!("查询失败: {}", e))?;
+        if count > 0 {
+            return Err(format!(
+                "有 {} 个目录正在使用此模块，请先移除模块绑定",
+                count
+            ));
+        }
 
-    if count > 0 {
-        return Err(format!(
-            "有 {} 个目录正在使用此模块，请先移除模块绑定",
-            count
-        ));
-    }
+        conn.execute("DELETE FROM modules WHERE id = ?1", params![id])
+            .map_err(|e| format!("删除模块失败: {}", e))?;
 
-    conn.execute("DELETE FROM modules WHERE id = ?1", params![id])
-        .map_err(|e| format!("删除模块失败: {}", e))?;
-
-    Ok(())
+        Ok(())
+    })
 }
 
 /// 验证模块配置

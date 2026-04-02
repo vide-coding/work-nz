@@ -3,6 +3,9 @@ export type ThemeMode = 'light' | 'dark' | 'system' | 'custom'
 
 export type SupportedIdeKind = 'vscode' | 'idea' | 'webstorm' | 'trae' | 'zed' | 'pycharm' | 'other'
 
+// Re-export locale types
+export type { LocaleCode } from './locale'
+
 export type IdeConfig = {
   kind: SupportedIdeKind
   name: string

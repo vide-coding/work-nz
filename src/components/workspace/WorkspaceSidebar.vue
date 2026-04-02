@@ -1,15 +1,9 @@
 <script setup lang="ts">
-import type { Component } from 'vue'
-
-type NavItem = {
-  id: string
-  labelKey: string
-  icon: Component
-}
+import type { SidebarNavItem } from '@/types/sidebar'
 
 const props = defineProps<{
   currentNav: string
-  navItems: NavItem[]
+  navItems: SidebarNavItem[]
 }>()
 
 const emit = defineEmits<{

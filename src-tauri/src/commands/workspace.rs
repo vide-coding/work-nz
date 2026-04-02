@@ -1,3 +1,4 @@
+use crate::with_db;
 use crate::db::get_db;
 use crate::types::*;
 use chrono::Utc;
@@ -117,10 +118,7 @@ pub fn workspace_init_or_open(path: String) -> Result<WorkspaceInfo, String> {
     add_to_recent_workspaces(path.clone(), now.clone(), None);
 
     // 首先：获取数据库连接并执行数据库操作
-    let settings = {
-        let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-        let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
-
+    let settings = with_db!(conn, {
         conn.execute(
             "INSERT OR REPLACE INTO workspace_meta (key, value, updated_at) VALUES ('last_opened', ?1, ?2)",
             params![&path, &now],
@@ -128,7 +126,7 @@ pub fn workspace_init_or_open(path: String) -> Result<WorkspaceInfo, String> {
 
         // 获取设置
         get_workspace_settings_internal(conn)
-    }; // db_guard 在这里被释放
+    });
 
     // 其次：在数据库锁释放后，获取工作区路径锁
     {
@@ -188,10 +186,8 @@ fn get_workspace_settings_internal(conn: &rusqlite::Connection) -> Option<Worksp
 /// 更新工作区设置
 #[tauri::command]
 pub fn workspace_settings_update(patch: serde_json::Value) -> Result<WorkspaceSettings, String> {
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
-
     // 获取当前设置
+    with_db!(conn, {
     let mut settings = get_workspace_settings_internal(conn).unwrap_or_default();
 
     // 合并更新
@@ -229,6 +225,7 @@ pub fn workspace_settings_update(patch: serde_json::Value) -> Result<WorkspaceSe
     ).map_err(|e| format!("保存设置失败: {}", e))?;
 
     Ok(settings)
+    })
 }
 
 /// 获取当前工作区路径
@@ -284,15 +281,9 @@ pub fn workspace_get_current() -> Result<Option<WorkspaceInfo>, String> {
             match ws {
                 Some(workspace) => {
                     // 获取设置
-                    let settings = {
-                        let db_guard = get_db().ok();
-                        match db_guard
-                            .and_then(|g| g.as_ref().map(|c| get_workspace_settings_internal(c)))
-                        {
-                            Some(Some(s)) => Some(s),
-                            _ => None,
-                        }
-                    };
+                    let settings = with_db!(conn, {
+                        get_workspace_settings_internal(conn)
+                    });
 
                     Ok(Some(WorkspaceInfo {
                         path: workspace.path,

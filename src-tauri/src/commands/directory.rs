@@ -1,7 +1,7 @@
 use crate::commands::module::module_get;
 use crate::commands::project::project_get;
-use crate::db::get_db;
 use crate::types::*;
+use crate::with_db;
 use chrono::Utc;
 use rusqlite::params;
 use std::fs;
@@ -10,72 +10,70 @@ use std::path::Path;
 /// 列出项目的所有目录
 #[tauri::command]
 pub fn directory_list(project_id: String) -> Result<Vec<Directory>, String> {
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
+    with_db!(conn, {
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, project_id, name, relative_path, module_id, module_config_json,
+                        sort_order, created_at, updated_at
+                 FROM directories WHERE project_id = ?1 ORDER BY sort_order, name",
+            )
+            .map_err(|e| format!("查询失败: {}", e))?;
 
-    let mut stmt = conn
-        .prepare(
-            "SELECT id, project_id, name, relative_path, module_id, module_config_json,
-                    sort_order, created_at, updated_at
-             FROM directories WHERE project_id = ?1 ORDER BY sort_order, name",
-        )
-        .map_err(|e| format!("查询失败: {}", e))?;
+        let dirs = stmt
+            .query_map(params![project_id], |row| {
+                let module_config_json: Option<String> = row.get(5)?;
+                let module_config: Option<serde_json::Value> =
+                    module_config_json.and_then(|j| serde_json::from_str(&j).ok());
 
-    let dirs = stmt
-        .query_map(params![project_id], |row| {
-            let module_config_json: Option<String> = row.get(5)?;
-            let module_config: Option<serde_json::Value> =
-                module_config_json.and_then(|j| serde_json::from_str(&j).ok());
-
-            Ok(Directory {
-                id: row.get(0)?,
-                project_id: row.get(1)?,
-                name: row.get(2)?,
-                relative_path: row.get(3)?,
-                module_id: row.get(4)?,
-                module_config,
-                sort_order: row.get(6)?,
-                created_at: row.get(7)?,
-                updated_at: row.get(8)?,
+                Ok(Directory {
+                    id: row.get(0)?,
+                    project_id: row.get(1)?,
+                    name: row.get(2)?,
+                    relative_path: row.get(3)?,
+                    module_id: row.get(4)?,
+                    module_config,
+                    sort_order: row.get(6)?,
+                    created_at: row.get(7)?,
+                    updated_at: row.get(8)?,
+                })
             })
-        })
-        .map_err(|e| format!("查询失败: {}", e))?
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| format!("读取数据失败: {}", e))?;
+            .map_err(|e| format!("查询失败: {}", e))?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|e| format!("读取数据失败: {}", e))?;
 
-    Ok(dirs)
+        Ok(dirs)
+    })
 }
 
 /// 获取目录
 #[tauri::command]
 pub fn directory_get(id: String) -> Result<Directory, String> {
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
+    with_db!(conn, {
+        conn.query_row(
+            "SELECT id, project_id, name, relative_path, module_id, module_config_json,
+                    sort_order, created_at, updated_at
+             FROM directories WHERE id = ?1",
+            params![id],
+            |row| {
+                let module_config_json: Option<String> = row.get(5)?;
+                let module_config: Option<serde_json::Value> =
+                    module_config_json.and_then(|j| serde_json::from_str(&j).ok());
 
-    conn.query_row(
-        "SELECT id, project_id, name, relative_path, module_id, module_config_json,
-                sort_order, created_at, updated_at
-         FROM directories WHERE id = ?1",
-        params![id],
-        |row| {
-            let module_config_json: Option<String> = row.get(5)?;
-            let module_config: Option<serde_json::Value> =
-                module_config_json.and_then(|j| serde_json::from_str(&j).ok());
-
-            Ok(Directory {
-                id: row.get(0)?,
-                project_id: row.get(1)?,
-                name: row.get(2)?,
-                relative_path: row.get(3)?,
-                module_id: row.get(4)?,
-                module_config,
-                sort_order: row.get(6)?,
-                created_at: row.get(7)?,
-                updated_at: row.get(8)?,
-            })
-        },
-    )
-    .map_err(|e| format!("目录不存在: {}", e))
+                Ok(Directory {
+                    id: row.get(0)?,
+                    project_id: row.get(1)?,
+                    name: row.get(2)?,
+                    relative_path: row.get(3)?,
+                    module_id: row.get(4)?,
+                    module_config,
+                    sort_order: row.get(6)?,
+                    created_at: row.get(7)?,
+                    updated_at: row.get(8)?,
+                })
+            },
+        )
+        .map_err(|e| format!("目录不存在: {}", e))
+    })
 }
 
 /// 创建目录
@@ -118,15 +116,14 @@ pub fn directory_create(project_id: String, input: serde_json::Value) -> Result<
         .map(|c| serde_json::to_string(c).ok())
         .flatten();
 
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
-
-    conn.execute(
-        "INSERT INTO directories (id, project_id, name, relative_path, module_id, module_config_json, sort_order, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
-        params![id, project_id, name, relative_path, module_id, module_config_json, sort_order, now, now],
-    )
-    .map_err(|e| format!("创建目录失败: {}", e))?;
+    with_db!(conn, {
+        conn.execute(
+            "INSERT INTO directories (id, project_id, name, relative_path, module_id, module_config_json, sort_order, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            params![id, project_id, name, relative_path, module_id, module_config_json, sort_order, now, now],
+        )
+        .map_err(|e| format!("创建目录失败: {}", e))?;
+    });
 
     Ok(Directory {
         id,
@@ -144,9 +141,6 @@ pub fn directory_create(project_id: String, input: serde_json::Value) -> Result<
 /// 更新目录
 #[tauri::command]
 pub fn directory_update(id: String, patch: serde_json::Value) -> Result<Directory, String> {
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
-
     // 获取当前目录
     let dir = directory_get(id.clone())?;
 
@@ -202,21 +196,23 @@ pub fn directory_update(id: String, patch: serde_json::Value) -> Result<Director
         }
     }
 
-    conn.execute(
-        "UPDATE directories SET name = ?1, relative_path = ?2, module_id = ?3,
-                           module_config_json = ?4, sort_order = ?5, updated_at = ?6
-         WHERE id = ?7",
-        params![
-            name,
-            relative_path,
-            module_id,
-            module_config_json,
-            sort_order,
-            now,
-            id
-        ],
-    )
-    .map_err(|e| format!("更新目录失败: {}", e))?;
+    with_db!(conn, {
+        conn.execute(
+            "UPDATE directories SET name = ?1, relative_path = ?2, module_id = ?3,
+                               module_config_json = ?4, sort_order = ?5, updated_at = ?6
+             WHERE id = ?7",
+            params![
+                name,
+                relative_path,
+                module_id,
+                module_config_json,
+                sort_order,
+                now,
+                id
+            ],
+        )
+        .map_err(|e| format!("更新目录失败: {}", e))?;
+    });
 
     Ok(Directory {
         id,
@@ -234,21 +230,13 @@ pub fn directory_update(id: String, patch: serde_json::Value) -> Result<Director
 /// 删除目录
 #[tauri::command]
 pub fn directory_delete(id: String) -> Result<(), String> {
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
-
     // 获取目录信息用于删除物理目录
     let _dir = directory_get(id.clone())?;
 
-    // 删除物理目录（可选：只删除记录，不删除物理目录）
-    // let project = project_get(dir.project_id)?;
-    // let full_path = Path::new(&project.project_path).join(&dir.relative_path);
-    // if full_path.exists() && full_path.is_dir() {
-    //     fs::remove_dir_all(&full_path).map_err(|e| format!("删除物理目录失败: {}", e))?;
-    // }
-
-    conn.execute("DELETE FROM directories WHERE id = ?1", params![id])
-        .map_err(|e| format!("删除目录失败: {}", e))?;
+    with_db!(conn, {
+        conn.execute("DELETE FROM directories WHERE id = ?1", params![id])
+            .map_err(|e| format!("删除目录失败: {}", e))?;
+    });
 
     Ok(())
 }
@@ -260,23 +248,6 @@ pub fn directory_enable_module(
     module_id: String,
     config: Option<serde_json::Value>,
 ) -> Result<Directory, String> {
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
-
-    // 检查目录是否已有模块
-    let current_module_id: Option<String> = conn
-        .query_row(
-            "SELECT module_id FROM directories WHERE id = ?1",
-            params![id],
-            |row| row.get(0),
-        )
-        .ok()
-        .flatten();
-
-    if current_module_id.is_some() {
-        return Err("目录已启用模块，请先禁用现有模块".to_string());
-    }
-
     // 验证模块存在
     let _module = module_get(module_id.clone())?;
 
@@ -310,11 +281,27 @@ pub fn directory_enable_module(
 
     let now = Utc::now().to_rfc3339();
 
-    conn.execute(
-        "UPDATE directories SET module_id = ?1, module_config_json = ?2, updated_at = ?3 WHERE id = ?4",
-        params![module_id, module_config_json, now, id],
-    )
-    .map_err(|e| format!("启用模块失败: {}", e))?;
+    with_db!(conn, {
+        // 检查目录是否已有模块
+        let current_module_id: Option<String> = conn
+            .query_row(
+                "SELECT module_id FROM directories WHERE id = ?1",
+                params![id],
+                |row| row.get(0),
+            )
+            .ok()
+            .flatten();
+
+        if current_module_id.is_some() {
+            return Err("目录已启用模块，请先禁用现有模块".to_string());
+        }
+
+        conn.execute(
+            "UPDATE directories SET module_id = ?1, module_config_json = ?2, updated_at = ?3 WHERE id = ?4",
+            params![module_id, module_config_json, now, id],
+        )
+        .map_err(|e| format!("启用模块失败: {}", e))?;
+    });
 
     directory_get(id)
 }
@@ -322,16 +309,15 @@ pub fn directory_enable_module(
 /// 禁用目录上的模块
 #[tauri::command]
 pub fn directory_disable_module(id: String) -> Result<Directory, String> {
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
-
     let now = Utc::now().to_rfc3339();
 
-    conn.execute(
-        "UPDATE directories SET module_id = NULL, module_config_json = NULL, updated_at = ?1 WHERE id = ?2",
-        params![now, id],
-    )
-    .map_err(|e| format!("禁用模块失败: {}", e))?;
+    with_db!(conn, {
+        conn.execute(
+            "UPDATE directories SET module_id = NULL, module_config_json = NULL, updated_at = ?1 WHERE id = ?2",
+            params![now, id],
+        )
+        .map_err(|e| format!("禁用模块失败: {}", e))?;
+    });
 
     directory_get(id)
 }
@@ -342,9 +328,6 @@ pub fn directory_update_module_config(
     id: String,
     config: serde_json::Value,
 ) -> Result<Directory, String> {
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
-
     // 获取当前模块
     let dir = directory_get(id.clone())?;
     let module_id = dir.module_id.ok_or("目录未启用模块")?;
@@ -374,11 +357,13 @@ pub fn directory_update_module_config(
 
     let now = Utc::now().to_rfc3339();
 
-    conn.execute(
-        "UPDATE directories SET module_config_json = ?1, updated_at = ?2 WHERE id = ?3",
-        params![module_config_json, now, id],
-    )
-    .map_err(|e| format!("更新模块配置失败: {}", e))?;
+    with_db!(conn, {
+        conn.execute(
+            "UPDATE directories SET module_config_json = ?1, updated_at = ?2 WHERE id = ?3",
+            params![module_config_json, now, id],
+        )
+        .map_err(|e| format!("更新模块配置失败: {}", e))?;
+    });
 
     directory_get(id)
 }
@@ -386,18 +371,17 @@ pub fn directory_update_module_config(
 /// 重新排序目录
 #[tauri::command]
 pub fn directory_reorder(project_id: String, ordered_ids: Vec<String>) -> Result<(), String> {
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
-
     let now = Utc::now().to_rfc3339();
 
-    for (index, id) in ordered_ids.iter().enumerate() {
-        conn.execute(
-            "UPDATE directories SET sort_order = ?1, updated_at = ?2 WHERE id = ?3 AND project_id = ?4",
-            params![index as i32, now, id, project_id],
-        )
-        .map_err(|e| format!("更新排序失败: {}", e))?;
-    }
+    with_db!(conn, {
+        for (index, id) in ordered_ids.iter().enumerate() {
+            conn.execute(
+                "UPDATE directories SET sort_order = ?1, updated_at = ?2 WHERE id = ?3 AND project_id = ?4",
+                params![index as i32, now, id, project_id],
+            )
+            .map_err(|e| format!("更新排序失败: {}", e))?;
+        }
+    });
 
     Ok(())
 }
