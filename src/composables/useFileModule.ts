@@ -16,6 +16,18 @@ export interface FileEntry {
 }
 
 /**
+ * 构建文件的完整路径
+ * @param relativeBase - 目录的 relativePath（可为 null/undefined）
+ * @param currentPath - 当前浏览路径
+ * @param target - 目标文件名或路径
+ */
+function buildFullPath(relativeBase: string | null | undefined, currentPath: string, target: string): string {
+  return relativeBase
+    ? `${relativeBase}/${currentPath}/${target}`
+    : `${currentPath}/${target}`
+}
+
+/**
  * View mode for file listing
  */
 export type ViewMode = 'list' | 'grid'
@@ -248,9 +260,7 @@ export function useFileModule(directory: Directory) {
     loading.value = true
     error.value = null
     try {
-      const fullPath = directory.relativePath
-        ? `${directory.relativePath}/${currentPath.value}/${name}`
-        : `${currentPath.value}/${name}`
+      const fullPath = buildFullPath(directory.relativePath, currentPath.value, name)
 
       const result = await fsApi.createDir(directory.projectId, fullPath)
       if (result.ok) {
@@ -278,7 +288,7 @@ export function useFileModule(directory: Directory) {
     loading.value = true
     error.value = null
     try {
-      const fullPath = directory.relativePath ? `${directory.relativePath}/${path}` : path
+      const fullPath = buildFullPath(directory.relativePath, '', path)
 
       const result = await fsApi.delete(fullPath)
       if (result.ok) {
@@ -336,7 +346,7 @@ export function useFileModule(directory: Directory) {
     }
 
     try {
-      const fullPath = directory.relativePath ? `${directory.relativePath}/${path}` : path
+      const fullPath = buildFullPath(directory.relativePath, '', path)
 
       const result = await previewApi.detect(fullPath)
       return result.kind
@@ -355,7 +365,7 @@ export function useFileModule(directory: Directory) {
     loading.value = true
     error.value = null
     try {
-      const fullPath = directory.relativePath ? `${directory.relativePath}/${path}` : path
+      const fullPath = buildFullPath(directory.relativePath, '', path)
 
       const result = await fsApi.readText(fullPath)
       return result.content
