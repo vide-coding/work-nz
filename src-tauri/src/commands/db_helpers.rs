@@ -5,14 +5,16 @@ use crate::types::*;
 use rusqlite::{Row, Result as SqliteResult};
 
 /// 获取数据库连接的简写模式，返回错误信息字符串
-/// 使用示例: with_db!(conn => { conn.prepare(...) })
+/// 使用示例: with_db!(conn, { conn.prepare(...) })
 #[macro_export]
 macro_rules! with_db {
-    ($conn:ident => $body:expr) => {{
+    ($conn:ident, $body:block) => {{
         let db_guard =
             $crate::db::get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
         let $conn = db_guard.as_ref().ok_or("数据库未初始化")?;
-        $body
+        let __result = { $body };
+        drop(db_guard);
+        __result
     }};
 }
 
