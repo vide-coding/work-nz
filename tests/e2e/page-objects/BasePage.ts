@@ -1,4 +1,5 @@
 import { Page, Locator, expect } from '@playwright/test'
+import { BASE_URL } from '../utils/url-helper'
 
 /**
  * BasePage - Common page object base class with shared functionality
@@ -7,10 +8,11 @@ export class BasePage {
   constructor(readonly page: Page) {}
 
   /**
-   * Navigate to a relative path
+   * Navigate to a path (prepends BASE_URL for WebDriver compatibility)
    */
   async goto(path: string) {
-    await this.page.goto(path)
+    const absolute = path.startsWith('http') ? path : `${BASE_URL}${path.startsWith('/') ? path : `/${path}`}`
+    await this.page.goto(absolute)
   }
 
   /**

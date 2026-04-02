@@ -31,7 +31,9 @@
     "test:e2e:project-workspace": "playwright test tests/e2e/specs/project-workspace.spec.ts",
     "test:e2e:grep": "playwright test --grep",
     "test:e2e:list": "playwright test --list",
-    "test:e2e:show-report": "playwright show-report"
+    "test:e2e:show-report": "playwright show-report",
+    "test:e2e:build": "tauri build",
+    "test:e2e:webdriver": "tauri webdriver install"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.2.1",

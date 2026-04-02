@@ -1,5 +1,6 @@
 import { test, expect, Page } from '@playwright/test'
 import { createProjectWorkspacePage, ProjectWorkspacePage } from '../page-objects'
+import { goto } from '../utils/url-helper'
 import {
   KNOWN_NON_CRITICAL_ERRORS,
   setupConsoleErrorListener,
@@ -43,7 +44,7 @@ test.describe('Project Workspace Page', () => {
     test('should load project workspace page with valid ID', async ({ page }) => {
       // Navigate with a test project ID
       // In a real scenario, we'd create a project first or use a known good ID
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
       await page.waitForTimeout(1000)
 
@@ -52,7 +53,7 @@ test.describe('Project Workspace Page', () => {
     })
 
     test('should have go back button', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
 
       const backButton = projectPage.getGoBackButton()
@@ -64,7 +65,7 @@ test.describe('Project Workspace Page', () => {
     })
 
     test('should have settings button', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
 
       const settingsButton = projectPage.getSettingsButton()
@@ -81,7 +82,7 @@ test.describe('Project Workspace Page', () => {
    */
   test.describe('Header Controls', () => {
     test('should have working theme button', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
 
       const themeButton = projectPage.getThemeButton()
@@ -94,7 +95,7 @@ test.describe('Project Workspace Page', () => {
     })
 
     test('should have working language button', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
 
       const langButton = projectPage.getLanguageButton()
@@ -112,7 +113,7 @@ test.describe('Project Workspace Page', () => {
    */
   test.describe('Directory Sidebar', () => {
     test('should display directories section', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
 
       const dirsSection = projectPage.getDirectoriesSection()
@@ -124,7 +125,7 @@ test.describe('Project Workspace Page', () => {
     })
 
     test('should have add directory button', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
 
       const addButton = projectPage.getAddDirectoryButton()
@@ -141,7 +142,7 @@ test.describe('Project Workspace Page', () => {
    */
   test.describe('Project Intro', () => {
     test('should display project intro when no directory selected', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
 
       const introSection = projectPage.getProjectIntroSection()
@@ -152,7 +153,7 @@ test.describe('Project Workspace Page', () => {
     })
 
     test('should have edit project button', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
 
       const editButton = projectPage.getEditProjectButton()
@@ -169,7 +170,7 @@ test.describe('Project Workspace Page', () => {
    */
   test.describe('Git Repositories', () => {
     test('should display clone repo button', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
 
       const cloneButton = projectPage.getGitModuleCloneButton()
@@ -186,7 +187,7 @@ test.describe('Project Workspace Page', () => {
    */
   test.describe('Navigation', () => {
     test('should navigate back to projects list', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
 
       const backButton = projectPage.getGoBackButton()
@@ -199,7 +200,7 @@ test.describe('Project Workspace Page', () => {
     })
 
     test('should navigate to workspace settings', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
 
       const settingsButton = projectPage.getSettingsButton()
@@ -217,7 +218,7 @@ test.describe('Project Workspace Page', () => {
    */
   test.describe('Console Errors', () => {
     test('should not have critical console errors on load', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
       await page.waitForTimeout(2000)
 
@@ -235,7 +236,7 @@ test.describe('Project Workspace Page', () => {
  */
 test.describe('Project Workspace Page - Theme', () => {
   test('should persist theme selection', async ({ page }) => {
-    await page.goto(`/projects/${TEST_PROJECT_ID}`)
+    await goto(page, `/projects/${TEST_PROJECT_ID}`)
     await page.waitForLoadState('domcontentloaded')
 
     const themeButton = page.getByRole('button', { name: /System|Light|Dark/i })
@@ -261,7 +262,7 @@ test.describe('Project Workspace Page - Theme', () => {
  */
 test.describe('Project Workspace Page - i18n', () => {
   test('should display Chinese UI correctly', async ({ page }) => {
-    await page.goto(`/projects/${TEST_PROJECT_ID}`)
+    await goto(page, `/projects/${TEST_PROJECT_ID}`)
     await page.evaluate(() => {
       document.documentElement.lang = 'zh-CN'
     })
@@ -276,7 +277,7 @@ test.describe('Project Workspace Page - i18n', () => {
   })
 
   test('should display English UI correctly', async ({ page }) => {
-    await page.goto(`/projects/${TEST_PROJECT_ID}`)
+    await goto(page, `/projects/${TEST_PROJECT_ID}`)
     await page.evaluate(() => {
       document.documentElement.lang = 'en-US'
     })
@@ -298,7 +299,7 @@ test.describe('Project Workspace Page - i18n', () => {
 test.describe('Project Workspace Page - Module System', () => {
   test('should show create directory dialog', async ({ page }) => {
     const projectPage = createProjectWorkspacePage(page)
-    await page.goto(`/projects/${TEST_PROJECT_ID}`)
+    await goto(page, `/projects/${TEST_PROJECT_ID}`)
     await page.waitForLoadState('domcontentloaded')
 
     const addButton = projectPage.getAddDirectoryButton()
@@ -319,7 +320,7 @@ test.describe('Project Workspace Page - Module System', () => {
 
   test('should have directory name input in create dialog', async ({ page }) => {
     const projectPage = createProjectWorkspacePage(page)
-    await page.goto(`/projects/${TEST_PROJECT_ID}`)
+    await goto(page, `/projects/${TEST_PROJECT_ID}`)
     await page.waitForLoadState('domcontentloaded')
 
     const addButton = projectPage.getAddDirectoryButton()

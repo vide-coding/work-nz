@@ -1,5 +1,6 @@
 import { test, expect, Page } from '@playwright/test'
 import { createProjectWorkspacePage, ProjectWorkspacePage } from '../page-objects'
+import { goto } from '../utils/url-helper'
 import {
   KNOWN_NON_CRITICAL_ERRORS,
   setupConsoleErrorListener,
@@ -41,7 +42,7 @@ test.describe('File Module View', () => {
    */
   test.describe('Page Load', () => {
     test('should load project workspace page', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
       await page.waitForTimeout(1000)
 
@@ -56,7 +57,7 @@ test.describe('File Module View', () => {
    */
   test.describe('File Module Toolbar', () => {
     test('should display file module toolbar when visible', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
       await page.waitForTimeout(500)
 
@@ -67,7 +68,7 @@ test.describe('File Module View', () => {
     })
 
     test('should have back button when in subdirectory', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
       await page.waitForTimeout(500)
 
@@ -80,7 +81,7 @@ test.describe('File Module View', () => {
     })
 
     test('should have new file and folder buttons', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
       await page.waitForTimeout(500)
 
@@ -95,7 +96,7 @@ test.describe('File Module View', () => {
     })
 
     test('should have view toggle buttons', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
       await page.waitForTimeout(500)
 
@@ -120,7 +121,7 @@ test.describe('File Module View', () => {
    */
   test.describe('File Module Content', () => {
     test('should display grid view when visible', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
       await page.waitForTimeout(500)
 
@@ -133,7 +134,7 @@ test.describe('File Module View', () => {
     })
 
     test('should display list view when selected', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
       await page.waitForTimeout(500)
 
@@ -158,7 +159,7 @@ test.describe('File Module View', () => {
     })
 
     test('should display empty state when no files', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
       await page.waitForTimeout(500)
 
@@ -176,7 +177,7 @@ test.describe('File Module View', () => {
    */
   test.describe('Create Folder Dialog', () => {
     test('should open create folder dialog when button is clicked', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
       await page.waitForTimeout(500)
 
@@ -201,7 +202,7 @@ test.describe('File Module View', () => {
    */
   test.describe('Create File Dialog', () => {
     test('should open create file dialog when button is clicked', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
       await page.waitForTimeout(500)
 
@@ -226,7 +227,7 @@ test.describe('File Module View', () => {
    */
   test.describe('Console Errors', () => {
     test('should not have critical console errors on load', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
       await page.waitForTimeout(2000)
 
@@ -252,7 +253,7 @@ test.describe('File Module View - Navigation', () => {
 
   test('should navigate back to projects list', async ({ page }) => {
     const projPage = createProjectWorkspacePage(page)
-    await page.goto(`/projects/${TEST_PROJECT_ID}`)
+    await goto(page, `/projects/${TEST_PROJECT_ID}`)
     await page.waitForLoadState('domcontentloaded')
 
     const backButton = projPage.getGoBackButton()
@@ -266,7 +267,7 @@ test.describe('File Module View - Navigation', () => {
 
   test('should navigate to settings', async ({ page }) => {
     const projPage = createProjectWorkspacePage(page)
-    await page.goto(`/projects/${TEST_PROJECT_ID}`)
+    await goto(page, `/projects/${TEST_PROJECT_ID}`)
     await page.waitForLoadState('domcontentloaded')
 
     const settingsButton = projPage.getSettingsButton()
@@ -284,7 +285,7 @@ test.describe('File Module View - Navigation', () => {
  */
 test.describe('File Module View - i18n', () => {
   test('should display UI text correctly', async ({ page }) => {
-    await page.goto(`/projects/${TEST_PROJECT_ID}`)
+    await goto(page, `/projects/${TEST_PROJECT_ID}`)
     await page.waitForLoadState('domcontentloaded')
     await page.waitForTimeout(500)
 

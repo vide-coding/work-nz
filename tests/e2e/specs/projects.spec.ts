@@ -1,5 +1,6 @@
 import { test, expect, Page } from '@playwright/test'
 import { createProjectsPage, ProjectsPage } from '../page-objects'
+import { goto } from '../utils/url-helper'
 import {
   KNOWN_NON_CRITICAL_ERRORS,
   setupConsoleErrorListener,
@@ -287,7 +288,7 @@ test.describe('Projects Page - Navigation', () => {
   test.describe.configure({ mode: 'serial' })
 
   test('should navigate to workspace when clicking switch workspace', async ({ page }) => {
-    await page.goto('/projects')
+    await goto(page, '/projects')
     await page.waitForLoadState('domcontentloaded')
 
     const switchButton = page.getByRole('button', { name: /切换工作区|Switch Workspace/i })
@@ -297,7 +298,7 @@ test.describe('Projects Page - Navigation', () => {
   })
 
   test('should navigate to settings when clicking settings', async ({ page }) => {
-    await page.goto('/projects')
+    await goto(page, '/projects')
     await page.waitForLoadState('domcontentloaded')
 
     const settingsButton = page.getByRole('button', { name: '设置' }).or(page.getByRole('button', { name: 'Settings', exact: true }))
@@ -312,7 +313,7 @@ test.describe('Projects Page - Navigation', () => {
  */
 test.describe('Projects Page - i18n', () => {
   test('should display Chinese UI correctly', async ({ page }) => {
-    await page.goto('/projects')
+    await goto(page, '/projects')
     await page.waitForLoadState('domcontentloaded')
 
     // Wait for page to settle
@@ -324,7 +325,7 @@ test.describe('Projects Page - i18n', () => {
   })
 
   test('should display English UI correctly', async ({ page }) => {
-    await page.goto('/projects')
+    await goto(page, '/projects')
     await page.waitForLoadState('domcontentloaded')
 
     // Wait for page to settle

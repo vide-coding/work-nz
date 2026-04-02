@@ -1,5 +1,6 @@
 import { Page, Locator, expect } from '@playwright/test'
 import { BasePage, createBasePage } from './BasePage'
+import { BASE_URL } from '../utils/url-helper'
 
 /**
  * ProjectWorkspacePage - Page object for project workspace view
@@ -148,8 +149,16 @@ export class ProjectWorkspacePage {
     return this.page.locator('[role="dialog"]').filter({ hasText: /新建文件夹|New Folder|Create Folder/i }).first()
   }
 
+  getCreateDirectoryDialog(): Locator {
+    return this.getCreateFolderDialog()
+  }
+
   getCreateFileDialog(): Locator {
     return this.page.locator('[role="dialog"]').filter({ hasText: /新建文件|New File|Create File/i }).first()
+  }
+
+  getDirectoryNameInput(): Locator {
+    return this.page.locator('[role="dialog"] input[type="text"], [role="dialog"] input:not([type])').first()
   }
 
   getDeleteDialog(): Locator {
@@ -172,7 +181,7 @@ export class ProjectWorkspacePage {
 
   // Actions
   async goto(projectId: string) {
-    await this.page.goto(`/projects/${projectId}`)
+    await this.page.goto(`${BASE_URL}/projects/${projectId}`)
   }
 
   async waitForLoad() {

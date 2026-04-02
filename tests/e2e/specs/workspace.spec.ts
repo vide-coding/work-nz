@@ -1,9 +1,9 @@
 import { test, expect, Page } from '@playwright/test'
 import { createWorkspacePage, WorkspacePage } from '../page-objects'
+import { goto } from '../utils/url-helper'
 import {
   KNOWN_NON_CRITICAL_ERRORS,
   setupConsoleErrorListener,
-  mockWorkspaceApi,
 } from '../utils/tauri-mocks'
 
 /**
@@ -301,7 +301,7 @@ test.describe('Workspace Page - i18n', () => {
   test.describe.configure({ mode: 'parallel' })
 
   test('should display Chinese UI correctly', async ({ page }) => {
-    await page.goto('/workspace')
+    await goto(page, '/workspace')
     await page.waitForLoadState('domcontentloaded')
 
     // Check Chinese or English heading is visible (depends on default locale)
@@ -310,7 +310,7 @@ test.describe('Workspace Page - i18n', () => {
   })
 
   test('should display English UI correctly', async ({ page }) => {
-    await page.goto('/workspace')
+    await goto(page, '/workspace')
     await page.waitForLoadState('domcontentloaded')
 
     // Check heading is visible
@@ -333,7 +333,7 @@ test.describe('Workspace Page - Responsive', () => {
     test(`should render correctly at ${viewport.name} (${viewport.width}x${viewport.height})`, async ({ page }) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height })
 
-      await page.goto('/workspace')
+      await goto(page, '/workspace')
       await page.waitForLoadState('domcontentloaded')
 
       // Main content should be visible

@@ -1,5 +1,6 @@
 import { Page, Locator, expect } from '@playwright/test'
 import { BasePage, createBasePage } from './BasePage'
+import { BASE_URL } from '../utils/url-helper'
 
 /**
  * SettingsPage - Page object for settings views
@@ -60,11 +61,11 @@ export class SettingsPage {
 
   // Actions
   async gotoGlobal() {
-    await this.page.goto('/settings/global')
+    await this.page.goto(`${BASE_URL}/settings/global`)
   }
 
   async gotoWorkspace() {
-    await this.page.goto('/settings/workspace')
+    await this.page.goto(`${BASE_URL}/settings/workspace`)
   }
 
   async waitForLoad() {

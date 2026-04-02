@@ -1,5 +1,6 @@
 import { Page, Locator, expect } from '@playwright/test'
 import { BasePage, createBasePage } from './BasePage'
+import { BASE_URL } from '../utils/url-helper'
 
 /**
  * ProjectsPage - Page object for project list view
@@ -95,7 +96,7 @@ export class ProjectsPage {
 
   // Actions
   async goto() {
-    await this.page.goto('/projects')
+    await this.page.goto(`${BASE_URL}/projects`)
   }
 
   async waitForLoad() {

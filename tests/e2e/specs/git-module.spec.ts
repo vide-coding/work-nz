@@ -1,5 +1,6 @@
 import { test, expect, Page } from '@playwright/test'
 import { createProjectWorkspacePage, ProjectWorkspacePage } from '../page-objects'
+import { goto } from '../utils/url-helper'
 import {
   KNOWN_NON_CRITICAL_ERRORS,
   setupConsoleErrorListener,
@@ -41,7 +42,7 @@ test.describe('Git Module View', () => {
    */
   test.describe('Page Load', () => {
     test('should load project workspace page', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
       await page.waitForTimeout(1000)
 
@@ -51,7 +52,7 @@ test.describe('Git Module View', () => {
     })
 
     test('should display project title when project exists', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
 
       const title = projectPage.getProjectTitle()
@@ -69,7 +70,7 @@ test.describe('Git Module View', () => {
    */
   test.describe('Git Module Header', () => {
     test('should have header controls when git module is active', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
       await page.waitForTimeout(500)
 
@@ -88,7 +89,7 @@ test.describe('Git Module View', () => {
     })
 
     test('should have git module title when visible', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
       await page.waitForTimeout(500)
 
@@ -106,7 +107,7 @@ test.describe('Git Module View', () => {
    */
   test.describe('Clone Repository Dialog', () => {
     test('should open clone dialog when clone button is clicked', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
       await page.waitForTimeout(500)
 
@@ -126,7 +127,7 @@ test.describe('Git Module View', () => {
     })
 
     test('should have URL input in clone dialog', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
       await page.waitForTimeout(500)
 
@@ -152,7 +153,7 @@ test.describe('Git Module View', () => {
    */
   test.describe('Refresh and Scan', () => {
     test('should have scan button', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
       await page.waitForTimeout(500)
 
@@ -165,7 +166,7 @@ test.describe('Git Module View', () => {
     })
 
     test('should have refresh button', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
       await page.waitForTimeout(500)
 
@@ -183,7 +184,7 @@ test.describe('Git Module View', () => {
    */
   test.describe('Console Errors', () => {
     test('should not have critical console errors on load', async ({ page }) => {
-      await page.goto(`/projects/${TEST_PROJECT_ID}`)
+      await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')
       await page.waitForTimeout(2000)
 
@@ -209,7 +210,7 @@ test.describe('Git Module View - Navigation', () => {
 
   test('should navigate back to projects list', async ({ page }) => {
     const projPage = createProjectWorkspacePage(page)
-    await page.goto(`/projects/${TEST_PROJECT_ID}`)
+    await goto(page, `/projects/${TEST_PROJECT_ID}`)
     await page.waitForLoadState('domcontentloaded')
 
     const backButton = projPage.getGoBackButton()
@@ -223,7 +224,7 @@ test.describe('Git Module View - Navigation', () => {
 
   test('should navigate to settings', async ({ page }) => {
     const projPage = createProjectWorkspacePage(page)
-    await page.goto(`/projects/${TEST_PROJECT_ID}`)
+    await goto(page, `/projects/${TEST_PROJECT_ID}`)
     await page.waitForLoadState('domcontentloaded')
 
     const settingsButton = projPage.getSettingsButton()
@@ -241,7 +242,7 @@ test.describe('Git Module View - Navigation', () => {
  */
 test.describe('Git Module View - i18n', () => {
   test('should display UI text correctly', async ({ page }) => {
-    await page.goto(`/projects/${TEST_PROJECT_ID}`)
+    await goto(page, `/projects/${TEST_PROJECT_ID}`)
     await page.waitForLoadState('domcontentloaded')
     await page.waitForTimeout(500)
 

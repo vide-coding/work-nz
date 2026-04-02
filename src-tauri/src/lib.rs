@@ -11,11 +11,10 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_devtools::init());
 
-    // Initialize webdriver plugin only in debug builds (E2E testing)
-    #[cfg(debug_assertions)]
-    {
-        builder = builder.plugin(tauri_plugin_webdriver::init());
-    }
+    // Initialize webdriver plugin for E2E testing
+    // The --webdriver-port flag is only recognized when this plugin is registered.
+    // Enable in both debug and release so tests can use the release build.
+    builder = builder.plugin(tauri_plugin_webdriver::init());
 
     builder.invoke_handler(tauri::generate_handler![
             // Workspace commands

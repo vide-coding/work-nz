@@ -1,5 +1,6 @@
 import { test, expect, Page, Locator } from '@playwright/test'
 import { BasePage, createBasePage } from './BasePage'
+import { BASE_URL } from '../utils/url-helper'
 
 /**
  * WorkspacePage - Page object for workspace selection view
@@ -59,7 +60,7 @@ export class WorkspacePage {
 
   // Actions
   async goto() {
-    await this.page.goto('/workspace')
+    await this.page.goto(`${BASE_URL}/workspace`)
   }
 
   async waitForLoad() {

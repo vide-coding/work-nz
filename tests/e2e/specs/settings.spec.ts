@@ -1,5 +1,6 @@
 import { test, expect, Page } from '@playwright/test'
 import { createSettingsPage, SettingsPage } from '../page-objects'
+import { goto } from '../utils/url-helper'
 import {
   KNOWN_NON_CRITICAL_ERRORS,
   setupConsoleErrorListener,
@@ -130,7 +131,7 @@ test.describe('Settings Page', () => {
       await settingsPage.waitForLoad()
       await expect(page).toHaveURL(/\/settings\/global/)
 
-      await page.goto('/settings/workspace')
+      await goto(page, '/settings/workspace')
       await settingsPage.waitForLoad()
       await expect(page).toHaveURL(/\/settings\/workspace/)
     })
@@ -171,7 +172,7 @@ test.describe('Settings Page', () => {
  */
 test.describe('Settings Page - Theme Persistence', () => {
   test('should apply theme immediately when changed', async ({ page }) => {
-    await page.goto('/settings/global')
+    await goto(page, '/settings/global')
     await page.waitForLoadState('domcontentloaded')
 
     const themeSelect = page.locator('select').first()
@@ -204,7 +205,7 @@ test.describe('Settings Page - Theme Persistence', () => {
  */
 test.describe('Settings Page - i18n', () => {
   test('should display Chinese UI correctly', async ({ page }) => {
-    await page.goto('/settings/global')
+    await goto(page, '/settings/global')
     await page.waitForLoadState('domcontentloaded')
 
     // Check that some UI element is visible
@@ -213,7 +214,7 @@ test.describe('Settings Page - i18n', () => {
   })
 
   test('should display English UI correctly', async ({ page }) => {
-    await page.goto('/settings/global')
+    await goto(page, '/settings/global')
     await page.waitForLoadState('domcontentloaded')
 
     // Check that some UI element is visible

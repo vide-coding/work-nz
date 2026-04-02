@@ -1,123 +1,139 @@
-import { defineConfig, devices } from '@playwright/test'
-import path from 'node:path'
+import { defineConfig } from '@playwright/test'
+import * as path from 'node:path'
+import * as fs from 'node:fs'
+import { fileURLToPath } from 'node:url'
 
 /**
- * Playwright Configuration for Tauri E2E Tests
+ * Tauri WebDriver E2E Test Configuration
  *
- * This configuration is designed for testing Tauri 2.0 desktop applications
- * using Playwright's webview support.
+ * Follows the official Tauri 2.0 WebDriver testing approach:
+ * https://v2.tauri.app/develop/tests/webdriver/
  *
- * Key features:
- * - Tests run against the Tauri webview (not a separate server)
- * - Supports both headed and headless modes
- * - Proper timeout handling for Tauri operations
- * - Mock support for Rust backend commands
+ * How it works:
+ * 1. global-setup.ts launches the built Tauri app with TAURI_WEBDRIVER_PORT=9222
+ *    The tauri-plugin-webdriver registers an HTTP server implementing W3C WebDriver.
+ * 2. The WebDriver URL (http://127.0.0.1:9222) is written to .webdriver-url file.
+ * 3. Playwright connects to this URL using the `webDriver` option (W3C WebDriver protocol).
+ * 4. global-teardown.ts kills the app after tests complete.
+ *
+ * Prerequisites:
+ *   1. pnpm tauri build   # Build the Tauri application (includes webdriver plugin)
+ *   2. pnpm test:e2e      # Run the tests
  */
 
-export default defineConfig({
-  // Test directory - Playwright will discover all *.spec.ts files
-  testDir: './tests/e2e',
+// ============================================================================
+// ESM __dirname workaround
+// ============================================================================
 
-  // Test file patterns (relative to testDir)
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+// ============================================================================
+// WebDriver URL Resolution
+// ============================================================================
+
+/** File where the WebDriver HTTP URL is stored by global-setup.ts */
+const WEBDRIVER_URL_FILE = path.join(__dirname, '.webdriver-url')
+
+/**
+ * Read the stored WebDriver URL from the file written by globalSetup.
+ */
+function getStoredWebDriverUrl(): string | null {
+  try {
+    if (fs.existsSync(WEBDRIVER_URL_FILE)) {
+      const url = fs.readFileSync(WEBDRIVER_URL_FILE, 'utf8').trim()
+      if (url && url.startsWith('http://')) {
+        return url
+      }
+    }
+  } catch {
+    // Ignore
+  }
+  return null
+}
+
+// ============================================================================
+// Pre-flight checks
+// ============================================================================
+
+function checkTauriBuild(): void {
+  const exePath = path.join(__dirname, 'src-tauri/target/release/pm-app.exe')
+  const altPath = path.join(__dirname, 'src-tauri/target/release/pm_app.exe')
+
+  if (!fs.existsSync(exePath) && !fs.existsSync(altPath)) {
+    throw new Error(
+      `Tauri executable not found.\n` +
+      `Please run "pnpm tauri build" before running tests.\n` +
+      `Expected: ${exePath}`
+    )
+  }
+}
+
+try {
+  checkTauriBuild()
+} catch (e) {
+  console.warn('[playwright.config] Warning:', (e as Error).message)
+}
+
+// ============================================================================
+// Configuration
+// ============================================================================
+
+export default defineConfig({
+  testDir: './tests/e2e',
   testMatch: '**/*.spec.ts',
 
-  // Fully parallel within a single file, but files run sequentially
-  // This prevents state pollution between different test files
+  // Fully parallel within a file; files run sequentially to avoid state pollution
   fullyParallel: false,
-  // Use workers only for independent test files
   workers: process.env.CI ? 1 : undefined,
 
-  // Fail build on skipped tests (CI mode)
   forbidOnly: !!process.env.CI,
-
-  // Retry failed tests
   retries: process.env.CI ? 2 : 0,
 
-  // Reporter configuration
   reporter: [
-    ['html', { outputFolder: 'playwright-report' }],
+    ['html', { outputFolder: 'playwright-report', open: 'never' }],
     ['list'],
   ],
 
-  // Global timeout for all tests
-  timeout: 60 * 1000, // 60 seconds
+  timeout: 60_000,
+  expect: { timeout: 10_000 },
+  actionTimeout: 10_000,
+  navigationTimeout: 30_000,
 
-  // Expect timeout (for assertions)
-  expect: {
-    timeout: 10 * 1000, // 10 seconds
-  },
+  // global-setup.ts launches the Tauri app and writes the WebDriver URL
+  globalSetup: path.join(__dirname, 'tests/e2e/global-setup.ts'),
 
-  // Playwright hooks - runs before each test
-  globalSetup: undefined,
+  // global-teardown.ts kills the app after tests
+  globalTeardown: path.join(__dirname, 'tests/e2e/global-teardown.ts'),
 
-  // Playwright hooks - runs after each test
-  globalTeardown: undefined,
-
-  // Use baseURL from environment or default
-  baseURL: process.env.BASE_URL || 'http://localhost:1420',
-
-  // Default viewport
   viewport: { width: 1280, height: 720 },
 
-  // Action timeout - timeout for individual Playwright actions
-  actionTimeout: 10 * 1000, // 10 seconds
+  // Base URL for the Tauri app — the webview serves at tauri.localhost
+  // When Playwright calls page.goto('/projects'), it resolves to
+  // http://tauri.localhost/projects, which the WebDriver navigates to.
+  baseURL: 'http://localhost:1420',
 
-  // Navigation timeout - timeout for page navigation
-  navigationTimeout: 30 * 1000, // 30 seconds
-
-  // Browser testing configuration
+  // Browser projects — connect to the running Tauri app via W3C WebDriver
   projects: [
     {
       name: 'chromium',
       use: {
-        // Use Playwright's bundled Chromium (no Chrome installation required)
         browserName: 'chromium',
-        // Capture trace on first retry
+
+        // Connect to Tauri app via W3C WebDriver HTTP server
+        // The tauri-plugin-webdriver serves HTTP at port 9222
+        // Playwright 1.47+ supports external WebDriver connections via this option
+        webDriver: {
+          url: getStoredWebDriverUrl() ?? 'http://127.0.0.1:9222',
+        },
+
         trace: 'on-first-retry',
-        // Screenshot on failure
         screenshot: 'only-on-failure',
+
+        // Headless by default; use --headed flag to see the window
         headless: true,
       },
     },
   ],
 
-  // WebServer configuration for development
-  // For Tauri apps, use 'pnpm tauri dev' (requires compiled Rust backend)
-  // For frontend-only testing, use 'pnpm dev'
-  webServer: {
-    // Command to start dev server (use 'pnpm dev' for frontend-only)
-    command: 'pnpm dev',
-    // Port to wait for
-    port: 1420,
-    // Timeout for server to start
-    timeout: 120 * 1000, // 2 minutes
-    // Reuse existing server if available (skip restart)
-    reuseExistingServer: !process.env.CI,
-    // Redirect output to avoid noise in test output
-    stdout: 'pipe',
-    stderr: 'pipe',
-    // Environment variables
-    env: {
-      NODE_ENV: 'test',
-    },
-  },
-
-  // Output directory for test artifacts
   outputDir: 'test-results',
-
-  // Annotations - tags for tests
-  _tag: ['tauri', 'e2e', 'desktop'],
 })
-
-/**
- * Environment Variables
- *
- * CI: Set to true when running in CI/CD environment
- * BASE_URL: Override base URL for testing (default: http://localhost:1420)
- * TAURI_DEBUG: Enable debug mode for Tauri
- * PLAYWRIGHT_TIMEOUT: Override default timeout
- *
- * Example:
- *   CI=true pnpm test:e2e
- *   BASE_URL=http://localhost:3000 pnpm test:e2e
- */

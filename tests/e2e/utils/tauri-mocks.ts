@@ -1,20 +1,85 @@
 import { Page, expect } from '@playwright/test'
-import type {
-  Project,
-  GitRepository,
-  GitRepoStatus,
-  FileNode,
-  WorkspaceInfo,
-  WorkspaceSettings,
-  Module,
-  Directory,
-} from '@/@types'
+
+// Global type augmentations for Tauri test globals
+// These are used by deprecated mock functions
+declare global {
+  interface Window {
+    __TAURI__?: {
+      core?: { invoke?: (cmd: string, args?: Record<string, unknown>) => unknown }
+      event?: { listen?: () => Promise<() => void>; emit?: () => Promise<void> }
+    }
+    __TAURI_INTERNALS__?: { invoke?: (cmd: string, args?: Record<string, unknown>) => unknown }
+  }
+}
+
+// Note: These types are duplicated from the app's type definitions to avoid
+// the @/@types import path in E2E tests. Since mocking is deprecated,
+// these are only used in the legacy mock functions kept for reference.
+/** @deprecated - Use real Tauri backend instead */
+interface WorkspaceInfo {
+  path: string
+  dbPath?: string
+  alias?: string
+  lastOpenedAt?: string
+}
+/** @deprecated */
+interface WorkspaceSettings {
+  themeMode?: string
+}
+/** @deprecated */
+interface Project {
+  id: string
+  name: string
+  description?: string
+  projectPath: string
+  visible?: boolean
+  updatedAt?: string
+}
+/** @deprecated */
+interface GitRepository {
+  id: string
+  projectId: string
+  name: string
+  path: string
+  folder?: string
+  remoteUrl?: string
+  branch?: string
+  description?: string
+}
+/** @deprecated */
+interface FileNode {
+  path: string
+  name: string
+  kind: string
+  children?: FileNode[]
+}
+/** @deprecated */
+interface Module {
+  id: string
+  key: string
+  name: string
+  description: string
+  version: string
+  capabilities?: string[]
+  configSchema?: Record<string, unknown>
+  defaultConfig?: Record<string, unknown>
+  icon?: string
+  isBuiltIn?: boolean
+}
 
 /**
- * Tauri Mock Utilities
+ * Tauri Test Utilities
  *
- * Provides comprehensive mocking for Tauri 2.0 invoke commands.
- * Intercepts the @tauri-apps/api/core invoke function in the browser.
+ * DEPRECATED: This module previously provided browser-side Tauri API mocking.
+ * Since migrating to official Tauri WebDriver testing, mocking is no longer used.
+ * Tests now run against the real Tauri application via CDP (Chrome DevTools Protocol).
+ *
+ * Kept for:
+ * - KNOWN_NON_CRITICAL_ERRORS: list of known Tauri error patterns for console monitoring
+ * - setupConsoleErrorListener(): utility for capturing console errors during tests
+ *
+ * The mockTauriInvoke, mockWorkspaceApi, mockProjectApi functions are NO LONGER USED.
+ * They remain here for reference only and will be removed in a future update.
  */
 
 // ============================================================================
@@ -159,17 +224,30 @@ export const DEFAULT_MOCK_DIRECTORY: MockDirectoryData = {
 // Known non-critical error patterns
 // ============================================================================
 
+// Known non-critical error patterns for real Tauri backend testing
+// These are errors that are expected/handled gracefully and don't indicate test failure
 export const KNOWN_NON_CRITICAL_ERRORS = [
-  /Cannot read properties of undefined.*invoke/,
-  /Cannot read properties of undefined.*metadata/,
-  /Failed to load recent workspaces/,
-  /Failed to load settings/,
-  /Failed to update window title/,
-  /Failed to load.*project/,
-  /Failed to load.*workspace/,
-  /invoke.*error/,
-  /Tauri.*error/,
-  /network.*error/i,
+  // Tauri invoke command errors (app gracefully handles these)
+  /invoke.*error/i,
+  /Failed to invoke command/i,
+  // File system errors (may occur when files don't exist)
+  /ENOENT|no such file|file not found/i,
+  // Git operation errors (expected when no git repos exist)
+  /git.*error|fatal:.*not a git/i,
+  // Network errors (may occur in offline scenarios)
+  /network.*error|fetch.*failed/i,
+  // Tauri plugin errors (handled by the app)
+  /Tauri.*error|plugin.*error/i,
+  // Dialog/file picker errors (user cancelled, etc.)
+  /dialog.*cancel|user.*cancel/i,
+  // Database errors
+  /database.*error|SQL.*error/i,
+  // Permission errors (common in desktop apps)
+  /permission.*denied|access.*denied/i,
+  // Window errors
+  /Failed to update window title/i,
+  // Database not found (app creates it automatically)
+  /database.*not found/i,
 ]
 
 // ============================================================================
@@ -225,11 +303,11 @@ export function setupConsoleErrorListener(page: Page): {
 /**
  * Register a mock for a specific Tauri command
  */
-export function mockTauriCommand(
+export async function mockTauriCommand(
   page: Page,
   command: string,
   handler: MockHandler
-): () => void {
+): Promise<() => void> {
   commandMocks.set(command, handler)
 
   // Inject mock into page if not already done
@@ -265,7 +343,7 @@ export function mockTauriCommand(
     }
 
     (window as any).__TAURI_MOCKS__.commands.set(command, handler)
-  })
+  }) as unknown as () => void
 }
 
 /**
@@ -349,7 +427,7 @@ export async function mockTauriInvoke(
 
       // Also expose on __TAURI_INTERNALS__ if used
       window.__TAURI_INTERNALS__ = {
-        invoke: window.__TAURI__.core.invoke,
+        invoke: window.__TAURI__?.core?.invoke,
       }
     },
     { mocks }
