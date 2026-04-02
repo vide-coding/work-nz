@@ -1,7 +1,7 @@
 use crate::commands::project::project_get;
 use crate::commands::workspace::load_global_settings;
-use crate::db::get_db;
 use crate::types::*;
+use crate::with_db;
 use chrono::Utc;
 use rusqlite::params;
 use std::fs;
@@ -12,9 +12,7 @@ use which::which;
 /// 列出所有目录类型
 #[tauri::command]
 pub fn dir_types_list() -> Result<Vec<DirectoryType>, String> {
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
-
+    with_db!(conn, {
     let mut stmt = conn
         .prepare("SELECT id, kind, name, category, sort_order, created_at, updated_at FROM directory_types ORDER BY sort_order")
         .map_err(|e| format!("查询失败: {}", e))?;
@@ -45,6 +43,7 @@ pub fn dir_types_list() -> Result<Vec<DirectoryType>, String> {
         .map_err(|e| format!("读取数据失败: {}", e))?;
 
     Ok(types)
+})
 }
 
 /// 创建自定义目录类型
@@ -69,33 +68,30 @@ pub fn dir_type_create_custom(input: serde_json::Value) -> Result<DirectoryType,
     let id = uuid::Uuid::new_v4().to_string();
     let now = Utc::now().to_rfc3339();
 
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
+    with_db!(conn, {
+        conn.execute(
+            "INSERT INTO directory_types (id, kind, name, category, sort_order, created_at, updated_at)
+             VALUES (?1, 'custom', ?2, ?3, ?4, ?5, ?6)",
+            params![id, name, category, sort_order, now, now],
+        )
+        .map_err(|e| format!("创建目录类型失败: {}", e))?;
 
-    conn.execute(
-        "INSERT INTO directory_types (id, kind, name, category, sort_order, created_at, updated_at)
-         VALUES (?1, 'custom', ?2, ?3, ?4, ?5, ?6)",
-        params![id, name, category, sort_order, now, now],
-    )
-    .map_err(|e| format!("创建目录类型失败: {}", e))?;
-
-    Ok(DirectoryType {
-        id,
-        kind: DirectoryTypeKind::Custom,
-        name,
-        category,
-        sort_order,
-        created_at: now.clone(),
-        updated_at: now,
+        Ok(DirectoryType {
+            id,
+            kind: DirectoryTypeKind::Custom,
+            name,
+            category,
+            sort_order,
+            created_at: now.clone(),
+            updated_at: now,
+        })
     })
 }
 
 /// 更新目录类型
 #[tauri::command]
 pub fn dir_type_update(id: String, patch: serde_json::Value) -> Result<DirectoryType, String> {
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
-
+    with_db!(conn, {
     // 获取当前类型
     let (old_name, old_category, old_sort_order): (String, Option<String>, i32) = conn
         .query_row(
@@ -157,14 +153,13 @@ pub fn dir_type_update(id: String, patch: serde_json::Value) -> Result<Directory
         created_at: now.clone(), // 不返回创建时间
         updated_at: now,
     })
+})
 }
 
 /// 列出项目的所有目录
 #[tauri::command]
 pub fn project_dirs_list(project_id: String) -> Result<Vec<ProjectDirectory>, String> {
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
-
+    with_db!(conn, {
     let mut stmt = conn
         .prepare(
             "SELECT id, project_id, dir_type_id, relative_path, created_at, updated_at
@@ -188,6 +183,7 @@ pub fn project_dirs_list(project_id: String) -> Result<Vec<ProjectDirectory>, St
         .map_err(|e| format!("读取数据失败: {}", e))?;
 
     Ok(dirs)
+})
 }
 
 /// 创建或更新项目目录
@@ -220,52 +216,51 @@ pub fn project_dir_create_or_update(
 
     let now = Utc::now().to_rfc3339();
 
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
+    with_db!(conn, {
+        // 检查是否已存在
+        let existing_id: Option<String> = conn
+            .query_row(
+                "SELECT id FROM project_directories WHERE project_id = ?1 AND dir_type_id = ?2",
+                params![project_id, dir_type_id],
+                |row| row.get(0),
+            )
+            .ok();
 
-    // 检查是否已存在
-    let existing_id: Option<String> = conn
-        .query_row(
-            "SELECT id FROM project_directories WHERE project_id = ?1 AND dir_type_id = ?2",
-            params![project_id, dir_type_id],
-            |row| row.get(0),
-        )
-        .ok();
+        if let Some(id) = existing_id {
+            conn.execute(
+                "UPDATE project_directories SET relative_path = ?1, updated_at = ?2 WHERE id = ?3",
+                params![relative_path, now, id],
+            )
+            .map_err(|e| format!("更新目录失败: {}", e))?;
 
-    if let Some(id) = existing_id {
-        conn.execute(
-            "UPDATE project_directories SET relative_path = ?1, updated_at = ?2 WHERE id = ?3",
-            params![relative_path, now, id],
-        )
-        .map_err(|e| format!("更新目录失败: {}", e))?;
+            Ok(ProjectDirectory {
+                id,
+                project_id,
+                dir_type_id,
+                relative_path,
+                created_at: now.clone(),
+                updated_at: now,
+            })
+        } else {
+            let id = uuid::Uuid::new_v4().to_string();
 
-        Ok(ProjectDirectory {
-            id,
-            project_id,
-            dir_type_id,
-            relative_path,
-            created_at: now.clone(),
-            updated_at: now,
-        })
-    } else {
-        let id = uuid::Uuid::new_v4().to_string();
+            conn.execute(
+                "INSERT INTO project_directories (id, project_id, dir_type_id, relative_path, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                params![id, project_id, dir_type_id, relative_path, now, now],
+            )
+            .map_err(|e| format!("创建目录失败: {}", e))?;
 
-        conn.execute(
-            "INSERT INTO project_directories (id, project_id, dir_type_id, relative_path, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-            params![id, project_id, dir_type_id, relative_path, now, now],
-        )
-        .map_err(|e| format!("创建目录失败: {}", e))?;
-
-        Ok(ProjectDirectory {
-            id,
-            project_id,
-            dir_type_id,
-            relative_path,
-            created_at: now.clone(),
-            updated_at: now,
-        })
-    }
+            Ok(ProjectDirectory {
+                id,
+                project_id,
+                dir_type_id,
+                relative_path,
+                created_at: now.clone(),
+                updated_at: now,
+            })
+        }
+    })
 }
 
 /// 检测文件预览类型
@@ -435,10 +430,9 @@ pub fn ide_preview(
     repo_id: String,
     provided_ide: Option<IdeConfig>,
 ) -> Result<Option<IdeConfig>, String> {
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
-
-    Ok(get_effective_ide(conn, &repo_id, provided_ide))
+    with_db!(conn, {
+        Ok(get_effective_ide(conn, &repo_id, provided_ide))
+    })
 }
 
 /// 用 IDE 打开仓库
@@ -447,188 +441,184 @@ pub fn ide_open_repo(
     repo_id: String,
     provided_ide: Option<IdeConfig>,
 ) -> Result<serde_json::Value, String> {
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
-
-    let path: String = conn
-        .query_row(
-            "SELECT path FROM git_repositories WHERE id = ?1",
-            params![repo_id],
-            |row| row.get(0),
-        )
-        .map_err(|e| format!("仓库不存在: {}", e))?;
-
-    // 获取有效的 IDE 配置（优先级：仓库 > 工作区 > 全局）
-    let ide_config = get_effective_ide(conn, &repo_id, provided_ide)
-        .ok_or_else(|| "未配置 IDE，请先在设置中配置默认 IDE".to_string())?;
-
-    // 验证 IDE 可执行文件存在（支持完整路径或 PATH 中的命令）
-    let ide_path = if std::path::Path::new(&ide_config.command).exists() {
-        // 如果是完整路径且文件存在，直接使用
-        std::path::PathBuf::from(&ide_config.command)
-    } else {
-        // 否则尝试在 PATH 中查找
-        which(&ide_config.command).map_err(|_| {
-            format!(
-                "IDE 可执行文件不存在: {}，请确保已安装并在 PATH 中",
-                ide_config.command
+    with_db!(conn, {
+        let path: String = conn
+            .query_row(
+                "SELECT path FROM git_repositories WHERE id = ?1",
+                params![repo_id],
+                |row| row.get(0),
             )
-        })?
-    };
+            .map_err(|e| format!("仓库不存在: {}", e))?;
 
-    // 启动 IDE（在新窗口中打开，不复用已有窗口）
-    #[cfg(windows)]
-    {
-        let mut cmd = Command::new(&ide_path);
-        // 移除 --reuse-window 参数，让 IDE 在新窗口中打开
-        if let Some(args) = ide_config.args {
-            // 过滤掉 --reuse-window 参数
-            let filtered_args: Vec<String> = args
-                .into_iter()
-                .filter(|arg| arg != "--reuse-window")
-                .collect();
-            cmd.args(&filtered_args);
-        }
-        cmd.arg(&path);
+        // 获取有效的 IDE 配置（优先级：仓库 > 工作区 > 全局）
+        let ide_config = get_effective_ide(conn, &repo_id, provided_ide)
+            .ok_or_else(|| "未配置 IDE，请先在设置中配置默认 IDE".to_string())?;
 
-        match cmd.spawn() {
-            Ok(_) => Ok(
-                serde_json::json!({ "ok": true, "message": format!("已使用 {} 打开", ide_config.name) }),
-            ),
-            Err(e) => {
-                Ok(serde_json::json!({ "ok": false, "message": format!("启动 IDE 失败: {}", e) }))
+        // 验证 IDE 可执行文件存在（支持完整路径或 PATH 中的命令）
+        let ide_path = if std::path::Path::new(&ide_config.command).exists() {
+            // 如果是完整路径且文件存在，直接使用
+            std::path::PathBuf::from(&ide_config.command)
+        } else {
+            // 否则尝试在 PATH 中查找
+            which(&ide_config.command).map_err(|_| {
+                format!(
+                    "IDE 可执行文件不存在: {}，请确保已安装并在 PATH 中",
+                    ide_config.command
+                )
+            })?
+        };
+
+        // 启动 IDE（在新窗口中打开，不复用已有窗口）
+        #[cfg(windows)]
+        {
+            let mut cmd = Command::new(&ide_path);
+            // 移除 --reuse-window 参数，让 IDE 在新窗口中打开
+            if let Some(args) = ide_config.args {
+                // 过滤掉 --reuse-window 参数
+                let filtered_args: Vec<String> = args
+                    .into_iter()
+                    .filter(|arg| arg != "--reuse-window")
+                    .collect();
+                cmd.args(&filtered_args);
+            }
+            cmd.arg(&path);
+
+            match cmd.spawn() {
+                Ok(_) => Ok(
+                    serde_json::json!({ "ok": true, "message": format!("已使用 {} 打开", ide_config.name) }),
+                ),
+                Err(e) => {
+                    Ok(serde_json::json!({ "ok": false, "message": format!("启动 IDE 失败: {}", e) }))
+                }
             }
         }
-    }
 
-    #[cfg(not(windows))]
-    {
-        Ok(serde_json::json!({ "ok": false, "message": "不支持的平台" }))
-    }
+        #[cfg(not(windows))]
+        {
+            Ok(serde_json::json!({ "ok": false, "message": "不支持的平台" }))
+        }
+    })
 }
 
 /// 用终端打开仓库目录
 #[tauri::command]
 pub fn open_in_terminal(repo_id: String) -> Result<serde_json::Value, String> {
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
+    with_db!(conn, {
+        let path: String = conn
+            .query_row(
+                "SELECT path FROM git_repositories WHERE id = ?1",
+                params![repo_id],
+                |row| row.get(0),
+            )
+            .map_err(|e| format!("仓库不存在: {}", e))?;
 
-    let path: String = conn
-        .query_row(
-            "SELECT path FROM git_repositories WHERE id = ?1",
-            params![repo_id],
-            |row| row.get(0),
-        )
-        .map_err(|e| format!("仓库不存在: {}", e))?;
+        // 检测并打开终端
+        #[cfg(windows)]
+        {
+            // 尝试多种终端命令
+            let terminal_commands = [
+                ("cmd", vec!["/c", "start", "cmd"]),
+                ("powershell", vec!["-NoExit", "-Command"]),
+                (
+                    "WindowsTerminal",
+                    vec!["nt", "--vertical-split", "--horizontal-split"],
+                ),
+                ("wt", vec!["nt", "--vertical-split", "--horizontal-split"]),
+            ];
 
-    // 检测并打开终端
-    #[cfg(windows)]
-    {
-        // 尝试多种终端命令
-        let terminal_commands = [
-            ("cmd", vec!["/c", "start", "cmd"]),
-            ("powershell", vec!["-NoExit", "-Command"]),
-            (
-                "WindowsTerminal",
-                vec!["nt", "--vertical-split", "--horizontal-split"],
-            ),
-            ("wt", vec!["nt", "--vertical-split", "--horizontal-split"]),
-        ];
+            let mut last_error = String::new();
 
-        let mut last_error = String::new();
-
-        for (cmd_name, args) in terminal_commands.iter() {
-            // 检查命令是否可用
-            if !is_command_available(cmd_name) {
-                continue;
-            }
-
-            let mut cmd = Command::new(cmd_name);
-            cmd.args(args);
-            cmd.current_dir(&path);
-
-            // 对于 powershell，需要添加 cd 命令
-            if *cmd_name == "powershell" {
-                cmd.arg(&format!("cd '{}'", path));
-            }
-
-            match cmd.spawn() {
-                Ok(_) => {
-                    return Ok(serde_json::json!({
-                        "ok": true,
-                        "message": format!("已在终端中打开 {}", path)
-                    }));
-                }
-                Err(e) => {
-                    last_error = format!("启动 {} 失败: {}", cmd_name, e);
+            for (cmd_name, args) in terminal_commands.iter() {
+                // 检查命令是否可用
+                if !is_command_available(cmd_name) {
                     continue;
                 }
+
+                let mut cmd = Command::new(cmd_name);
+                cmd.args(args);
+                cmd.current_dir(&path);
+
+                // 对于 powershell，需要添加 cd 命令
+                if *cmd_name == "powershell" {
+                    cmd.arg(&format!("cd '{}'", path));
+                }
+
+                match cmd.spawn() {
+                    Ok(_) => {
+                        return Ok(serde_json::json!({
+                            "ok": true,
+                            "message": format!("已在终端中打开 {}", path)
+                        }));
+                    }
+                    Err(e) => {
+                        last_error = format!("启动 {} 失败: {}", cmd_name, e);
+                        continue;
+                    }
+                }
+            }
+
+            // 如果所有命令都失败，尝试使用 Windows 的 start 命令
+            let mut cmd = Command::new("cmd");
+            cmd.args(&["/c", "start", "cmd"]);
+            cmd.current_dir(&path);
+
+            match cmd.spawn() {
+                Ok(_) => Ok(serde_json::json!({
+                    "ok": true,
+                    "message": format!("已在终端中打开 {}", path)
+                })),
+                Err(e) => Ok(serde_json::json!({
+                    "ok": false,
+                    "message": format!("打开终端失败: {}，原始错误: {}", e, last_error)
+                })),
             }
         }
 
-        // 如果所有命令都失败，尝试使用 Windows 的 start 命令
-        let mut cmd = Command::new("cmd");
-        cmd.args(&["/c", "start", "cmd"]);
-        cmd.current_dir(&path);
+        #[cfg(not(windows))]
+        {
+            // Unix 系统使用 x-terminal-emulator 或 gnome-terminal 等
+            let terminal_commands = [
+                "x-terminal-emulator",
+                "gnome-terminal",
+                "konsole",
+                "xfce4-terminal",
+                "xterm",
+            ];
 
-        match cmd.spawn() {
-            Ok(_) => Ok(serde_json::json!({
-                "ok": true,
-                "message": format!("已在终端中打开 {}", path)
-            })),
-            Err(e) => Ok(serde_json::json!({
+            for cmd_name in terminal_commands.iter() {
+                if !is_command_available(cmd_name) {
+                    continue;
+                }
+
+                let mut cmd = Command::new(cmd_name);
+                cmd.current_dir(&path);
+
+                match cmd.spawn() {
+                    Ok(_) => {
+                        return Ok(serde_json::json!({
+                            "ok": true,
+                            "message": format!("已在终端中打开 {}", path)
+                        }));
+                    }
+                    Err(e) => {
+                        continue;
+                    }
+                }
+            }
+
+            Ok(serde_json::json!({
                 "ok": false,
-                "message": format!("打开终端失败: {}，原始错误: {}", e, last_error)
-            })),
+                "message": "未找到可用的终端模拟器"
+            }))
         }
-    }
-
-    #[cfg(not(windows))]
-    {
-        // Unix 系统使用 x-terminal-emulator 或 gnome-terminal 等
-        let terminal_commands = [
-            "x-terminal-emulator",
-            "gnome-terminal",
-            "konsole",
-            "xfce4-terminal",
-            "xterm",
-        ];
-
-        for cmd_name in terminal_commands.iter() {
-            if !is_command_available(cmd_name) {
-                continue;
-            }
-
-            let mut cmd = Command::new(cmd_name);
-            cmd.current_dir(&path);
-
-            match cmd.spawn() {
-                Ok(_) => {
-                    return Ok(serde_json::json!({
-                        "ok": true,
-                        "message": format!("已在终端中打开 {}", path)
-                    }));
-                }
-                Err(e) => {
-                    continue;
-                }
-            }
-        }
-
-        Ok(serde_json::json!({
-            "ok": false,
-            "message": "未找到可用的终端模拟器"
-        }))
-    }
+    })
 }
 
 /// 自动扫描并同步项目目录到数据库
 /// 当进入代码仓库页时，如果文件目录中有数据库中不存在的目录，自动导入到数据库中
 #[tauri::command]
 pub fn project_dirs_sync_auto(project_id: String) -> Result<serde_json::Value, String> {
-    let db_guard = get_db().map_err(|e| format!("获取数据库失败：{}", e))?;
-    let conn = db_guard.as_ref().ok_or("数据库未初始化")?;
-
+    with_db!(conn, {
     // 先获取项目信息，避免多次获取锁
     let project: crate::types::Project = conn
         .query_row(
@@ -654,7 +644,7 @@ pub fn project_dirs_sync_auto(project_id: String) -> Result<serde_json::Value, S
 
     let project_path = Path::new(&project.project_path);
 
-    // 扫描 Git 仓库（复用已获取的项目信息和数据库连接）
+    // 扫描 Git 仓库（conn 已在 with_db 作用域内，可直接传递）
     let git_scanned: Vec<String> = match crate::commands::git::git_repo_scan_internal(
         conn,
         project_id.clone(),
@@ -740,4 +730,5 @@ pub fn project_dirs_sync_auto(project_id: String) -> Result<serde_json::Value, S
         "scanned": git_scanned,
         "synced": synced
     }))
+})
 }
