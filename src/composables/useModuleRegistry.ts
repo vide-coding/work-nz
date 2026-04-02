@@ -508,7 +508,7 @@ export function directoryHasCapability(
 /**
  * Helper function to get capabilities for a directory
  */
-export function getDirectoryCapabilities(directory: Directory): ModuleCapability[] {
+export function getModuleCapabilities(directory: Directory): ModuleCapability[] {
   if (!directory.moduleId) return []
   const module = moduleRegistry.get(directory.moduleId)
   return module?.capabilities ?? []

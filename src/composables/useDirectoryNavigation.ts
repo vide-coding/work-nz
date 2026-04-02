@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
 import { directoryApi, moduleApi } from './useApi'
-import { moduleRegistry } from './useModuleRegistry'
+import { moduleRegistry, getModuleCapabilities } from './useModuleRegistry'
 import type { Directory, Module, ModuleCapability } from '@/types'
 
 /**
@@ -55,14 +55,8 @@ export function useDirectoryNavigation(projectId: string) {
   }
 
   // Get module capabilities for a directory
-  function getDirectoryCapabilities(directory: Directory): ModuleCapability[] {
-    return getDirectoryCapabilitiesFromModule(directory)
-  }
-
-  function getDirectoryCapabilitiesFromModule(directory: Directory): ModuleCapability[] {
-    if (!directory.moduleId) return []
-    const module = moduleRegistry.get(directory.moduleId)
-    return module?.capabilities ?? []
+  function getCapabilities(directory: Directory): ModuleCapability[] {
+    return getModuleCapabilities(directory)
   }
 
   // Navigation items computed from directories
@@ -307,7 +301,7 @@ export function useDirectoryNavigation(projectId: string) {
     loadDirectories,
     loadModules,
     getDirectoryModule,
-    getDirectoryCapabilities,
+    getCapabilities,
     getDirectoriesForNav,
     selectDirectory,
     createDirectory,

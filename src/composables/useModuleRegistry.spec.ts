@@ -4,7 +4,7 @@ import {
   BUILTIN_MODULES,
   moduleRegistry,
   directoryHasCapability,
-  getDirectoryCapabilities,
+  getModuleCapabilities,
 } from './useModuleRegistry'
 import type { Module, Directory, ModuleCapability } from '@/types'
 
@@ -289,7 +289,7 @@ describe('useModuleRegistry', () => {
       })
     })
 
-    describe('getDirectoryCapabilities', () => {
+    describe('getModuleCapabilities', () => {
       it('should return module capabilities', () => {
         const directory = {
           id: '1',
@@ -303,7 +303,7 @@ describe('useModuleRegistry', () => {
           updatedAt: '',
         } as Directory
 
-        const capabilities = getDirectoryCapabilities(directory)
+        const capabilities = getModuleCapabilities(directory)
         expect(capabilities).toContain('git.clone')
         expect(capabilities).toContain('git.pull')
       })
@@ -320,7 +320,7 @@ describe('useModuleRegistry', () => {
           updatedAt: '',
         } as Directory
 
-        expect(getDirectoryCapabilities(directory)).toEqual([])
+        expect(getModuleCapabilities(directory)).toEqual([])
       })
     })
   })
