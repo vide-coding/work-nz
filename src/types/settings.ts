@@ -2,8 +2,9 @@
 
 import type { IdeConfig } from './index'
 import type { MarkdownThemeConfig } from './markdown'
+import type { LocaleCode } from './locale'
 
-export type LanguageCode = 'zh-CN' | 'en-US'
+export type { LocaleCode as LanguageCode } from './locale'
 
 // Re-export ThemeMode from index for convenience
 export type { ThemeMode } from './index'
@@ -16,7 +17,7 @@ export type FontSize = 'small' | 'medium' | 'large'
  */
 export type GlobalSettings = {
   themeMode: 'light' | 'dark' | 'system'
-  language: LanguageCode
+  language: LocaleCode
   fontSize: FontSize
   defaultIde?: IdeConfig
   markdownTheme?: MarkdownThemeConfig
@@ -32,15 +33,6 @@ export type WorkspaceSettingsOverride = {
   useGlobalLanguage: boolean
   useGlobalIde: boolean
   themeMode?: 'light' | 'dark' | 'system'
-  language?: LanguageCode
+  language?: LocaleCode
   defaultIde?: IdeConfig
-}
-
-/**
- * API response for global settings operations
- */
-export type GlobalSettingsResult = {
-  ok: boolean
-  settings?: GlobalSettings
-  error?: string
 }
