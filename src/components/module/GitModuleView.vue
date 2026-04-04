@@ -33,6 +33,7 @@ const error = ref('')
 let unlistenDirChange: UnlistenFn | null = null
 const watchingDirectory = ref(false)
 let currentWatchId: string | null = null
+let isCleaningUp = false
 
 // Drag and drop state
 const draggedRepos = ref<GitRepository[]>([])
@@ -169,27 +170,27 @@ async function handleScan() {
   }
 }
 
-// Debounced auto-scan triggered by file system changes
-const debouncedAutoScan = debounce(async () => {
-  if (!props.directory.projectId || scanning.value) return
-
-  scanning.value = true
-  error.value = ''
-  try {
-    const result = await gitApi.scan(props.directory.projectId)
-    if (result.scanned && result.scanned.length > 0) {
-      await loadRepositories()
-    }
-  } catch (e: any) {
-    error.value = e.message || 'Failed to auto-scan repositories'
-  } finally {
-    scanning.value = false
-  }
-}, 1500)
-
 // Start watching directory for changes
 async function setupDirectoryWatcher() {
   if (!props.directory.projectId) return
+
+  // Create instance-scoped debounced function to prevent cross-component interference
+  const debouncedAutoScan = debounce(async () => {
+    if (!props.directory.projectId || scanning.value) return
+
+    scanning.value = true
+    error.value = ''
+    try {
+      const result = await gitApi.scan(props.directory.projectId)
+      if (result.scanned && result.scanned.length > 0) {
+        await loadRepositories()
+      }
+    } catch (e: any) {
+      error.value = e.message || 'Failed to auto-scan repositories'
+    } finally {
+      scanning.value = false
+    }
+  }, 1500)
 
   try {
     // Get project path to compute full directory path
@@ -217,19 +218,27 @@ async function setupDirectoryWatcher() {
 
 // Clean up watcher
 async function cleanupDirectoryWatcher() {
-  if (unlistenDirChange) {
-    unlistenDirChange()
-    unlistenDirChange = null
-  }
-  if (currentWatchId) {
-    try {
-      await gitApi.unwatchDirectory(currentWatchId)
-    } catch (e) {
-      console.error('Failed to unwatch directory:', e)
+  // Guard against concurrent cleanup calls
+  if (isCleaningUp) return
+  isCleaningUp = true
+
+  try {
+    if (unlistenDirChange) {
+      unlistenDirChange()
+      unlistenDirChange = null
     }
-    currentWatchId = null
+    if (currentWatchId) {
+      try {
+        await gitApi.unwatchDirectory(currentWatchId)
+      } catch (e) {
+        console.error('Failed to unwatch directory:', e)
+      }
+      currentWatchId = null
+    }
+    watchingDirectory.value = false
+  } finally {
+    isCleaningUp = false
   }
-  watchingDirectory.value = false
 }
 
 // Refresh all repository statuses (with network check)
@@ -564,12 +573,8 @@ watch(
 )
 
 // Load on mount and when directory changes
+// Note: watch with immediate:true handles initial load + watcher setup
 onMounted(async () => {
-  loadRepositories()
-  // Initial auto-scan for repositories
-  await handleScan()
-  // Setup file system watcher
-  await setupDirectoryWatcher()
   // Listen for clone progress events
   unlistenCloneProgress = await listen<GitCloneProgress>('git:clone:progress', (event) => {
     const progress = event.payload
@@ -599,6 +604,7 @@ onUnmounted(() => {
 })
 
 // Reload when directory identity changes (handles both id and relativePath changes)
+// immediate:true ensures this runs on mount (replaces onMounted setup calls)
 watch(
   () => [props.directory.id, props.directory.projectId, props.directory.relativePath] as const,
   async () => {
@@ -606,7 +612,8 @@ watch(
     loadRepositories()
     await handleScan()
     await setupDirectoryWatcher()
-  }
+  },
+  { immediate: true }
 )
 </script>
 

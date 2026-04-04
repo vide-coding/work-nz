@@ -12,7 +12,28 @@ MyFlow (迈流) is a Tauri + Vue 3 + TypeScript desktop application for managing
 - **Internationalization**: vue-i18n (en-US, zh-CN)
 - **UI Framework**: Tailwind CSS + Lucide Icons
 
-## Key Directories
+## Styling Rules (MANDATORY)
+
+### Use Tailwind CSS Only
+
+All styles must be written using Tailwind CSS utility classes. **No custom CSS files, no `<style>` blocks, no inline styles.**
+
+**Allowed:**
+```vue
+<div class="flex items-center gap-2 p-4 text-sm text-gray-600">
+```
+
+**Forbidden:**
+```vue
+<!-- NO -->
+<style>
+.my-class { color: gray; }
+</style>
+
+<!-- NO -->
+<div style="color: gray;">
+```
+
 
 - `src/` - Vue frontend source code
 - `src/locales/` - i18n configuration and translation files

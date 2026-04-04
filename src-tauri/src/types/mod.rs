@@ -589,6 +589,34 @@ mod tests {
         assert!(json.contains("test:module"));
         assert!(json.contains("Test Module"));
     }
+
+    #[test]
+    fn test_task_priority_default() {
+        assert_eq!(TaskPriority::default(), TaskPriority::Medium);
+    }
+
+    #[test]
+    fn test_task_serialization() {
+        let task = Task {
+            id: "task-1".to_string(),
+            directory_id: "dir-1".to_string(),
+            parent_id: None,
+            title: "Test Task".to_string(),
+            description: Some("Description".to_string()),
+            status: "todo".to_string(),
+            priority: "high".to_string(),
+            assignee: Some("Alice".to_string()),
+            due_date: None,
+            sort_order: 0,
+            is_completed: false,
+            created_at: "2024-01-01T00:00:00Z".to_string(),
+            updated_at: "2024-01-01T00:00:00Z".to_string(),
+        };
+
+        let json = serde_json::to_string(&task).unwrap();
+        assert!(json.contains("Test Task"));
+        assert!(json.contains("todo"));
+    }
 }
 
 // ============== New Module System Types ==============
@@ -776,6 +804,47 @@ pub struct DirectoryTemplate {
     pub items: Vec<DirectoryTemplateItem>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub created_by: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+// ============== Task System Types ==============
+
+/// Task priority
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum TaskPriority {
+    Low,
+    Medium,
+    High,
+    Urgent,
+}
+
+impl Default for TaskPriority {
+    fn default() -> Self {
+        TaskPriority::Medium
+    }
+}
+
+/// Task
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Task {
+    pub id: String,
+    pub directory_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parent_id: Option<String>,
+    pub title: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    pub status: String,
+    pub priority: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub assignee: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub due_date: Option<String>,
+    pub sort_order: i32,
+    pub is_completed: bool,
     pub created_at: String,
     pub updated_at: String,
 }

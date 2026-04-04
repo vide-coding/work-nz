@@ -105,6 +105,26 @@ CREATE TABLE IF NOT EXISTS directory_templates (
   updated_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS tasks (
+  id TEXT PRIMARY KEY,
+  directory_id TEXT NOT NULL,
+  parent_id TEXT,
+  title TEXT NOT NULL,
+  description TEXT,
+  status TEXT NOT NULL DEFAULT 'todo',
+  priority TEXT NOT NULL DEFAULT 'medium',
+  assignee TEXT,
+  due_date TEXT,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  is_completed INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (directory_id) REFERENCES directories(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_tasks_directory_id ON tasks(directory_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_parent_id ON tasks(parent_id);
+
 -- Indexes for new tables
 CREATE INDEX IF NOT EXISTS idx_modules_key ON modules(key);
 CREATE INDEX IF NOT EXISTS idx_directories_project_id ON directories(project_id);
