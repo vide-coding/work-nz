@@ -16,6 +16,9 @@ pub fn run() {
     // Enable in both debug and release so tests can use the release build.
     builder = builder.plugin(tauri_plugin_webdriver::init());
 
+    // Register global watcher state for directory watching
+    builder = builder.manage(git::WatcherState::new());
+
     builder.invoke_handler(tauri::generate_handler![
             // Workspace commands
             workspace_init_or_open,
@@ -49,6 +52,8 @@ pub fn run() {
             git_status_watch_stop,
             git_repo_scan,
             git_repo_delete,
+            watch_directory,
+            unwatch_directory,
             // Filesystem commands
             project_fs_tree,
             fs_read_text,

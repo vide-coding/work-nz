@@ -91,9 +91,6 @@ function deleteRepo() {
           <p v-if="repo.description" class="text-sm text-gray-500 dark:text-gray-400 mt-1">
             {{ repo.description }}
           </p>
-          <p class="text-sm text-gray-500 dark:text-gray-400">
-            {{ repo.path }}
-          </p>
           <div class="flex items-center gap-3 mt-2">
             <span
               v-if="repo.branch"

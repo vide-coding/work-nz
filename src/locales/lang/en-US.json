@@ -198,6 +198,7 @@
     "notInstalled": "Not Installed",
     "customIde": "Custom IDE",
     "addCustomIde": "Add Custom IDE",
+    "editCustomIde": "Edit Custom IDE",
     "ideName": "Name",
     "ideNamePlaceholder": "e.g., VS Code",
     "ideCommand": "Command",

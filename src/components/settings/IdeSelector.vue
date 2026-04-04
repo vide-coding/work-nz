@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Plus, Trash2, Edit2, Check, X, Circle } from 'lucide-vue-next'
+import { Plus, Trash2, Edit2, Check, Circle } from 'lucide-vue-next'
 import { ideApi } from '@/composables/useApi'
 import type { IdeConfig, SupportedIdeKind } from '@/types'
+import BaseDialog from '@/components/common/BaseDialog.vue'
 
 const props = defineProps<{
   modelValue?: IdeConfig
@@ -20,8 +21,9 @@ const { t } = useI18n()
 const supportedIdes = ref<IdeConfig[]>([])
 const isLoading = ref(false)
 
-// 自定义IDE编辑状态
-const isEditing = ref(false)
+// 自定义IDE弹窗
+const showDialog = ref(false)
+const dialogMode = ref<'add' | 'edit'>('add')
 const editingIde = ref<IdeConfig>({
   kind: 'other',
   name: '',
@@ -61,7 +63,6 @@ async function loadSupportedIdes() {
 
 // 选择IDE
 function selectIde(ide: IdeConfig) {
-  // 只允许选择可用的IDE
   if (!ide.available) {
     return
   }
@@ -73,9 +74,9 @@ function clearSelection() {
   selectedIde.value = undefined
 }
 
-// 开始添加自定义IDE
-function startAddCustom() {
-  isEditing.value = true
+// 打开添加自定义IDE弹窗
+function openAddDialog() {
+  dialogMode.value = 'add'
   editingIde.value = {
     kind: 'other',
     name: '',
@@ -83,18 +84,19 @@ function startAddCustom() {
     args: [],
   }
   argInput.value = ''
+  showDialog.value = true
 }
 
-// 开始编辑当前IDE
-function startEdit() {
-  if (selectedIde.value) {
-    isEditing.value = true
-    editingIde.value = {
-      ...selectedIde.value,
-      args: selectedIde.value.args ? [...selectedIde.value.args] : [],
-    }
-    argInput.value = editingIde.value.args?.join(' ') || ''
+// 打开编辑自定义IDE弹窗
+function openEditDialog() {
+  if (!selectedIde.value) return
+  dialogMode.value = 'edit'
+  editingIde.value = {
+    ...selectedIde.value,
+    args: selectedIde.value.args ? [...selectedIde.value.args] : [],
   }
+  argInput.value = editingIde.value.args?.join(' ') || ''
+  showDialog.value = true
 }
 
 // 保存自定义IDE
@@ -103,7 +105,6 @@ function saveCustomIde() {
     return
   }
 
-  // 解析参数
   const args = argInput.value
     .split(' ')
     .map((a) => a.trim())
@@ -114,16 +115,11 @@ function saveCustomIde() {
     name: editingIde.value.name.trim(),
     command: editingIde.value.command.trim(),
     args: args.length > 0 ? args : undefined,
-    available: true, // 自定义IDE默认标记为可用
+    available: true,
   }
 
   selectedIde.value = newIde
-  isEditing.value = false
-}
-
-// 取消编辑
-function cancelEdit() {
-  isEditing.value = false
+  showDialog.value = false
 }
 
 // 获取IDE图标/颜色
@@ -133,7 +129,6 @@ function getIdeColor(kind: SupportedIdeKind): string {
       return 'bg-blue-500'
     case 'idea':
     case 'webstorm':
-    case 'pycharm':
       return 'bg-purple-500'
     case 'trae':
       return 'bg-orange-500'
@@ -153,13 +148,12 @@ onMounted(() => {
 
 <template>
   <div class="space-y-4">
-    <!-- IDE列表 -->
-    <div v-if="!isEditing" class="space-y-2">
-      <!-- 加载状态 -->
-      <div v-if="isLoading" class="flex items-center justify-center py-4">
-        <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600"></div>
-      </div>
+    <!-- 加载状态 -->
+    <div v-if="isLoading" class="flex items-center justify-center py-4">
+      <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600"></div>
+    </div>
 
+    <template v-else>
       <!-- 可用的IDE -->
       <div v-if="availableIdes.length > 0" class="space-y-2">
         <div class="text-xs text-gray-500 dark:text-gray-400">
@@ -269,7 +263,7 @@ onMounted(() => {
             </div>
           </div>
           <button
-            @click="startEdit"
+            @click="openEditDialog"
             :disabled="disabled"
             class="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700"
           >
@@ -288,83 +282,80 @@ onMounted(() => {
       <!-- 添加自定义IDE按钮 -->
       <button
         v-if="!selectedIde || selectedIde.kind !== 'other'"
-        @click="startAddCustom"
+        @click="openAddDialog"
         :disabled="disabled"
         class="flex items-center gap-2 px-3 py-2 text-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
       >
         <Plus class="w-4 h-4" />
         {{ t('settings.addCustomIde') }}
       </button>
-    </div>
+    </template>
 
-    <!-- 自定义IDE编辑表单 -->
-    <div v-else class="space-y-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-      <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
-        {{ t('settings.customIde') }}
-      </div>
+    <!-- 自定义IDE弹窗 -->
+    <BaseDialog
+      v-model="showDialog"
+      :title="dialogMode === 'add' ? t('settings.addCustomIde') : t('settings.editCustomIde')"
+      width="max-w-md"
+    >
+      <div class="space-y-4">
+        <!-- 名称 -->
+        <div>
+          <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+            {{ t('settings.ideName') }}
+          </label>
+          <input
+            v-model="editingIde.name"
+            type="text"
+            :placeholder="t('settings.ideNamePlaceholder')"
+            class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+        </div>
 
-      <!-- 名称 -->
-      <div>
-        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-          {{ t('settings.ideName') }}
-        </label>
-        <input
-          v-model="editingIde.name"
-          type="text"
-          :placeholder="t('settings.ideNamePlaceholder')"
-          class="w-full px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-        />
-      </div>
-
-      <!-- 命令 -->
-      <div>
-        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-          {{ t('settings.ideCommand') }}
-        </label>
-        <div class="flex gap-2">
+        <!-- 命令 -->
+        <div>
+          <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+            {{ t('settings.ideCommand') }}
+          </label>
           <input
             v-model="editingIde.command"
             type="text"
             :placeholder="t('settings.ideCommandPlaceholder')"
-            class="flex-1 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           />
         </div>
-      </div>
 
-      <!-- 启动参数 -->
-      <div>
-        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-          {{ t('settings.ideArgs') }}
-        </label>
-        <input
-          v-model="argInput"
-          type="text"
-          :placeholder="t('settings.ideArgsPlaceholder')"
-          class="w-full px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-        />
-        <div class="text-xs text-gray-400 dark:text-gray-500 mt-1">
-          {{ t('settings.ideArgsHint') }}
+        <!-- 启动参数 -->
+        <div>
+          <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+            {{ t('settings.ideArgs') }}
+          </label>
+          <input
+            v-model="argInput"
+            type="text"
+            :placeholder="t('settings.ideArgsPlaceholder')"
+            class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+          <div class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+            {{ t('settings.ideArgsHint') }}
+          </div>
         </div>
       </div>
 
-      <!-- 操作按钮 -->
-      <div class="flex justify-end gap-2 pt-2">
+      <template #footer>
         <button
-          @click="cancelEdit"
-          class="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          @click="showDialog = false"
+          class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
         >
-          <X class="w-4 h-4 inline mr-1" />
           {{ t('common.cancel') }}
         </button>
         <button
           @click="saveCustomIde"
           :disabled="!editingIde.name.trim() || !editingIde.command.trim()"
-          class="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          class="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          <Check class="w-4 h-4 inline mr-1" />
           {{ t('common.save') }}
         </button>
-      </div>
-    </div>
+      </template>
+    </BaseDialog>
   </div>
 </template>

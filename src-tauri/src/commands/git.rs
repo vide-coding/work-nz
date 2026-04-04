@@ -4,11 +4,27 @@ use crate::commands::workspace::get_workspace_path;
 use crate::types::*;
 use chrono::Utc;
 use git2::Repository;
+use notify::Watcher;
 use rusqlite::params;
+use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
+use std::sync::{Arc, atomic::AtomicBool, Mutex};
 use std::time::Duration;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, State};
+
+/// Global state to manage active file watchers using stop signals
+pub struct WatcherState {
+    pub watch_signals: Arc<Mutex<HashMap<String, Arc<AtomicBool>>>>,
+}
+
+impl WatcherState {
+    pub fn new() -> Self {
+        WatcherState {
+            watch_signals: Arc::new(Mutex::new(HashMap::new())),
+        }
+    }
+}
 
 /// 列出项目的 Git 仓库（可按目录筛选）
 #[tauri::command]
@@ -770,11 +786,12 @@ pub fn git_repo_scan_with_conn(
 
 /// 监视目录变化（顶级文件/文件夹的创建和删除）
 #[tauri::command]
-pub async fn watch_directory(
+pub fn watch_directory(
     app_handle: AppHandle,
+    watcher_state: State<'_, WatcherState>,
     directory: String,
 ) -> Result<String, String> {
-    use notify::{Watcher, RecursiveMode};
+    use notify::{RecursiveMode, recommended_watcher};
     use std::path::PathBuf;
     use std::sync::mpsc;
 
@@ -785,8 +802,8 @@ pub async fn watch_directory(
     }
 
     let (tx, rx) = mpsc::channel();
-    let mut watcher = notify::recommended_watcher(tx)
-        .map_err(|e| format!("创建文件监视器失败: {}", e))?;
+    let mut watcher = recommended_watcher(tx)
+        .map_err(|e| format!("文件监视器创建失败: {}", e))?;
 
     // 仅监视顶级目录，非递归
     watcher
@@ -795,10 +812,25 @@ pub async fn watch_directory(
 
     let watch_id = uuid::Uuid::new_v4().to_string();
     let watch_id_clone = watch_id.clone();
+    let stop_signal = Arc::new(AtomicBool::new(false));
+    let stop_signal_clone = stop_signal.clone();
+
+    // CRITICAL FIX: Store stop signal in global state
+    // This allows unwatch_directory to signal the thread to stop
+    {
+        let mut signals = watcher_state.watch_signals.lock().unwrap();
+        signals.insert(watch_id.clone(), stop_signal);
+    }
 
     // 在后台线程中处理事件
+    // CRITICAL FIX: Watcher is moved into thread closure, preventing premature drop
     std::thread::spawn(move || {
         for event in rx {
+            // Check if we should stop watching
+            if stop_signal_clone.load(std::sync::atomic::Ordering::Relaxed) {
+                break;
+            }
+
             match event {
                 Ok(notify::Event {
                     kind: notify::EventKind::Create(_) | notify::EventKind::Remove(_),
@@ -810,6 +842,8 @@ pub async fn watch_directory(
                 _ => {}
             }
         }
+        // watcher is dropped here when thread ends, proper cleanup
+        drop(watcher);
     });
 
     Ok(watch_id)
@@ -817,7 +851,16 @@ pub async fn watch_directory(
 
 /// 停止监视目录
 #[tauri::command]
-pub async fn unwatch_directory(_watch_id: String) -> Result<(), String> {
-    // 简化实现 - 可以通过全局状态管理来改进
-    Ok(())
+pub fn unwatch_directory(
+    watcher_state: State<'_, WatcherState>,
+    watch_id: String,
+) -> Result<(), String> {
+    // CRITICAL FIX: Actually signal the watcher thread to stop
+    let mut signals = watcher_state.watch_signals.lock().unwrap();
+    if let Some(stop_signal) = signals.remove(&watch_id) {
+        stop_signal.store(true, std::sync::atomic::Ordering::Relaxed);
+        Ok(())
+    } else {
+        Err("Watch ID not found".to_string())
+    }
 }

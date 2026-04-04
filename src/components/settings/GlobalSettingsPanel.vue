@@ -1,28 +1,22 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import ThemeToggle from '@/components/common/ThemeToggle.vue'
-import LanguageSelector from '@/components/common/LanguageSelector.vue'
 import SettingItem from './SettingItem.vue'
 import IdeSelector from './IdeSelector.vue'
 import { useSettings } from '@/composables/useSettings'
-import type { LanguageCode, FontSize } from '@/types/settings'
+import type { FontSize } from '@/types/settings'
 import type { IdeConfig } from '@/types'
 import type { MarkdownThemeConfig } from '@/types/markdown'
 import MarkdownThemeSelector from '@/components/MarkdownThemeSelector.vue'
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const { globalSettings, loadGlobalSettings, updateGlobalSettings, resetGlobalSettings } =
   useSettings()
 
 const isLoading = ref(true)
 const isSaving = ref(false)
-const saveMessage = ref('')
 
 // Local state for two-way binding
-// Use 'light' | 'dark' | 'system' to match ThemeToggle and GlobalSettings type
-const localTheme = ref<'light' | 'dark' | 'system'>('system')
-const localLanguage = ref<LanguageCode>('zh-CN')
 const localFontSize = ref<FontSize>('medium')
 const localDefaultIde = ref<IdeConfig | undefined>(undefined)
 const localMarkdownTheme = ref<MarkdownThemeConfig>({
@@ -35,8 +29,6 @@ const localAutoFetchGitProjects = ref(true)
 onMounted(async () => {
   await loadGlobalSettings()
   if (globalSettings.value) {
-    localTheme.value = globalSettings.value.themeMode as 'light' | 'dark' | 'system'
-    localLanguage.value = globalSettings.value.language
     localFontSize.value = globalSettings.value.fontSize
     // Create a mutable copy of IdeConfig to avoid readonly issues
     localDefaultIde.value = globalSettings.value.defaultIde
@@ -57,30 +49,11 @@ onMounted(async () => {
   isLoading.value = false
 })
 
-// Apply theme changes immediately
-watch(localTheme, async (newTheme) => {
-  isSaving.value = true
-  await updateGlobalSettings({ themeMode: newTheme })
-  applyTheme(newTheme)
-  isSaving.value = false
-  showSaveMessage()
-})
-
-// Apply language changes immediately
-watch(localLanguage, async (newLanguage) => {
-  isSaving.value = true
-  await updateGlobalSettings({ language: newLanguage })
-  locale.value = newLanguage
-  isSaving.value = false
-  showSaveMessage()
-})
-
 // Watch for font size changes
 watch(localFontSize, async (newFontSize) => {
   isSaving.value = true
   await updateGlobalSettings({ fontSize: newFontSize })
   isSaving.value = false
-  showSaveMessage()
 })
 
 // Watch for IDE changes
@@ -88,7 +61,6 @@ watch(localDefaultIde, async (newIde) => {
   isSaving.value = true
   await updateGlobalSettings({ defaultIde: newIde })
   isSaving.value = false
-  showSaveMessage()
 })
 
 // Watch for markdown theme changes
@@ -98,7 +70,6 @@ watch(
     isSaving.value = true
     await updateGlobalSettings({ markdownTheme: newThemeConfig })
     isSaving.value = false
-    showSaveMessage()
   },
   { deep: true }
 )
@@ -108,44 +79,16 @@ watch(localAutoFetchGitProjects, async (newValue) => {
   isSaving.value = true
   await updateGlobalSettings({ autoFetchGitProjects: newValue })
   isSaving.value = false
-  showSaveMessage()
 })
-
-function applyTheme(theme: 'light' | 'dark' | 'system') {
-  const root = document.documentElement
-
-  if (theme === 'system') {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    root.classList.toggle('dark', prefersDark)
-  } else {
-    root.classList.toggle('dark', theme === 'dark')
-  }
-}
-
-function showSaveMessage() {
-  saveMessage.value = t('settings.saved')
-  setTimeout(() => {
-    saveMessage.value = ''
-  }, 2000)
-}
 
 async function handleReset() {
   if (confirm(t('settings.resetConfirm'))) {
     isSaving.value = true
     const defaults = await resetGlobalSettings()
-    localTheme.value = defaults.themeMode
-    localLanguage.value = defaults.language
     localFontSize.value = defaults.fontSize
     localDefaultIde.value = defaults.defaultIde
 
-    applyTheme(defaults.themeMode)
-    locale.value = defaults.language
-
     isSaving.value = false
-    saveMessage.value = t('settings.resetSuccess')
-    setTimeout(() => {
-      saveMessage.value = ''
-    }, 2000)
   }
 }
 </script>
@@ -172,14 +115,6 @@ async function handleReset() {
         </button>
       </div>
 
-      <!-- Save message -->
-      <div
-        v-if="saveMessage"
-        class="mb-4 px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg text-sm"
-      >
-        {{ saveMessage }}
-      </div>
-
       <!-- Appearance Section -->
       <div class="mb-8">
         <h3
@@ -191,21 +126,6 @@ async function handleReset() {
         <div
           class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 px-4"
         >
-          <!-- Theme Setting -->
-          <SettingItem
-            :label="t('settings.theme')"
-            :description="
-              t('settings.theme' + localTheme.charAt(0).toUpperCase() + localTheme.slice(1))
-            "
-          >
-            <ThemeToggle v-model="localTheme" variant="select" />
-          </SettingItem>
-
-          <!-- Language Setting -->
-          <SettingItem :label="t('settings.language')">
-            <LanguageSelector v-model="localLanguage" variant="select" />
-          </SettingItem>
-
           <!-- Font Size Setting -->
           <SettingItem :label="t('settings.fontSize')">
             <select

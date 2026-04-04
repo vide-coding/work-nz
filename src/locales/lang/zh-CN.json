@@ -204,6 +204,7 @@
     "notInstalled": "未安装",
     "customIde": "自定义 IDE",
     "addCustomIde": "添加自定义 IDE",
+    "editCustomIde": "编辑自定义 IDE",
     "ideName": "名称",
     "ideNamePlaceholder": "例如：VS Code",
     "ideCommand": "命令",

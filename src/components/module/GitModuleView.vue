@@ -106,16 +106,9 @@ const selectedRepo = ref<GitRepository | null>(null)
 const readmeContent = ref('')
 const isLoadingReadme = ref(false)
 
-// Filter repos by directory folder
-const filteredRepos = computed(() => {
-  const dirPath = props.directory.relativePath
-  if (!dirPath) return repositories.value
-
-  // Filter by folder field (matches directory relativePath)
-  return repositories.value.filter((repo) => {
-    return repo.folder === dirPath
-  })
-})
+// Repos are already filtered by the backend (via folder parameter).
+// Use repositories directly - filteredRepos was causing double-filtering issues.
+const filteredRepos = computed(() => repositories.value)
 
 // Load repositories for this directory
 async function loadRepositories() {
@@ -124,13 +117,17 @@ async function loadRepositories() {
   loading.value = true
   error.value = ''
   try {
+    // Pass relativePath as folder filter - backend handles the SQL WHERE clause
     const repos = await gitApi.repoList(props.directory.projectId, props.directory.relativePath || undefined)
+    // Clear and reset all state for the new directory
     repositories.value = repos
-
-    // Load status for each repo
-    for (const repo of repos) {
-      await loadRepoStatus(repo.id)
-    }
+    repoStatuses.value = {}
+    draggedRepos.value = [...repos]
+    // Clear selection when switching directories
+    selectedRepo.value = null
+    readmeContent.value = ''
+    // Load status for each repo in parallel
+    await Promise.all(repos.map((repo) => loadRepoStatus(repo.id)))
   } catch (e: any) {
     error.value = e.message || 'Failed to load repositories'
   } finally {
@@ -408,11 +405,8 @@ function onModelValueUpdate(newList: GitRepository[]) {
 async function onDragEnd() {
   if (!props.directory.projectId) return
 
-  // Update the main repositories list to match the new order
-  const nonFilteredRepos = repositories.value.filter(
-    (r) => !filteredRepos.value.some((fr) => fr.id === r.id)
-  )
-  repositories.value = [...draggedRepos.value, ...nonFilteredRepos]
+  // All repos in repositories.value belong to this directory (backend filtered by folder)
+  repositories.value = [...draggedRepos.value]
 
   // Save the new order to backend
   try {
@@ -425,6 +419,10 @@ async function onDragEnd() {
 
 // Load README
 async function handleLoadReadme(repo: GitRepository) {
+  // Skip if same repo already selected and has content
+  if (selectedRepo.value?.id === repo.id && readmeContent.value) {
+    return
+  }
   selectedRepo.value = repo
   readmeContent.value = ''
   isLoadingReadme.value = true
@@ -523,8 +521,9 @@ onUnmounted(() => {
   }
 })
 
+// Reload when directory identity changes (handles both id and relativePath changes)
 watch(
-  () => props.directory.id,
+  () => [props.directory.id, props.directory.projectId, props.directory.relativePath] as const,
   () => {
     loadRepositories()
   }

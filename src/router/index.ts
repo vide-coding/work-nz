@@ -25,11 +25,11 @@ const router = createRouter({
     },
     {
       path: '/settings',
-      name: 'settings',
       component: () => import('../views/SettingsView.vue'),
       children: [
         {
           path: '',
+          name: 'settings',
           redirect: '/settings/global',
         },
         {

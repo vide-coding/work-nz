@@ -25,7 +25,6 @@ pub enum SupportedIdeKind {
     Webstorm,
     Trae,
     Zed,
-    Pycharm,
     Other,
 }
 
@@ -365,7 +364,6 @@ mod tests {
         let _ = SupportedIdeKind::Webstorm;
         let _ = SupportedIdeKind::Trae;
         let _ = SupportedIdeKind::Zed;
-        let _ = SupportedIdeKind::Pycharm;
         let _ = SupportedIdeKind::Other;
     }
 

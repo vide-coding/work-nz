@@ -298,29 +298,11 @@ pub fn ide_list_supported() -> Result<Vec<IdeConfig>, String> {
 
     // 定义所有支持的 IDE 列表
     let all_supported_ides: Vec<(&str, SupportedIdeKind, &str, Option<Vec<&str>>)> = vec![
-        // 主要支持的 IDE
         ("code", SupportedIdeKind::Vscode, "VS Code", Some(vec!["--reuse-window"])),
         ("idea", SupportedIdeKind::Idea, "IntelliJ IDEA", None),
         ("webstorm", SupportedIdeKind::Webstorm, "WebStorm", None),
         ("trae", SupportedIdeKind::Trae, "Trae", None),
         ("zed", SupportedIdeKind::Zed, "Zed", None),
-        ("pycharm", SupportedIdeKind::Pycharm, "PyCharm", None),
-        // 其他编辑器
-        ("cursor", SupportedIdeKind::Other, "Cursor", Some(vec!["--reuse-window"])),
-        ("code-insiders", SupportedIdeKind::Other, "VS Code Insiders", Some(vec!["--reuse-window"])),
-        ("goland", SupportedIdeKind::Other, "GoLand", None),
-        ("datagrip", SupportedIdeKind::Other, "DataGrip", None),
-        ("rustrover", SupportedIdeKind::Other, "RustRover", None),
-        ("subl", SupportedIdeKind::Other, "Sublime Text", None),
-        ("atom", SupportedIdeKind::Other, "Atom", None),
-        ("npp", SupportedIdeKind::Other, "Notepad++", None),
-        ("studio64", SupportedIdeKind::Other, "Android Studio", None),
-        ("studio", SupportedIdeKind::Other, "Android Studio", None),
-        ("rstudio", SupportedIdeKind::Other, "RStudio", None),
-        ("jupyter-lab", SupportedIdeKind::Other, "Jupyter Lab", None),
-        ("hbuilderx", SupportedIdeKind::Other, "HBuilderX", None),
-        ("notepad", SupportedIdeKind::Other, "Notepad", None),
-        ("devenv", SupportedIdeKind::Other, "Visual Studio", None),
     ];
 
     // 检测每个 IDE 的可用性
