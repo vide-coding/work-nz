@@ -767,3 +767,57 @@ pub fn git_repo_scan_with_conn(
         "scanned": scanned
     }))
 }
+
+/// 监视目录变化（顶级文件/文件夹的创建和删除）
+#[tauri::command]
+pub async fn watch_directory(
+    app_handle: AppHandle,
+    directory: String,
+) -> Result<String, String> {
+    use notify::{Watcher, RecursiveMode};
+    use std::path::PathBuf;
+    use std::sync::mpsc;
+
+    let path = PathBuf::from(&directory);
+
+    if !path.exists() {
+        return Err("目录不存在".to_string());
+    }
+
+    let (tx, rx) = mpsc::channel();
+    let mut watcher = notify::recommended_watcher(tx)
+        .map_err(|e| format!("创建文件监视器失败: {}", e))?;
+
+    // 仅监视顶级目录，非递归
+    watcher
+        .watch(&path, RecursiveMode::NonRecursive)
+        .map_err(|e| format!("开始监视失败: {}", e))?;
+
+    let watch_id = uuid::Uuid::new_v4().to_string();
+    let watch_id_clone = watch_id.clone();
+
+    // 在后台线程中处理事件
+    std::thread::spawn(move || {
+        for event in rx {
+            match event {
+                Ok(notify::Event {
+                    kind: notify::EventKind::Create(_) | notify::EventKind::Remove(_),
+                    ..
+                }) => {
+                    // 向前端发送事件
+                    let _ = app_handle.emit("git:directory:changed", &watch_id_clone);
+                }
+                _ => {}
+            }
+        }
+    });
+
+    Ok(watch_id)
+}
+
+/// 停止监视目录
+#[tauri::command]
+pub async fn unwatch_directory(_watch_id: String) -> Result<(), String> {
+    // 简化实现 - 可以通过全局状态管理来改进
+    Ok(())
+}
