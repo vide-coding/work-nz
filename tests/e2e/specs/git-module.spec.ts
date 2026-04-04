@@ -76,16 +76,14 @@ test.describe('Git Module View', () => {
 
       // Try to find git module elements
       const refreshBtn = projectPage.getGitModuleRefreshButton()
-      const scanBtn = projectPage.getGitModuleScanButton()
       const cloneBtn = projectPage.getGitModuleCloneButton()
 
       // These may not be visible if no git directory is selected
       const refreshVisible = await refreshBtn.isVisible().catch(() => false)
-      const scanVisible = await scanBtn.isVisible().catch(() => false)
       const cloneVisible = await cloneBtn.isVisible().catch(() => false)
 
       // At least some elements should be present or gracefully absent
-      expect(refreshVisible || scanVisible || cloneVisible || true).toBeTruthy()
+      expect(refreshVisible || cloneVisible || true).toBeTruthy()
     })
 
     test('should have git module title when visible', async ({ page }) => {
@@ -149,22 +147,9 @@ test.describe('Git Module View', () => {
   })
 
   /**
-   * Refresh and scan button tests
+   * Refresh button tests
    */
-  test.describe('Refresh and Scan', () => {
-    test('should have scan button', async ({ page }) => {
-      await goto(page, `/projects/${TEST_PROJECT_ID}`)
-      await page.waitForLoadState('domcontentloaded')
-      await page.waitForTimeout(500)
-
-      const scanBtn = projectPage.getGitModuleScanButton()
-      const isVisible = await scanBtn.isVisible().catch(() => false)
-
-      if (isVisible) {
-        await expect(scanBtn).toBeVisible()
-      }
-    })
-
+  test.describe('Refresh', () => {
     test('should have refresh button', async ({ page }) => {
       await goto(page, `/projects/${TEST_PROJECT_ID}`)
       await page.waitForLoadState('domcontentloaded')

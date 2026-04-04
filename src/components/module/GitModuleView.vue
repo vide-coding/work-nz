@@ -6,7 +6,7 @@ import { debounce } from '@/composables/useDebounce'
 import { Loader2, GitBranch, X, RefreshCw } from 'lucide-vue-next'
 import draggable from 'vuedraggable'
 import type { Directory, GitRepository, GitRepoStatus, GitCloneProgress } from '@/types'
-import { gitApi, ideApi, fsApi } from '@/composables/useApi'
+import { gitApi, ideApi, fsApi, projectApi } from '@/composables/useApi'
 import RepoCard from '@/components/workspace/RepoCard.vue'
 import ReadmePreview from '@/components/workspace/ReadmePreview.vue'
 import CloneRepoDialog from '@/components/workspace/CloneRepoDialog.vue'
@@ -32,6 +32,7 @@ const error = ref('')
 // File system watcher state
 let unlistenDirChange: UnlistenFn | null = null
 const watchingDirectory = ref(false)
+let currentWatchId: string | null = null
 
 // Drag and drop state
 const draggedRepos = ref<GitRepository[]>([])
@@ -190,12 +191,19 @@ const debouncedAutoScan = debounce(async () => {
 async function setupDirectoryWatcher() {
   if (!props.directory.projectId) return
 
-  // Clean up existing watcher
-  if (unlistenDirChange) {
-    unlistenDirChange()
-  }
-
   try {
+    // Get project path to compute full directory path
+    const project = await projectApi.get(props.directory.projectId)
+    const dirPath = props.directory.relativePath
+      ? `${project.projectPath}/${props.directory.relativePath}`
+      : project.projectPath
+
+    // Clean up existing watcher first
+    await cleanupDirectoryWatcher()
+
+    // Call backend to start watching
+    currentWatchId = await gitApi.watchDirectory(dirPath)
+
     // Listen for directory change events
     unlistenDirChange = await listen<string>('git:directory:changed', () => {
       // Trigger debounced auto-scan when files/folders change
@@ -208,20 +216,32 @@ async function setupDirectoryWatcher() {
 }
 
 // Clean up watcher
-function cleanupDirectoryWatcher() {
+async function cleanupDirectoryWatcher() {
   if (unlistenDirChange) {
     unlistenDirChange()
     unlistenDirChange = null
+  }
+  if (currentWatchId) {
+    try {
+      await gitApi.unwatchDirectory(currentWatchId)
+    } catch (e) {
+      console.error('Failed to unwatch directory:', e)
+    }
+    currentWatchId = null
   }
   watchingDirectory.value = false
 }
 
 // Refresh all repository statuses (with network check)
 async function refreshAllRepoStatuses() {
-  if (!props.directory.projectId || refreshing.value) return
+  if (!props.directory.projectId || refreshing.value || scanning.value) return
 
   refreshing.value = true
   try {
+    // First scan for new repositories
+    await handleScan()
+
+    // Then refresh status for each existing repo
     const repos = await gitApi.repoList(props.directory.projectId, props.directory.relativePath || undefined)
     // Refresh status for each repo with network check
     await Promise.all(
@@ -546,6 +566,10 @@ watch(
 // Load on mount and when directory changes
 onMounted(async () => {
   loadRepositories()
+  // Initial auto-scan for repositories
+  await handleScan()
+  // Setup file system watcher
+  await setupDirectoryWatcher()
   // Listen for clone progress events
   unlistenCloneProgress = await listen<GitCloneProgress>('git:clone:progress', (event) => {
     const progress = event.payload
@@ -568,6 +592,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  cleanupDirectoryWatcher()
   if (unlistenCloneProgress) {
     unlistenCloneProgress()
   }
@@ -576,8 +601,11 @@ onUnmounted(() => {
 // Reload when directory identity changes (handles both id and relativePath changes)
 watch(
   () => [props.directory.id, props.directory.projectId, props.directory.relativePath] as const,
-  () => {
+  async () => {
+    cleanupDirectoryWatcher()
     loadRepositories()
+    await handleScan()
+    await setupDirectoryWatcher()
   }
 )
 </script>
@@ -591,20 +619,11 @@ watch(
         <div class="git-module__header-actions">
           <button
             class="git-module__refresh-btn"
-            :disabled="refreshing"
+            :disabled="refreshing || scanning"
             :title="$t('git.refresh')"
             @click="refreshAllRepoStatuses"
           >
-            <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': refreshing }" />
-          </button>
-          <button
-            class="git-module__scan-btn"
-            :disabled="scanning"
-            :title="$t('git.scan')"
-            @click="handleScan"
-          >
-            <RefreshCw :class="{ 'animate-spin': scanning }" class="w-4 h-4" />
-            <span v-if="!scanning">{{ t('git.scan') }}</span>
+            <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': refreshing || scanning }" />
           </button>
           <button class="git-module__clone-btn" @click="showCloneDialog = true">
             {{ t('git.cloneButton') }}
@@ -875,29 +894,6 @@ watch(
 .dark .git-module__refresh-btn:hover:not(:disabled) {
   background-color: #374151;
   color: #f3f4f6;
-}
-
-.git-module__scan-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  background-color: #6b7280;
-  border: none;
-  border-radius: 6px;
-  color: white;
-  font-size: 13px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.git-module__scan-btn:hover:not(:disabled) {
-  background-color: #4b5563;
-}
-
-.git-module__scan-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .git-module__clone-btn {

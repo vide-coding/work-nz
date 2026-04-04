@@ -149,6 +149,14 @@ export const gitApi = {
   async statusWatchStop(repoId?: string): Promise<{ ok: boolean }> {
     return invoke('git_status_watch_stop', { repoId })
   },
+
+  async watchDirectory(directory: string): Promise<string> {
+    return invoke('watch_directory', { directory })
+  },
+
+  async unwatchDirectory(watchId: string): Promise<void> {
+    return invoke('unwatch_directory', { watchId })
+  },
 }
 
 // Filesystem API

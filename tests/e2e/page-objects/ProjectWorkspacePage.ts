@@ -70,10 +70,6 @@ export class ProjectWorkspacePage {
     return this.page.locator('.git-module__clone-btn')
   }
 
-  getGitModuleScanButton(): Locator {
-    return this.page.locator('.git-module__scan-btn')
-  }
-
   getGitModuleRefreshButton(): Locator {
     return this.page.locator('.git-module__refresh-btn')
   }
