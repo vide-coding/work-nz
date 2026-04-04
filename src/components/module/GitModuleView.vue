@@ -29,6 +29,10 @@ const scanning = ref(false)
 const refreshing = ref(false)
 const error = ref('')
 
+// File system watcher state
+let unlistenDirChange: UnlistenFn | null = null
+const watchingDirectory = ref(false)
+
 // Drag and drop state
 const draggedRepos = ref<GitRepository[]>([])
 
@@ -162,6 +166,54 @@ async function handleScan() {
   } finally {
     scanning.value = false
   }
+}
+
+// Debounced auto-scan triggered by file system changes
+const debouncedAutoScan = debounce(async () => {
+  if (!props.directory.projectId || scanning.value) return
+
+  scanning.value = true
+  error.value = ''
+  try {
+    const result = await gitApi.scan(props.directory.projectId)
+    if (result.scanned && result.scanned.length > 0) {
+      await loadRepositories()
+    }
+  } catch (e: any) {
+    error.value = e.message || 'Failed to auto-scan repositories'
+  } finally {
+    scanning.value = false
+  }
+}, 1500)
+
+// Start watching directory for changes
+async function setupDirectoryWatcher() {
+  if (!props.directory.projectId) return
+
+  // Clean up existing watcher
+  if (unlistenDirChange) {
+    unlistenDirChange()
+  }
+
+  try {
+    // Listen for directory change events
+    unlistenDirChange = await listen<string>('git:directory:changed', () => {
+      // Trigger debounced auto-scan when files/folders change
+      debouncedAutoScan()
+    })
+    watchingDirectory.value = true
+  } catch (e) {
+    console.error('Failed to setup directory watcher:', e)
+  }
+}
+
+// Clean up watcher
+function cleanupDirectoryWatcher() {
+  if (unlistenDirChange) {
+    unlistenDirChange()
+    unlistenDirChange = null
+  }
+  watchingDirectory.value = false
 }
 
 // Refresh all repository statuses (with network check)
