@@ -1,22 +1,11 @@
 import { ref, computed } from 'vue'
 import { directoryHasCapability } from './useModuleRegistry'
-import type { Directory } from '@/types'
+import { taskApi } from './useApi'
+import type { Directory, Task } from '@/types'
 
 /**
  * Task type for the Task module
  */
-export interface Task {
-  id: string
-  directoryId: string
-  title: string
-  description?: string
-  status: string
-  priority: string
-  assignee?: string
-  dueDate?: string
-  createdAt: string
-  updatedAt: string
-}
 
 /**
  * Task filter options
@@ -137,9 +126,8 @@ export function useTaskModule(directory: Directory) {
     loading.value = true
     error.value = null
     try {
-      // TODO: Replace with actual API call when backend implements task endpoints
-      // For now, simulate empty tasks
-      tasks.value = []
+      const allTasks = await taskApi.list(directory.id)
+      tasks.value = allTasks
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to load tasks'
     } finally {
@@ -154,6 +142,7 @@ export function useTaskModule(directory: Directory) {
     priority?: string
     assignee?: string
     dueDate?: string
+    status?: string
   }): Promise<Task | null> {
     if (!hasTaskCapability.value) {
       error.value = 'Task module not enabled for this directory'
@@ -163,19 +152,15 @@ export function useTaskModule(directory: Directory) {
     loading.value = true
     error.value = null
     try {
-      // TODO: Replace with actual API call when backend implements task endpoints
-      const newTask: Task = {
-        id: `task-${Date.now()}`,
-        directoryId: directory.id,
-        title: input.title,
-        description: input.description,
-        status: moduleConfig.value?.defaultStatus || 'todo',
-        priority: input.priority || 'medium',
-        assignee: input.assignee,
-        dueDate: input.dueDate,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }
+      const newTask = await taskApi.create(
+        directory.id,
+        input.title,
+        input.description,
+        input.priority,
+        input.assignee,
+        input.dueDate,
+        input.status
+      )
       tasks.value.push(newTask)
       return newTask
     } catch (e) {
@@ -201,18 +186,11 @@ export function useTaskModule(directory: Directory) {
     loading.value = true
     error.value = null
     try {
+      const updated = await taskApi.update(taskId, patch)
       const index = tasks.value.findIndex((t) => t.id === taskId)
-      if (index === -1) {
-        error.value = 'Task not found'
-        return null
+      if (index !== -1) {
+        tasks.value[index] = updated
       }
-
-      const updated: Task = {
-        ...tasks.value[index],
-        ...patch,
-        updatedAt: new Date().toISOString(),
-      }
-      tasks.value[index] = updated
       return updated
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to update task'
@@ -232,13 +210,11 @@ export function useTaskModule(directory: Directory) {
     loading.value = true
     error.value = null
     try {
+      await taskApi.delete(taskId)
       const index = tasks.value.findIndex((t) => t.id === taskId)
-      if (index === -1) {
-        error.value = 'Task not found'
-        return false
+      if (index !== -1) {
+        tasks.value.splice(index, 1)
       }
-
-      tasks.value.splice(index, 1)
       return true
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to delete task'
@@ -263,6 +239,27 @@ export function useTaskModule(directory: Directory) {
     filter.value = {}
   }
 
+  // Reorder a task
+  async function reorderTask(taskId: string, newStatus: string, newSortOrder: number): Promise<Task | null> {
+    if (!hasTaskCapability.value) return null
+
+    loading.value = true
+    error.value = null
+    try {
+      const updated = await taskApi.reorder(taskId, newStatus, newSortOrder)
+      const index = tasks.value.findIndex((t) => t.id === taskId)
+      if (index !== -1) {
+        tasks.value[index] = updated
+      }
+      return updated
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Failed to reorder task'
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     // State
     tasks: filteredTasks,
@@ -283,6 +280,7 @@ export function useTaskModule(directory: Directory) {
     createTask,
     updateTask,
     deleteTask,
+    reorderTask,
     setFilter,
     setSort,
     clearFilter,

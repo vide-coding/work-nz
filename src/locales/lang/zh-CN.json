@@ -281,5 +281,22 @@
     "size": "大小",
     "modified": "修改日期",
     "itemCount": "项"
+  },
+  "task": {
+    "quickAdd": "快速添加任务...",
+    "add": "添加",
+    "todo": "待办",
+    "inProgress": "进行中",
+    "done": "已完成",
+    "priority": "优先级",
+    "assignee": "指派人",
+    "dueDate": "截止日期",
+    "description": "描述",
+    "status": "状态",
+    "title": "标题",
+    "delete": "删除任务",
+    "deleteConfirm": "确定要删除这个任务吗？",
+    "noTasks": "暂无任务",
+    "createFirst": "创建你的第一个任务"
   }
 }

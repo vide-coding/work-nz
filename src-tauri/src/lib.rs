@@ -105,6 +105,12 @@ pub fn run() {
             template_from_directories,
             template_export,
             template_import,
+            // Task commands
+            task_list,
+            task_create,
+            task_update,
+            task_delete,
+            task_reorder,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

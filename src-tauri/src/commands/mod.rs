@@ -7,6 +7,7 @@ pub mod module;
 pub mod project;
 pub mod template;
 pub mod workspace;
+pub mod task;
 
 pub use db_helpers::*;
 pub use dir_type::*;
@@ -17,3 +18,4 @@ pub use module::*;
 pub use project::*;
 pub use template::*;
 pub use workspace::*;
+pub use task::*;

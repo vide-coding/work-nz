@@ -327,3 +327,27 @@ export type DirectoryTemplateCreateInput = {
 export type DirectoryTemplateUpdateInput = Partial<
   Pick<DirectoryTemplate, 'name' | 'description' | 'items'>
 >
+
+/**
+ * Task priority
+ */
+export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent'
+
+/**
+ * Task - represents a task in the task board
+ */
+export interface Task {
+  id: string
+  directoryId: string
+  parentId?: string       // Step 2 启用
+  title: string
+  description?: string
+  status: string          // todo | in_progress | done
+  priority: string        // low | medium | high | urgent
+  assignee?: string
+  dueDate?: string
+  sortOrder: number
+  isCompleted: boolean    // Step 2 启用
+  createdAt: string
+  updatedAt: string
+}

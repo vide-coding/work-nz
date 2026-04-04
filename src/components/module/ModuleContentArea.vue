@@ -5,6 +5,7 @@ import type { Directory } from '@/types'
 import { moduleRegistry } from '@/composables/useModuleRegistry'
 import GitModuleView from './GitModuleView.vue'
 import FileModuleView from './FileModuleView.vue'
+import TaskBoardView from './TaskBoardView.vue'
 
 const { t } = useI18n()
 
@@ -49,12 +50,7 @@ const moduleType = computed(() => module.value?.key)
 
         <!-- Task Module Content -->
         <template v-else-if="moduleType === 'task'">
-          <div class="module-content-area__tasks">
-            <p>{{ t('module.taskEnabled') }}</p>
-            <p class="module-content-area__hint">
-              {{ t('module.taskHint') }}
-            </p>
-          </div>
+          <TaskBoardView :directory="props.directory" />
         </template>
 
         <!-- File Module Content -->

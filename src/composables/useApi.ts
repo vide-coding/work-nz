@@ -29,6 +29,7 @@ import type {
   DirectoryTemplateCreateInput,
   DirectoryTemplateUpdateInput,
   TemplateScope,
+  Task,
 } from '@/types'
 
 // Workspace API
@@ -386,5 +387,36 @@ export const templateApi = {
 
   async import(filePath: string): Promise<DirectoryTemplate> {
     return invoke('template_import', { filePath })
+  },
+}
+
+// Task API
+export const taskApi = {
+  async list(directoryId: string): Promise<Task[]> {
+    return invoke('task_list', { directoryId })
+  },
+
+  async create(
+    directoryId: string,
+    title: string,
+    description?: string,
+    priority?: string,
+    assignee?: string,
+    dueDate?: string,
+    status?: string
+  ): Promise<Task> {
+    return invoke('task_create', { directoryId, title, description, priority, assignee, dueDate, status })
+  },
+
+  async update(id: string, patch: Partial<Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'assignee' | 'dueDate'>>): Promise<Task> {
+    return invoke('task_update', { id, patch })
+  },
+
+  async delete(id: string): Promise<void> {
+    return invoke('task_delete', { id })
+  },
+
+  async reorder(id: string, newStatus: string, newSortOrder: number): Promise<Task> {
+    return invoke('task_reorder', { id, newStatus, newSortOrder })
   },
 }

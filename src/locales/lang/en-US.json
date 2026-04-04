@@ -281,5 +281,22 @@
     "size": "Size",
     "modified": "Modified",
     "itemCount": "items"
+  },
+  "task": {
+    "quickAdd": "Quick add task...",
+    "add": "Add",
+    "todo": "To Do",
+    "inProgress": "In Progress",
+    "done": "Done",
+    "priority": "Priority",
+    "assignee": "Assignee",
+    "dueDate": "Due Date",
+    "description": "Description",
+    "status": "Status",
+    "title": "Title",
+    "delete": "Delete Task",
+    "deleteConfirm": "Are you sure you want to delete this task?",
+    "noTasks": "No tasks yet",
+    "createFirst": "Create your first task"
   }
 }
