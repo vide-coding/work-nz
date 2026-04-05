@@ -16,14 +16,6 @@ import { BASE_URL } from '../utils/url-helper'
  * - SubTaskList / SubTaskItem (subtask management)
  */
 
-/** Priority dot colors used in task cards */
-const PRIORITY_COLORS = {
-  urgent: '#EF4444',
-  high: '#F59E0B',
-  medium: '#10B981',
-  low: '#9CA3AF',
-} as const
-
 export class TaskBoardViewPage {
   constructor(readonly page: Page) {}
 
@@ -44,32 +36,37 @@ export class TaskBoardViewPage {
   // TaskBoardView root
   // ============================================================
 
+  // Root board: TaskBoardView uses "flex flex-col h-full bg-gray-100"
   get taskBoard(): Locator {
-    return this.page.locator('.task-board')
+    return this.page.locator('.bg-gray-100').first()
   }
 
+  // Board columns container
   get boardColumns(): Locator {
-    return this.page.locator('.task-board__columns')
+    return this.page.locator('.overflow-x-auto')
   }
 
   get loadingState(): Locator {
-    return this.page.locator('.task-board__loading')
-  }
-
-  get errorState(): Locator {
-    return this.page.locator('.task-board__error')
+    return this.page.locator('.text-gray-500').first()
   }
 
   get toolbar(): Locator {
-    return this.page.locator('.task-board__toolbar')
+    // The toolbar is the div with "flex items-center justify-end gap-2 px-4 pb-2"
+    return this.page.locator('.flex.items-center\\.justify-end')
+  }
+
+  // Settings button inside the toolbar (Lucide Settings icon)
+  getSettingsButton(): Locator {
+    return this.toolbar.locator('button').filter({ has: this.page.locator('svg') })
   }
 
   // ============================================================
   // Quick Add
   // ============================================================
 
+  // TaskQuickAdd: "w-full px-3.5 py-2 text-sm text-gray-900 border..."
   get quickAddInput(): Locator {
-    return this.page.locator('.task-quick-add__input, .task-quick-add input')
+    return this.page.locator('input[placeholder]').first()
   }
 
   getQuickAddInput(): Locator {
@@ -80,81 +77,80 @@ export class TaskBoardViewPage {
   // Columns
   // ============================================================
 
+  // TaskColumn outer div: "flex flex-col min-w-[280px] max-w-[320px] flex-1 bg-gray-50 rounded-xl"
   get columns(): Locator {
-    return this.page.locator('.task-column')
+    return this.page.locator('.bg-gray-50.rounded-xl')
   }
 
   getColumnByName(name: string): Locator {
-    return this.page.locator('.task-column').filter({ hasText: name })
+    return this.columns.filter({ hasText: name })
   }
 
-  get columnCount(): Locator {
-    return this.page.locator('.task-board__column-count')
-  }
-
-  getSettingsButton(): Locator {
-    return this.page.locator('.task-board__settings-btn')
-  }
-
-  // Column header elements
+  // Column header: "flex items-center gap-2 px-4 py-3 bg-white border-b border-gray-200"
   getColumnHeader(columnName: string): Locator {
-    return this.page.locator('.task-column__header').filter({ hasText: columnName })
+    return this.page.locator('.border-b.border-gray-200').filter({ hasText: columnName })
   }
 
   getColumnAddButton(columnName: string): Locator {
-    return this.getColumnHeader(columnName).locator('.task-column__add')
+    // Add button in column header (Plus icon)
+    return this.getColumnHeader(columnName).locator('button')
   }
 
   getColumnCountBadge(columnName: string): Locator {
-    return this.getColumnHeader(columnName).locator('.task-column__count')
-  }
-
-  get columnList(): Locator {
-    return this.page.locator('.task-column__list')
+    // Count badge: "text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full"
+    return this.getColumnHeader(columnName).locator('.rounded-full')
   }
 
   // ============================================================
   // Task Cards
   // ============================================================
 
+  // TaskCard outer div: "bg-white border border-gray-200 rounded-lg overflow-hidden"
   get taskCards(): Locator {
-    return this.page.locator('.task-card')
+    return this.page.locator('.bg-white.border.border-gray-200.rounded-lg').first()
   }
 
+  // Find task card by title text
   getTaskCardByTitle(title: string): Locator {
-    return this.page.locator('.task-card__title').filter({ hasText: title }).locator('..').locator('..')
+    // Title is .text-sm.font-medium.text-gray-800 inside a task card
+    return this.page
+      .locator('.text-sm.font-medium.text-gray-800')
+      .filter({ hasText: title })
+      .locator('..')
+      .locator('..')
   }
 
   get taskCardTitles(): Locator {
-    return this.page.locator('.task-card__title')
+    return this.page.locator('.text-sm.font-medium.text-gray-800')
   }
 
-  // Priority dot in task card
+  // Priority dot: "w-2 h-2 rounded-full" (small colored circle)
   getTaskCardPriority(taskTitle: string): Locator {
-    return this.getTaskCardByTitle(taskTitle).locator('.task-card__priority')
+    return this.getTaskCardByTitle(taskTitle).locator('.rounded-full.w-2')
   }
 
-  // Assignee in task card
+  // Assignee text: "text-xs text-gray-500"
   getTaskCardAssignee(taskTitle: string): Locator {
-    return this.getTaskCardByTitle(taskTitle).locator('.task-card__assignee')
+    return this.getTaskCardByTitle(taskTitle).locator('.text-xs.text-gray-500')
   }
 
-  // Expand button (shows subtask progress, e.g. "2/5")
+  // Expand button: shows child count "N/M" or chevron
   getTaskExpandBtn(taskTitle: string): Locator {
-    return this.getTaskCardByTitle(taskTitle).locator('.task-card__expand-btn')
+    return this.getTaskCardByTitle(taskTitle).locator('.rounded-full.px-1\\.5')
   }
 
-  // Subtask list (visible after expand)
+  // Subtask list inside expanded card
   getTaskSubtasks(taskTitle: string): Locator {
-    return this.getTaskCardByTitle(taskTitle).locator('.task-card__subtasks')
+    return this.getTaskCardByTitle(taskTitle).locator('.border-t.border-gray-200')
   }
 
   // ============================================================
   // Task Detail Panel
   // ============================================================
 
+  // Detail panel: "fixed top-0 right-0 w-[400px] h-screen bg-white"
   get taskDetailPanel(): Locator {
-    return this.page.locator('.task-detail-panel')
+    return this.page.locator('.fixed.top-0.right-0')
   }
 
   getDetailTitleInput(): Locator {
@@ -173,95 +169,117 @@ export class TaskBoardViewPage {
     return this.taskDetailPanel.locator('select').nth(1)
   }
 
+  // Close button in panel header (X icon)
   getDetailCloseButton(): Locator {
-    return this.taskDetailPanel.locator('.task-detail-panel__close')
+    return this.taskDetailPanel.locator('.text-gray-500 button, button:has(svg)')
   }
 
   getDetailDeleteButton(): Locator {
-    return this.taskDetailPanel.locator('.task-detail-panel__delete')
+    return this.taskDetailPanel.locator('button:has-text("Delete"), button:has-text("删除")')
   }
 
-  // Subtask section in detail panel
+  // Subtask section: "border-t border-gray-200 px-5 py-4 bg-gray-50"
   get detailSubtasksSection(): Locator {
-    return this.taskDetailPanel.locator('.task-detail-panel__subtasks')
+    return this.taskDetailPanel.locator('.bg-gray-50.border-t')
   }
 
   getDetailSubtaskItems(): Locator {
-    return this.detailSubtasksSection.locator('.task-detail-panel__subtask-item')
+    return this.detailSubtasksSection.locator('.bg-white.border')
   }
 
+  // Quick add input in subtasks section
   getDetailSubtaskAddInput(): Locator {
-    return this.detailSubtasksSection.locator('.task-detail-panel__subtasks-input')
+    return this.detailSubtasksSection.locator('input')
   }
 
+  // Add subtask button
   getDetailSubtaskAddButton(): Locator {
-    return this.detailSubtasksSection.locator('.task-detail-panel__subtasks-btn')
+    return this.detailSubtasksSection.locator('button:has-text("Add"), button:has-text("添加")')
   }
 
   // ============================================================
   // Column Settings Dialog
   // ============================================================
 
+  // Dialog backdrop: "fixed inset-0 bg-black/40"
   get columnSettingsDialog(): Locator {
-    return this.page.locator('.settings-dialog')
+    return this.page.locator('.fixed.inset-0')
   }
 
   get columnSettingsTitle(): Locator {
-    return this.columnSettingsDialog.locator('.settings-dialog__title')
+    return this.columnSettingsDialog.locator('h3')
   }
 
+  // Dialog inner panel
+  get columnSettingsPanel(): Locator {
+    return this.columnSettingsDialog.locator('.bg-white.rounded-xl')
+  }
+
+  // Column list inside dialog
   get columnSettingsList(): Locator {
-    return this.columnSettingsDialog.locator('.settings-dialog__list')
+    return this.columnSettingsPanel.locator('.flex.flex-col.gap-1\\.5')
   }
 
+  // Single column item: "bg-gray-50 border border-gray-200 rounded-lg"
   getColumnSettingsItem(columnName: string): Locator {
-    return this.columnSettingsDialog.locator('.column-item').filter({ hasText: columnName })
+    return this.columnSettingsPanel
+      .locator('.bg-gray-50.border.border-gray-200')
+      .filter({ hasText: columnName })
   }
 
+  // Visibility toggle button
   getColumnVisibilityButton(columnName: string): Locator {
-    return this.getColumnSettingsItem(columnName).locator('.column-item__visibility')
+    const item = this.getColumnSettingsItem(columnName)
+    // Button text is either "Visible" / "显示" or "Hidden" / "隐藏"
+    return item.locator('button').filter({ hasText: /Visible|Hidden|显示|隐藏/ })
   }
 
+  // Delete button in column item (Trash2 icon)
   getColumnDeleteButton(columnName: string): Locator {
-    return this.getColumnSettingsItem(columnName).locator('.column-item__delete')
+    return this.getColumnSettingsItem(columnName).locator('button:has(svg)')
   }
 
+  // Add column button
   get addColumnButton(): Locator {
-    return this.columnSettingsDialog.locator('.add-column-btn')
+    return this.columnSettingsPanel.locator('button').filter({ hasText: 'Add Column' })
   }
 
+  // Add column form
   get addColumnForm(): Locator {
-    return this.columnSettingsDialog.locator('.add-form')
+    return this.columnSettingsPanel.locator('.border-dashed')
   }
 
+  // Inputs in add form
   get newColumnKeyInput(): Locator {
-    return this.addColumnForm.locator('.add-form__input').first()
+    return this.addColumnForm.locator('input').nth(0)
   }
 
   get newColumnNameInput(): Locator {
-    return this.addColumnForm.locator('.add-form__input').nth(1)
+    return this.addColumnForm.locator('input').nth(1)
   }
 
   get newColumnColorInput(): Locator {
-    return this.addColumnForm.locator('input[type="color"]').first()
+    return this.addColumnForm.locator('input[type="color"]')
   }
 
   get submitAddColumnButton(): Locator {
-    return this.addColumnForm.locator('.add-form__submit')
+    return this.addColumnForm.locator('button:has-text("Create")')
   }
 
   get cancelAddColumnButton(): Locator {
-    return this.addColumnForm.locator('.add-form__cancel')
+    return this.addColumnForm.locator('button:has-text("Cancel")')
   }
 
+  // Close button in dialog header
   get settingsCloseButton(): Locator {
-    return this.columnSettingsDialog.locator('.settings-dialog__close')
+    return this.columnSettingsPanel.locator('.text-gray-500 button')
   }
 
   // ============================================================
   // SubTaskList (inside expanded card)
   // ============================================================
 
+  // Subtask items have class "subtask-item" on root div
   getSubtaskCheckbox(parentTitle: string, subtaskTitle: string): Locator {
     return this.getTaskCardByTitle(parentTitle)
       .locator('.subtask-item')
@@ -273,11 +291,11 @@ export class TaskBoardViewPage {
     return this.getTaskCardByTitle(parentTitle)
       .locator('.subtask-item')
       .filter({ hasText: subtaskTitle })
-      .locator('.subtask-item__delete')
+      .locator('button')
   }
 
   getSubtaskAddInput(parentTitle: string): Locator {
-    return this.getTaskCardByTitle(parentTitle).locator('.subtask-list__input')
+    return this.getTaskCardByTitle(parentTitle).locator('input')
   }
 
   // ============================================================
@@ -354,13 +372,8 @@ export class TaskBoardViewPage {
 
   async deleteColumn(columnName: string) {
     await this.getColumnDeleteButton(columnName).click()
-    // Handle confirm dialog
-    const dialog = this.page.locator('[role="alertdialog"], [role="dialog"]').first()
-    const isVisible = await dialog.isVisible().catch(() => false)
-    if (isVisible) {
-      await dialog.getByRole('button', { name: /delete|删除|confirm|确定/i }).click()
-      await this.page.waitForTimeout(500)
-    }
+    await this.getColumnDeleteButton(columnName).click()
+    await this.page.waitForTimeout(500)
   }
 
   async toggleTaskSubtask(parentTitle: string, subtaskTitle: string) {

@@ -72,8 +72,8 @@ export function useTaskModule(directory: Directory) {
       )
     }
 
-    // Apply sort
-    result.sort((a, b) => {
+    // Apply sort (spread first to avoid mutating the original array)
+    return [...result].sort((a, b) => {
       let comparison = 0
       switch (sort.value.field) {
         case 'priority':
@@ -370,7 +370,7 @@ export function useTaskModule(directory: Directory) {
   async function createColumn(statusKey: string, name: string, color: string): Promise<TaskColumn | null> {
     try {
       const col = await taskApi.createColumn(directory.id, statusKey, name, color)
-      columns.value.push(col)
+      columns.value = [...columns.value, col]
       return col
     } catch (e) {
       console.error('Failed to create column:', e)
@@ -420,9 +420,9 @@ export function useTaskModule(directory: Directory) {
     }
   }
 
-  // Convert column to status value format for template compatibility
+  // Convert column to status value format for template compatibility (visible columns only)
   const columnStatusValues = computed(() =>
-    columns.value.map((c) => ({
+    columns.value.filter((c) => c.isVisible).map((c) => ({
       id: c.statusKey,
       name: c.name,
       color: c.color,

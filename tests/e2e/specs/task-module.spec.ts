@@ -310,7 +310,7 @@ test.describe('Task Module - UI Elements', () => {
         await taskDir.click()
         await page.waitForTimeout(1000)
 
-        const priorityDot = page.locator('.task-card__priority').first()
+        const priorityDot = taskPage.taskBoard.locator('.rounded-full.w-2').first()
         const isVisible = await priorityDot.isVisible().catch(() => false)
         if (isVisible) {
           await expect(priorityDot).toBeVisible()
@@ -755,7 +755,7 @@ test.describe('Task Module - UI Elements', () => {
         const subtasksVisible = await subtasks.isVisible().catch(() => false)
 
         if (subtasksVisible) {
-          const checkbox = page.locator('.task-card__subtasks input[type="checkbox"]').first()
+          const checkbox = taskPage.getTaskCardByTitle('Write unit tests').locator('.subtask-item input[type="checkbox"]').first()
           const checkboxVisible = await checkbox.isVisible().catch(() => false)
           if (checkboxVisible) {
             await expect(checkbox).toBeVisible()

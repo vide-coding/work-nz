@@ -16,7 +16,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="group flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-md transition-colors hover:bg-gray-100">
+  <div class="subtask-item group flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-md transition-colors hover:bg-gray-100">
     <input
       type="checkbox"
       :checked="task.isCompleted"

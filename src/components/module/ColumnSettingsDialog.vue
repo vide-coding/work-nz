@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { X, Plus, Trash2, GripVertical } from 'lucide-vue-next'
 import draggable from 'vuedraggable'
 import type { TaskColumn } from '@/types'
