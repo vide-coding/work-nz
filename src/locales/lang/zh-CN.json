@@ -310,6 +310,12 @@
     "showColumn": "隐藏",
     "hideColumn": "显示",
     "noVisibleColumns": "没有可见的列",
-    "configureColumns": "配置列"
+    "configureColumns": "配置列",
+    "addTask": "添加任务",
+    "addToColumn": "添加到列",
+    "titlePlaceholder": "任务标题",
+    "collapse": "折叠",
+    "expand": "展开",
+    "expandSubtasks": "展开子任务"
   }
 }

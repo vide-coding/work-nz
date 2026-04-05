@@ -310,6 +310,12 @@
     "showColumn": "Hide",
     "hideColumn": "Show",
     "noVisibleColumns": "No visible columns",
-    "configureColumns": "Configure columns"
+    "configureColumns": "Configure columns",
+    "addTask": "Add Task",
+    "addToColumn": "Add to column",
+    "titlePlaceholder": "Task title",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "expandSubtasks": "Expand subtasks"
   }
 }

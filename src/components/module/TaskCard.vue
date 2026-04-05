@@ -56,7 +56,7 @@ function onCardClick() {
             v-if="childCount.total > 0"
             class="flex items-center gap-0.5 px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded-full text-[11px] transition-colors hover:bg-gray-200 hover:text-gray-700 flex-shrink-0"
             @click.stop="toggleExpand"
-            :title="isExpanded ? 'Collapse' : 'Expand'"
+            :title="isExpanded ? $t('task.collapse') : $t('task.expand')"
           >
             <span class="font-semibold">{{ childCount.completed }}/{{ childCount.total }}</span>
             <component :is="isExpanded ? ChevronDown : ChevronRight" :size="14" />
@@ -65,7 +65,7 @@ function onCardClick() {
             v-else
             class="p-0.5 text-gray-400 hover:text-gray-600 transition-colors"
             @click.stop="toggleExpand"
-            :title="'Expand subtasks'"
+            :title="$t('task.expandSubtasks')"
           >
             <ChevronRight :size="14" />
           </button>
