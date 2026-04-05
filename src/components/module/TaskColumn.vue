@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { Plus } from 'lucide-vue-next'
 import draggable from 'vuedraggable'
 import type { Task } from '@/types'
@@ -32,17 +31,16 @@ function getChildren(taskId: string): Task[] {
   return props.childTasksMap[taskId] || []
 }
 
-const localTasks = computed({
-  get: () => props.tasks,
-  set: (val) => emit('tasks-changed', val),
-})
-
 function onTaskClick(task: Task) {
   emit('task-click', task)
 }
 
 function onAddClick() {
   emit('add-task', props.statusKey)
+}
+
+function onModelValueUpdate(newTasks: Task[]) {
+  emit('tasks-changed', newTasks)
 }
 </script>
 
@@ -62,12 +60,14 @@ function onAddClick() {
 
     <div class="flex-1 p-2 overflow-y-auto">
       <draggable
-        v-model="localTasks"
+        :model-value="tasks"
+        @update:model-value="onModelValueUpdate"
         :group="{ name: 'tasks' }"
         item-key="id"
         class="flex flex-col gap-2 min-h-10"
-        ghost-class="opacity-40 bg-blue-100 border-2 border-dashed border-blue-500"
-        drag-class="rotate-2 shadow-xl"
+        animation="200"
+        force-fallback="true"
+        ghost-class="opacity-50"
       >
         <template #item="{ element }">
           <TaskCard
@@ -88,6 +88,7 @@ function onAddClick() {
     </div>
   </div>
 </template>
+<style>
 .task-card--ghost {
   opacity: 0.4;
   background: #dbeafe;

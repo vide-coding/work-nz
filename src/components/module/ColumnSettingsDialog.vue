@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { X, Plus, Trash2, GripVertical } from 'lucide-vue-next'
 import draggable from 'vuedraggable'
 import type { TaskColumn } from '@/types'
@@ -24,7 +24,7 @@ const emit = defineEmits<{
 
 // Local copy of columns for drag-and-drop
 const localColumns = ref<TaskColumn[]>([])
-
+const previousOrder = ref<Record<string, number>>({})
 const showAddForm = ref(false)
 const newStatusKey = ref('')
 const newName = ref('')
@@ -40,8 +40,8 @@ const editingId = ref<string | null>(null)
 const editName = ref('')
 const editColor = ref('')
 const pendingDeleteId = ref<string | null>(null)
-const previousOrder = ref<Record<string, number>>({})
 
+// Sync when props.columns changes
 watch(
   () => props.columns,
   (cols) => {
@@ -52,6 +52,20 @@ watch(
   },
   { immediate: true }
 )
+
+function onModelValueUpdate(newList: TaskColumn[]) {
+  localColumns.value = newList
+}
+
+function onDragEnd() {
+  // Only emit update for columns whose order actually changed
+  localColumns.value.forEach((col, index) => {
+    if (previousOrder.value[col.id] !== index) {
+      emit('update', col.id, { sortOrder: index })
+      previousOrder.value[col.id] = index
+    }
+  })
+}
 
 function openAddForm() {
   showAddForm.value = true
@@ -70,16 +84,6 @@ function submitAdd() {
   if (!key || !name) return
   emit('create', key, name, newColor.value)
   showAddForm.value = false
-}
-
-function onDragEnd() {
-  // Only emit update for columns whose order actually changed
-  localColumns.value.forEach((col, index) => {
-    if (previousOrder.value[col.id] !== index) {
-      emit('update', col.id, { sortOrder: index })
-      previousOrder.value[col.id] = index
-    }
-  })
 }
 
 function startEdit(col: TaskColumn) {
@@ -134,15 +138,19 @@ function cancelDelete() {
           <template v-else>
             <!-- Column list with drag reorder -->
             <draggable
-              v-model="localColumns"
+              :model-value="localColumns"
+              @update:model-value="onModelValueUpdate"
               item-key="id"
-              handle=".column-item__drag"
+              handle=".drag-handle"
               class="flex flex-col gap-1.5 mb-3"
+              animation="200"
+              force-fallback="true"
+              ghost-class="opacity-50"
               @end="onDragEnd"
             >
               <template #item="{ element: col }">
                 <div class="group flex items-center gap-2 px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-lg">
-                  <div class="column-item__drag text-gray-300 cursor-grab active:cursor-grabbing flex-shrink-0">
+                  <div class="drag-handle text-gray-300 cursor-grab active:cursor-grabbing flex-shrink-0">
                     <GripVertical :size="14" />
                   </div>
 
