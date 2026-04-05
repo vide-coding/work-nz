@@ -12,23 +12,7 @@ fn task_get(id: String) -> Result<Task, String> {
                     assignee, due_date, sort_order, is_completed, created_at, updated_at
              FROM tasks WHERE id = ?1",
             params![id],
-            |row| {
-                Ok(Task {
-                    id: row.get(0)?,
-                    directory_id: row.get(1)?,
-                    parent_id: row.get(2)?,
-                    title: row.get(3)?,
-                    description: row.get(4)?,
-                    status: row.get(5)?,
-                    priority: row.get(6)?,
-                    assignee: row.get(7)?,
-                    due_date: row.get(8)?,
-                    sort_order: row.get(9)?,
-                    is_completed: row.get::<_, i32>(10)? != 0,
-                    created_at: row.get(11)?,
-                    updated_at: row.get(12)?,
-                })
-            },
+            map_task_row,
         )
         .map_err(|e| format!("任务不存在: {}", e))
     })
@@ -49,23 +33,7 @@ pub fn task_list(directory_id: String) -> Result<Vec<Task>, String> {
             .map_err(|e| format!("查询失败: {}", e))?;
 
         let tasks = stmt
-            .query_map(params![directory_id], |row| {
-                Ok(Task {
-                    id: row.get(0)?,
-                    directory_id: row.get(1)?,
-                    parent_id: row.get(2)?,
-                    title: row.get(3)?,
-                    description: row.get(4)?,
-                    status: row.get(5)?,
-                    priority: row.get(6)?,
-                    assignee: row.get(7)?,
-                    due_date: row.get(8)?,
-                    sort_order: row.get(9)?,
-                    is_completed: row.get::<_, i32>(10)? != 0,
-                    created_at: row.get(11)?,
-                    updated_at: row.get(12)?,
-                })
-            })
+            .query_map(params![directory_id], map_task_row)
             .map_err(|e| format!("查询失败: {}", e))?
             .collect::<Result<Vec<_>, _>>()
             .map_err(|e| format!("读取数据失败: {}", e))?;
@@ -203,23 +171,7 @@ pub fn task_list_children(parent_id: String) -> Result<Vec<Task>, String> {
             .map_err(|e| format!("查询失败: {}", e))?;
 
         let tasks = stmt
-            .query_map(params![parent_id], |row| {
-                Ok(Task {
-                    id: row.get(0)?,
-                    directory_id: row.get(1)?,
-                    parent_id: row.get(2)?,
-                    title: row.get(3)?,
-                    description: row.get(4)?,
-                    status: row.get(5)?,
-                    priority: row.get(6)?,
-                    assignee: row.get(7)?,
-                    due_date: row.get(8)?,
-                    sort_order: row.get(9)?,
-                    is_completed: row.get::<_, i32>(10)? != 0,
-                    created_at: row.get(11)?,
-                    updated_at: row.get(12)?,
-                })
-            })
+            .query_map(params![parent_id], map_task_row)
             .map_err(|e| format!("查询失败: {}", e))?
             .collect::<Result<Vec<_>, _>>()
             .map_err(|e| format!("读取数据失败: {}", e))?;
@@ -256,28 +208,12 @@ pub fn task_create_child(
 
     with_db!(conn, {
         // 获取父任务信息（用于 directory_id）
-        let parent: Task = conn.query_row(
+        let parent = conn.query_row(
             "SELECT id, directory_id, parent_id, title, description, status, priority,
                     assignee, due_date, sort_order, is_completed, created_at, updated_at
              FROM tasks WHERE id = ?1",
             params![parent_id],
-            |row| {
-                Ok(Task {
-                    id: row.get(0)?,
-                    directory_id: row.get(1)?,
-                    parent_id: row.get(2)?,
-                    title: row.get(3)?,
-                    description: row.get(4)?,
-                    status: row.get(5)?,
-                    priority: row.get(6)?,
-                    assignee: row.get(7)?,
-                    due_date: row.get(8)?,
-                    sort_order: row.get(9)?,
-                    is_completed: row.get::<_, i32>(10)? != 0,
-                    created_at: row.get(11)?,
-                    updated_at: row.get(12)?,
-                })
-            },
+            map_task_row,
         )
         .map_err(|e| format!("父任务不存在: {}", e))?;
 
@@ -329,19 +265,7 @@ fn column_get(id: String) -> Result<TaskColumn, String> {
             "SELECT id, directory_id, status_key, name, color, sort_order, is_visible, created_at, updated_at
              FROM task_columns WHERE id = ?1",
             params![id],
-            |row| {
-                Ok(TaskColumn {
-                    id: row.get(0)?,
-                    directory_id: row.get(1)?,
-                    status_key: row.get(2)?,
-                    name: row.get(3)?,
-                    color: row.get(4)?,
-                    sort_order: row.get(5)?,
-                    is_visible: row.get::<_, i32>(6)? != 0,
-                    created_at: row.get(7)?,
-                    updated_at: row.get(8)?,
-                })
-            },
+            map_task_column_row,
         )
         .map_err(|e| format!("列不存在: {}", e))
     })
@@ -359,19 +283,7 @@ pub fn task_column_list(directory_id: String) -> Result<Vec<TaskColumn>, String>
             .map_err(|e| format!("查询失败: {}", e))?;
 
         let columns = stmt
-            .query_map(params![directory_id], |row| {
-                Ok(TaskColumn {
-                    id: row.get(0)?,
-                    directory_id: row.get(1)?,
-                    status_key: row.get(2)?,
-                    name: row.get(3)?,
-                    color: row.get(4)?,
-                    sort_order: row.get(5)?,
-                    is_visible: row.get::<_, i32>(6)? != 0,
-                    created_at: row.get(7)?,
-                    updated_at: row.get(8)?,
-                })
-            })
+            .query_map(params![directory_id], map_task_column_row)
             .map_err(|e| format!("查询失败: {}", e))?
             .collect::<Result<Vec<_>, _>>()
             .map_err(|e| format!("读取数据失败: {}", e))?;
@@ -479,19 +391,7 @@ pub fn task_column_delete(id: String) -> Result<(), String> {
                 "SELECT id, directory_id, status_key, name, color, sort_order, is_visible, created_at, updated_at
                  FROM task_columns WHERE id = ?1",
                 params![id],
-                |row| {
-                    Ok(TaskColumn {
-                        id: row.get(0)?,
-                        directory_id: row.get(1)?,
-                        status_key: row.get(2)?,
-                        name: row.get(3)?,
-                        color: row.get(4)?,
-                        sort_order: row.get(5)?,
-                        is_visible: row.get::<_, i32>(6)? != 0,
-                        created_at: row.get(7)?,
-                        updated_at: row.get(8)?,
-                    })
-                },
+                map_task_column_row,
             )
             .map_err(|e| format!("列不存在: {}", e))?;
 
