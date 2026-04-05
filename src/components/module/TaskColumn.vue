@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, computed } from 'vue'
 import { Plus } from 'lucide-vue-next'
 import draggable from 'vuedraggable'
 import type { Task } from '@/types'
@@ -28,6 +29,13 @@ const emit = defineEmits<{
   'add-child': [parentId: string, title: string]
 }>()
 
+// props.modelValue is readonly (from parent). Make it writable locally
+// so vuedraggable can mutate the array in-place.
+const localTasks = computed({
+  get: () => props.modelValue,
+  set: (val: Task[]) => emit('update:modelValue', val),
+})
+
 function getChildren(taskId: string): Task[] {
   return props.childTasksMap[taskId] || []
 }
@@ -40,20 +48,9 @@ function onAddClick() {
   emit('add-task', props.statusKey)
 }
 
-// v-model two-way: vuedraggable mutates the array in-place
-// @change only needed for detecting cross-column "from" side
-function onChange(evt: { added?: { element: Task; newIndex: number }; moved?: { element: Task; newIndex: number } }) {
-  if (evt.moved) {
-    // In-place reorder within this column — vuedraggable already updated modelValue
-    emit('update:modelValue', [...props.modelValue])
-  }
-  // evt.added is handled by the move callback in the parent (cross-column)
-  // evt.removed is ignored — source column update is handled by move callback
-}
-
 // Cross-column move: use move callback (fires before @change, has full context)
 function onMove(evt: { data: Task; futureIndex: number; to: HTMLElement }) {
-  // Find the destination column's statusKey from the DOM
+  if (!evt.data) return false
   const toColumn = evt.to.closest('[data-column-key]') as HTMLElement | null
   const toStatusKey = toColumn?.dataset.columnKey ?? props.statusKey
   emit('task-moved', {
@@ -62,7 +59,6 @@ function onMove(evt: { data: Task; futureIndex: number; to: HTMLElement }) {
     to: toStatusKey,
     newIndex: evt.futureIndex,
   })
-  // Return true to allow the move, false to cancel
   return true
 }
 </script>
@@ -75,7 +71,7 @@ function onMove(evt: { data: Task; futureIndex: number; to: HTMLElement }) {
         :style="{ backgroundColor: statusColor }"
       />
       <span class="text-sm font-semibold text-gray-700 flex-1">{{ statusName }}</span>
-      <span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{{ modelValue.length }}</span>
+      <span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{{ localTasks.length }}</span>
       <button class="flex items-center justify-center w-6 h-6 text-gray-400 bg-transparent rounded hover:bg-gray-100 hover:text-gray-700 transition-colors" @click="onAddClick" :title="$t('task.add')">
         <Plus :size="14" />
       </button>
@@ -83,8 +79,8 @@ function onMove(evt: { data: Task; futureIndex: number; to: HTMLElement }) {
 
     <div class="flex-1 p-2 overflow-y-auto">
       <draggable
-        v-model="props.modelValue"
-        @change="onChange"
+        v-model="localTasks"
+        @change="() => {}"
         :group="{ name: 'tasks' }"
         item-key="id"
         class="flex flex-col gap-2 min-h-10"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, shallowRef, triggerRef, nextTick, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { Settings } from 'lucide-vue-next'
 import draggable from 'vuedraggable'
 import type { Directory, Task } from '@/types'
@@ -55,9 +55,19 @@ const boardColumns = computed(() =>
     }))
 )
 
-// columnTasks: allTasks 按列分组，驱动 TaskColumn 的 v-model
-const columnTasks = computed(() => {
-  const map: Record<string, Task[]> = {}
+// columnTasks: shallowRef，vuedraggable 可以直接修改数组引用（不用经过 readonly proxy）
+// 初始化时从 allTasks 同步，注意：不替换已有数组引用，避免打断 vuedraggable
+const columnTasks = shallowRef<Record<string, Task[]>>({})
+
+function syncColumnTasks() {
+  const map = columnTasks.value
+  // 初始化：为每个列创建数组
+  if (Object.keys(map).length === 0) {
+    for (const col of columns.value) {
+      map[col.statusKey] = []
+    }
+  }
+  // 重新填充任务
   for (const col of columns.value) {
     map[col.statusKey] = []
   }
@@ -66,18 +76,42 @@ const columnTasks = computed(() => {
       map[task.status].push(task)
     }
   }
-  return map
-})
+  for (const key of Object.keys(map)) {
+    map[key].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+  }
+  triggerRef(columnTasks)
+}
+
+watch([allTasks, columns], syncColumnTasks, { immediate: true })
+
+// vuedraggable 内部修改数组后，Vue 不会自动感知（shallowRef 不跟踪深层）
+// 需要手动调用 setColumnTasks 来：1）更新 columnTasks 引用，2）同步 allTasks 状态
+function setColumnTasks(statusKey: string, newList: Task[]) {
+  // 更新 columnTasks 的该列引用（vuedraggable 已修改数组，直接引用）
+  columnTasks.value[statusKey] = newList
+  // 检测跨列移动：对比任务当前 status，任务是否移入本列
+  if (newList.some((t) => t.status !== statusKey)) {
+    // 用 nextTick 等 vuedraggable DOM 操作完成后再更新 allTasks
+    // 这样 syncColumnTasks 看到的是已更新的 allTasks
+    nextTick(() => {
+      for (const task of newList) {
+        if (task.status !== statusKey) {
+          const idx = allTasks.value.findIndex((t) => t.id === task.id)
+          if (idx !== -1) {
+            allTasks.value[idx] = { ...allTasks.value[idx], status: statusKey }
+          }
+        }
+      }
+      triggerRef(columnTasks)
+    })
+  }
+}
 
 // 拖拽操作：vuedraggable v-model 直接管理内部列表，
 // 父组件通过 task-moved 事件同步 allTasks（后台 API 调用，不影响显示）
 async function onTaskMoved(payload: { task: Task; from: string; to: string; newIndex: number }) {
-  const { task, to, newIndex } = payload
-  // 更新 allTasks 中任务的状态（后台 API 持久化）
-  if (task.status !== to) {
-    await updateTask(task.id, { status: to })
-  }
-  // 立即调用 reorder API 持久化 sortOrder
+  const { task, from, to, newIndex } = payload
+  // 状态变更通过 setColumnTasks 已同步到 allTasks，这里只做 API 持久化
   await reorderTask(task.id, to, newIndex)
 }
 
@@ -252,9 +286,10 @@ function getSelectedChildTasks(): Task[] {
           :status-key="col.key"
           :status-name="col.name"
           :status-color="col.color"
-          v-model="columnTasks[col.key]"
+          :model-value="columnTasks[col.key] || []"
           :child-tasks-map="childTasksMap"
           :get-child-counts="getChildCounts"
+          @update:model-value="(list) => setColumnTasks(col.key, list)"
           @task-click="onTaskClick"
           @add-task="(key) => onAddTask(key, col.name)"
           @task-moved="onTaskMoved"
