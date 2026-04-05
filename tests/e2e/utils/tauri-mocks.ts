@@ -136,6 +136,34 @@ export interface MockModuleData {
   isBuiltIn: boolean
 }
 
+export interface MockTaskData {
+  id: string
+  directoryId: string
+  parentId?: string
+  title: string
+  description?: string
+  status: string
+  priority: string
+  assignee?: string
+  dueDate?: string
+  sortOrder: number
+  isCompleted: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface MockTaskColumnData {
+  id: string
+  directoryId: string
+  statusKey: string
+  name: string
+  color: string
+  sortOrder: number
+  isVisible: boolean
+  createdAt: string
+  updatedAt: string
+}
+
 // ============================================================================
 // Default mock data
 // ============================================================================
@@ -219,6 +247,42 @@ export const DEFAULT_MOCK_DIRECTORY: MockDirectoryData = {
   moduleId: 'mod-git-001',
   sortOrder: 0,
 }
+
+export const DEFAULT_MOCK_TASK_MODULE: MockModuleData = {
+  id: 'builtin:task',
+  key: 'task',
+  name: 'Task Board',
+  description: 'Kanban board for task management',
+  version: '1.0.0',
+  capabilities: ['task.create', 'task.list', 'task.update', 'task.delete', 'task.kanban'],
+  configSchema: {},
+  defaultConfig: {},
+  icon: 'CheckSquare',
+  isBuiltIn: true,
+}
+
+export const DEFAULT_MOCK_TASK_DIRECTORY: MockDirectoryData = {
+  id: 'dir-task-001',
+  projectId: 'proj-test-001',
+  name: 'Tasks',
+  relativePath: 'tasks',
+  moduleId: 'builtin:task',
+  moduleConfig: {},
+  sortOrder: 1,
+}
+
+export const DEFAULT_MOCK_TASK_COLUMNS: MockTaskColumnData[] = [
+  { id: 'col-todo', directoryId: 'dir-task-001', statusKey: 'todo', name: 'To Do', color: '#9CA3AF', sortOrder: 0, isVisible: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+  { id: 'col-in-progress', directoryId: 'dir-task-001', statusKey: 'in_progress', name: 'In Progress', color: '#3B82F6', sortOrder: 1, isVisible: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+  { id: 'col-done', directoryId: 'dir-task-001', statusKey: 'done', name: 'Done', color: '#10B981', sortOrder: 2, isVisible: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+]
+
+export const DEFAULT_MOCK_TASKS: MockTaskData[] = [
+  { id: 'task-001', directoryId: 'dir-task-001', title: 'Write unit tests', description: 'Add tests for the task module', status: 'todo', priority: 'high', assignee: 'Dev', sortOrder: 0, isCompleted: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+  { id: 'task-002', directoryId: 'dir-task-001', title: 'Update documentation', description: '', status: 'in_progress', priority: 'medium', assignee: undefined, sortOrder: 0, isCompleted: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+  { id: 'task-003', directoryId: 'dir-task-001', title: 'Deploy to staging', description: '', status: 'done', priority: 'low', assignee: 'Dev', sortOrder: 0, isCompleted: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+  { id: 'task-004', directoryId: 'dir-task-001', parentId: 'task-001', title: 'Write test helpers', description: '', status: 'todo', priority: 'medium', assignee: undefined, sortOrder: 0, isCompleted: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+]
 
 // ============================================================================
 // Known non-critical error patterns
@@ -388,6 +452,10 @@ export async function mockTauriInvoke(
                 return []
               case 'directory_list':
                 return []
+              case 'task_list':
+                return []
+              case 'task_list_children':
+                return []
               default:
                 console.warn(`[Mock] No mock for command: ${cmd}`)
                 return null
@@ -474,6 +542,9 @@ export interface MockSetupOptions {
   directories?: MockDirectoryData[]
   modules?: MockModuleData[]
   shouldFail?: string[]
+  tasks?: MockTaskData[]
+  taskColumns?: MockTaskColumnData[]
+  taskDirectory?: MockDirectoryData
 }
 
 /**
@@ -492,6 +563,9 @@ export async function mockProjectWorkspace(
     directories = [DEFAULT_MOCK_DIRECTORY],
     modules = [DEFAULT_MOCK_GIT_MODULE, DEFAULT_MOCK_FILE_MODULE],
     shouldFail = [],
+    tasks = [],
+    taskColumns = [],
+    taskDirectory = DEFAULT_MOCK_TASK_DIRECTORY,
   } = options
 
   const mocks: Record<string, unknown> = {}
@@ -595,6 +669,43 @@ export async function mockProjectWorkspace(
     { kind: 'vscode', name: 'VS Code', command: 'code', available: true },
     { kind: 'idea', name: 'IntelliJ IDEA', command: 'idea', available: false },
   ]
+
+  // Task module commands
+  if (taskDirectory) {
+    mocks['directory_list'] = [...directories, taskDirectory]
+  }
+  mocks['task_list'] = (args: { directoryId: string }) => {
+    return tasks.filter(t => t.directoryId === args.directoryId && !t.parentId)
+  }
+  mocks['task_list_children'] = (args: { parentId: string }) => {
+    return tasks.filter(t => t.parentId === args.parentId)
+  }
+  mocks['task_column_list'] = (args: { directoryId: string }) => {
+    return taskColumns.filter(c => c.directoryId === args.directoryId)
+  }
+  mocks['task_column_init_defaults'] = () => taskColumns.length > 0 ? taskColumns : DEFAULT_MOCK_TASK_COLUMNS
+  mocks['task_toggle_complete'] = (args: { id: string }) => {
+    const task = tasks.find(t => t.id === args.id)
+    if (task) {
+      return { ...task, isCompleted: !task.isCompleted }
+    }
+    throw new Error('Task not found')
+  }
+  mocks['task_create'] = (args: { directoryId: string; title: string }) => ({
+    id: `task-${Date.now()}`,
+    directoryId: args.directoryId,
+    parentId: undefined,
+    title: args.title,
+    description: undefined,
+    status: 'todo',
+    priority: 'medium',
+    assignee: undefined,
+    dueDate: undefined,
+    sortOrder: 99,
+    isCompleted: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  })
 
   // Add error mocks for shouldFail commands
   for (const cmd of shouldFail) {

@@ -18,6 +18,20 @@ macro_rules! with_db {
     }};
 }
 
+/// 获取可变数据库连接的简写模式，用于需要事务的操作
+/// 使用示例: with_db_mut!(conn, { let tx = conn.transaction()?; ... })
+#[macro_export]
+macro_rules! with_db_mut {
+    ($conn:ident, $body:block) => {{
+        let db_guard =
+            $crate::db::get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
+        let $conn = (&mut *db_guard).as_mut().ok_or("数据库未初始化")?;
+        let __result = { $body };
+        drop(db_guard);
+        __result
+    }};
+}
+
 /// 辅助函数：从 Row 中解析 ide_override_json 字段
 pub fn parse_ide_override(row: &Row, idx: usize) -> Option<IdeConfig> {
     row.get::<_, Option<String>>(idx)
