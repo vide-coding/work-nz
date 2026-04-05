@@ -10,15 +10,27 @@ interface Props {
   statusName: string
   statusColor: string
   tasks: Task[]
+  childTasksMap?: Record<string, Task[]>
+  getChildCounts?: (taskId: string) => { total: number; completed: number }
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  childTasksMap: () => ({}),
+  getChildCounts: () => () => ({ total: 0, completed: 0 }),
+})
 
 const emit = defineEmits<{
   'task-click': [task: Task]
   'add-task': [statusKey: string]
   'tasks-changed': [tasks: Task[]]
+  'toggle-child': [childId: string]
+  'delete-child': [childId: string]
+  'add-child': [parentId: string, title: string]
 }>()
+
+function getChildren(taskId: string): Task[] {
+  return props.childTasksMap[taskId] || []
+}
 
 const localTasks = computed({
   get: () => props.tasks,
@@ -58,7 +70,15 @@ function onAddClick() {
         drag-class="task-card--drag"
       >
         <template #item="{ element }">
-          <TaskCard :task="element" @click="onTaskClick" />
+          <TaskCard
+            :task="element"
+            :child-tasks="getChildren(element.id)"
+            :child-count="getChildCounts(element.id)"
+            @click="onTaskClick"
+            @toggle-child="emit('toggle-child', $event)"
+            @delete-child="emit('delete-child', $event)"
+            @add-child="(parentId, title) => emit('add-child', parentId, title)"
+          />
         </template>
       </draggable>
 

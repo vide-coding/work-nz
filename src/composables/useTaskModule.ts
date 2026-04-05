@@ -260,6 +260,90 @@ export function useTaskModule(directory: Directory) {
     }
   }
 
+  // Subtask state: parentId -> child tasks
+  const childTasksMap = ref<Record<string, Task[]>>({})
+
+  // Load children for a parent task
+  async function loadChildTasks(parentId: string) {
+    try {
+      const children = await taskApi.listChildren(parentId)
+      childTasksMap.value[parentId] = children
+    } catch (e) {
+      console.error('Failed to load child tasks:', e)
+    }
+  }
+
+  // Create a child task
+  async function createChildTask(parentId: string, title: string): Promise<Task | null> {
+    try {
+      const child = await taskApi.createChild(parentId, title)
+      if (!childTasksMap.value[parentId]) {
+        childTasksMap.value[parentId] = []
+      }
+      childTasksMap.value[parentId].push(child)
+      return child
+    } catch (e) {
+      console.error('Failed to create child task:', e)
+      return null
+    }
+  }
+
+  // Toggle child task completion
+  async function toggleChildComplete(childId: string): Promise<Task | null> {
+    try {
+      const updated = await taskApi.toggleComplete(childId)
+      // Find and update in map
+      for (const parentId of Object.keys(childTasksMap.value)) {
+        const children = childTasksMap.value[parentId]
+        const idx = children.findIndex((c) => c.id === childId)
+        if (idx !== -1) {
+          children[idx] = updated
+          childTasksMap.value[parentId] = [...children]
+          break
+        }
+      }
+      return updated
+    } catch (e) {
+      console.error('Failed to toggle child task:', e)
+      return null
+    }
+  }
+
+  // Delete a child task
+  async function deleteChildTask(childId: string): Promise<boolean> {
+    try {
+      await taskApi.deleteChild(childId)
+      // Find and remove from map
+      for (const parentId of Object.keys(childTasksMap.value)) {
+        const children = childTasksMap.value[parentId]
+        const idx = children.findIndex((c) => c.id === childId)
+        if (idx !== -1) {
+          children.splice(idx, 1)
+          childTasksMap.value[parentId] = [...children]
+          break
+        }
+      }
+      return true
+    } catch (e) {
+      console.error('Failed to delete child task:', e)
+      return false
+    }
+  }
+
+  // Helper: get child tasks for a parent
+  function getChildTasks(parentId: string): Task[] {
+    return childTasksMap.value[parentId] || []
+  }
+
+  // Helper: get child task counts
+  function getChildCounts(parentId: string): { total: number; completed: number } {
+    const children = childTasksMap.value[parentId] || []
+    return {
+      total: children.length,
+      completed: children.filter((c) => c.isCompleted).length,
+    }
+  }
+
   return {
     // State
     tasks: filteredTasks,
@@ -268,6 +352,7 @@ export function useTaskModule(directory: Directory) {
     error,
     filter,
     sort,
+    childTasksMap,
 
     // Computed
     hasTaskCapability,
@@ -281,6 +366,12 @@ export function useTaskModule(directory: Directory) {
     updateTask,
     deleteTask,
     reorderTask,
+    loadChildTasks,
+    createChildTask,
+    toggleChildComplete,
+    deleteChildTask,
+    getChildTasks,
+    getChildCounts,
     setFilter,
     setSort,
     clearFilter,

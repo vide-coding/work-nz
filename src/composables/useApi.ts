@@ -419,4 +419,20 @@ export const taskApi = {
   async reorder(id: string, newStatus: string, newSortOrder: number): Promise<Task> {
     return invoke('task_reorder', { id, newStatus, newSortOrder })
   },
+
+  async listChildren(parentId: string): Promise<Task[]> {
+    return invoke('task_list_children', { parentId })
+  },
+
+  async toggleComplete(id: string): Promise<Task> {
+    return invoke('task_toggle_complete', { id })
+  },
+
+  async createChild(parentId: string, title: string): Promise<Task> {
+    return invoke('task_create_child', { parentId, title })
+  },
+
+  async deleteChild(id: string): Promise<void> {
+    return invoke('task_delete_child', { id })
+  },
 }

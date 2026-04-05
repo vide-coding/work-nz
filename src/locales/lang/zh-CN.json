@@ -297,6 +297,7 @@
     "delete": "删除任务",
     "deleteConfirm": "确定要删除这个任务吗？",
     "noTasks": "暂无任务",
-    "createFirst": "创建你的第一个任务"
+    "createFirst": "创建你的第一个任务",
+    "subtasks": "子任务"
   }
 }

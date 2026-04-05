@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import type { Directory, Task } from '@/types'
 import { useTaskModule } from '@/composables/useTaskModule'
 import TaskColumn from './TaskColumn.vue'
@@ -23,14 +23,14 @@ const {
   reorderTask,
   statusValues,
   priorityValues,
+  childTasksMap,
+  loadChildTasks,
+  createChildTask,
+  toggleChildComplete,
+  deleteChildTask,
+  getChildTasks,
+  getChildCounts,
 } = useTaskModule(props.directory)
-
-// Map status id to i18n key for localized column names
-const statusI18nKeyMap: Record<string, string> = {
-  todo: 'task.todo',
-  in_progress: 'task.inProgress',
-  done: 'task.done',
-}
 
 // Build columns from composable statusValues
 const columns = computed(() =>
@@ -52,8 +52,41 @@ const tasksByStatus = computed(() => {
   return map
 })
 
+// Selected task for detail panel
 const selectedTask = ref<Task | null>(null)
 const showDetailPanel = computed(() => selectedTask.value !== null)
+
+// Watch selected task to load child tasks
+watch(selectedTask, async (task) => {
+  if (task) {
+    await loadChildTasks(task.id)
+  }
+})
+
+// Get child tasks for a task
+function getChildren(taskId: string): Task[] {
+  return childTasksMap.value[taskId] || []
+}
+
+// Get child counts for a task
+function getCounts(taskId: string): { total: number; completed: number } {
+  const children = getChildren(taskId)
+  return {
+    total: children.length,
+    completed: children.filter((c) => c.isCompleted).length,
+  }
+}
+
+// Get child tasks for selected task
+const selectedChildTasks = computed(() => {
+  if (!selectedTask.value) return []
+  return getChildren(selectedTask.value.id)
+})
+
+const selectedChildCounts = computed(() => {
+  if (!selectedTask.value) return { total: 0, completed: 0 }
+  return getCounts(selectedTask.value.id)
+})
 
 onMounted(() => {
   loadTasks()
@@ -96,6 +129,39 @@ async function onTasksChanged(statusKey: string, newTasks: Task[]) {
   }
 }
 
+// Child task handlers
+async function onToggleChild(childId: string) {
+  await toggleChildComplete(childId)
+  // Refresh child tasks for selected task
+  if (selectedTask.value) {
+    await loadChildTasks(selectedTask.value.id)
+  }
+}
+
+async function onDeleteChild(childId: string) {
+  await deleteChildTask(childId)
+  if (selectedTask.value) {
+    await loadChildTasks(selectedTask.value.id)
+  }
+}
+
+async function onAddChild(parentId: string, title: string) {
+  await createChildTask(parentId, title)
+}
+
+// Card-level child task handlers
+async function onCardToggleChild(childId: string) {
+  await toggleChildComplete(childId)
+}
+
+async function onCardDeleteChild(childId: string) {
+  await deleteChildTask(childId)
+}
+
+async function onCardAddChild(parentId: string, title: string) {
+  await createChildTask(parentId, title)
+}
+
 // Options passed to the detail panel for localized labels
 const statusOptions = computed(() =>
   statusValues.value.map((sv) => ({ value: sv.id, label: sv.name }))
@@ -126,9 +192,14 @@ const priorityOptions = computed(() =>
         :status-name="col.name"
         :status-color="col.color"
         :tasks="tasksByStatus[col.key]"
+        :child-tasks-map="childTasksMap"
+        :get-child-counts="getCounts"
         @task-click="onTaskClick"
         @add-task="onAddTask"
         @tasks-changed="(t) => onTasksChanged(col.key, t)"
+        @toggle-child="onCardToggleChild"
+        @delete-child="onCardDeleteChild"
+        @add-child="onCardAddChild"
       />
     </div>
 
@@ -137,9 +208,14 @@ const priorityOptions = computed(() =>
       :visible="showDetailPanel"
       :status-options="statusOptions"
       :priority-options="priorityOptions"
+      :child-tasks="selectedChildTasks"
+      :child-count="selectedChildCounts"
       @close="onDetailClose"
       @update="onDetailUpdate"
       @delete="onDetailDelete"
+      @toggle-child="onToggleChild"
+      @delete-child="onDeleteChild"
+      @add-child="onAddChild"
     />
   </div>
 </template>

@@ -297,6 +297,7 @@
     "delete": "Delete Task",
     "deleteConfirm": "Are you sure you want to delete this task?",
     "noTasks": "No tasks yet",
-    "createFirst": "Create your first task"
+    "createFirst": "Create your first task",
+    "subtasks": "Subtasks"
   }
 }
