@@ -12,6 +12,10 @@ MyFlow (迈流) is a Tauri + Vue 3 + TypeScript desktop application for managing
 - **Internationalization**: vue-i18n (en-US, zh-CN)
 - **UI Framework**: Tailwind CSS + Lucide Icons
 
+## Language (MANDATORY)
+
+All responses and communication must be in **Chinese (中文)**. This applies to all messages, explanations, and documentation written for this project.
+
 ## Styling Rules (MANDATORY)
 
 ### Use Tailwind CSS Only

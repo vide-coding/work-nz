@@ -1,6 +1,7 @@
 use crate::types::{Task, TaskColumn};
 use crate::with_db;
 use crate::with_db_mut;
+use crate::db_helpers::{map_task_row, map_task_column_row};
 use rusqlite::params;
 
 /// 获取单个任务（辅助函数）
