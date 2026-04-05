@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
+import { Settings } from 'lucide-vue-next'
 import type { Directory, Task } from '@/types'
 import { useTaskModule } from '@/composables/useTaskModule'
 import TaskColumn from './TaskColumn.vue'
 import TaskDetailPanel from './TaskDetailPanel.vue'
 import TaskQuickAdd from './TaskQuickAdd.vue'
+import ColumnSettingsDialog from './ColumnSettingsDialog.vue'
 
 interface Props {
   directory: Directory
@@ -30,15 +32,25 @@ const {
   deleteChildTask,
   getChildTasks,
   getChildCounts,
+  columns,
+  columnsLoading,
+  loadColumns,
+  createColumn,
+  updateColumn,
+  toggleColumnVisibility,
+  deleteColumn,
 } = useTaskModule(props.directory)
 
-// Build columns from composable statusValues
-const columns = computed(() =>
-  statusValues.value.map((sv) => ({
-    key: sv.id,
-    name: sv.name,
-    color: sv.color,
-  }))
+// Build columns from visible columns (sorted, only visible)
+const boardColumns = computed(() =>
+  columns.value
+    .filter((c) => c.isVisible)
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((c) => ({
+      key: c.statusKey,
+      name: c.name,
+      color: c.color,
+    }))
 )
 
 // Group tasks by status
@@ -55,6 +67,7 @@ const tasksByStatus = computed(() => {
 // Selected task for detail panel
 const selectedTask = ref<Task | null>(null)
 const showDetailPanel = computed(() => selectedTask.value !== null)
+const showColumnSettings = ref(false)
 
 // Watch selected task to load child tasks
 watch(selectedTask, async (task) => {
@@ -90,6 +103,7 @@ const selectedChildCounts = computed(() => {
 
 onMounted(() => {
   loadTasks()
+  loadColumns()
 })
 
 async function onQuickAdd(title: string) {
@@ -176,6 +190,15 @@ const priorityOptions = computed(() =>
   <div class="task-board">
     <TaskQuickAdd @add="onQuickAdd" />
 
+    <div class="task-board__toolbar">
+      <span class="task-board__column-count">
+        {{ boardColumns.length }} {{ $t('workspace.columns') || 'columns' }}
+      </span>
+      <button class="task-board__settings-btn" @click="showColumnSettings = true" :title="$t('settings.title')">
+        <Settings :size="16" />
+      </button>
+    </div>
+
     <div v-if="loading" class="task-board__loading">
       Loading...
     </div>
@@ -186,7 +209,7 @@ const priorityOptions = computed(() =>
 
     <div v-else class="task-board__columns">
       <TaskColumn
-        v-for="col in columns"
+        v-for="col in boardColumns"
         :key="col.key"
         :status-key="col.key"
         :status-name="col.name"
@@ -202,6 +225,17 @@ const priorityOptions = computed(() =>
         @add-child="onCardAddChild"
       />
     </div>
+
+    <ColumnSettingsDialog
+      :visible="showColumnSettings"
+      :columns="columns"
+      :loading="columnsLoading"
+      @close="showColumnSettings = false"
+      @create="createColumn"
+      @update="updateColumn"
+      @toggle-visibility="toggleColumnVisibility"
+      @delete="deleteColumn"
+    />
 
     <TaskDetailPanel
       :task="selectedTask"
@@ -226,6 +260,38 @@ const priorityOptions = computed(() =>
   flex-direction: column;
   height: 100%;
   background: #f3f4f6;
+}
+
+.task-board__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0 16px 8px;
+}
+
+.task-board__column-count {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.task-board__settings-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.task-board__settings-btn:hover {
+  background: #e5e7eb;
+  color: #374151;
 }
 
 .task-board__loading,

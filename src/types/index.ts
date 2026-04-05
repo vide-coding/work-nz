@@ -351,3 +351,15 @@ export interface Task {
   createdAt: string
   updatedAt: string
 }
+
+export interface TaskColumn {
+  id: string
+  directoryId: string
+  statusKey: string
+  name: string
+  color: string
+  sortOrder: number
+  isVisible: boolean
+  createdAt: string
+  updatedAt: string
+}

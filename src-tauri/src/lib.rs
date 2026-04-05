@@ -115,6 +115,12 @@ pub fn run() {
             task_toggle_complete,
             task_create_child,
             task_delete_child,
+            task_column_list,
+            task_column_create,
+            task_column_update,
+            task_column_toggle_visibility,
+            task_column_delete,
+            task_column_init_defaults,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

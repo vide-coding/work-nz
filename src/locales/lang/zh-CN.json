@@ -75,6 +75,7 @@
     "fileModules": "文件模块",
     "moduleOverview": "模块概览",
     "items": "项",
+    "columns": "列",
     "noModule": "未设置模块",
     "noModules": "暂无模块",
     "codeRepositories": "代码仓库",
@@ -298,6 +299,13 @@
     "deleteConfirm": "确定要删除这个任务吗？",
     "noTasks": "暂无任务",
     "createFirst": "创建你的第一个任务",
-    "subtasks": "子任务"
+    "subtasks": "子任务",
+    "columnSettings": "列设置",
+    "addColumn": "添加列",
+    "statusKey": "状态标识",
+    "columnName": "列名称",
+    "color": "颜色",
+    "visible": "显示",
+    "hidden": "隐藏"
   }
 }

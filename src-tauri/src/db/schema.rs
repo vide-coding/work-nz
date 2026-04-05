@@ -125,6 +125,21 @@ CREATE TABLE IF NOT EXISTS tasks (
 CREATE INDEX IF NOT EXISTS idx_tasks_directory_id ON tasks(directory_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_parent_id ON tasks(parent_id);
 
+CREATE TABLE IF NOT EXISTS task_columns (
+  id TEXT PRIMARY KEY,
+  directory_id TEXT NOT NULL,
+  status_key TEXT NOT NULL,
+  name TEXT NOT NULL,
+  color TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  is_visible INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE(directory_id, status_key)
+);
+
+CREATE INDEX IF NOT EXISTS idx_task_columns_directory_id ON task_columns(directory_id);
+
 -- Indexes for new tables
 CREATE INDEX IF NOT EXISTS idx_modules_key ON modules(key);
 CREATE INDEX IF NOT EXISTS idx_directories_project_id ON directories(project_id);

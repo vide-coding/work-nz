@@ -1,4 +1,4 @@
-use crate::types::Task;
+use crate::types::{Task, TaskColumn};
 use crate::with_db;
 use rusqlite::params;
 
@@ -318,3 +318,238 @@ pub fn task_delete_child(id: String) -> Result<(), String> {
     });
     Ok(())
 }
+
+// ============ 列配置命令 ============
+
+fn column_get(id: String) -> Result<TaskColumn, String> {
+    with_db!(conn, {
+        conn.query_row(
+            "SELECT id, directory_id, status_key, name, color, sort_order, is_visible, created_at, updated_at
+             FROM task_columns WHERE id = ?1",
+            params![id],
+            |row| {
+                Ok(TaskColumn {
+                    id: row.get(0)?,
+                    directory_id: row.get(1)?,
+                    status_key: row.get(2)?,
+                    name: row.get(3)?,
+                    color: row.get(4)?,
+                    sort_order: row.get(5)?,
+                    is_visible: row.get::<_, i32>(6)? != 0,
+                    created_at: row.get(7)?,
+                    updated_at: row.get(8)?,
+                })
+            },
+        )
+        .map_err(|e| format!("列不存在: {}", e))
+    })
+}
+
+/// 获取目录下所有列配置
+#[tauri::command]
+pub fn task_column_list(directory_id: String) -> Result<Vec<TaskColumn>, String> {
+    with_db!(conn, {
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, directory_id, status_key, name, color, sort_order, is_visible, created_at, updated_at
+                 FROM task_columns WHERE directory_id = ?1 ORDER BY sort_order ASC",
+            )
+            .map_err(|e| format!("查询失败: {}", e))?;
+
+        let columns = stmt
+            .query_map(params![directory_id], |row| {
+                Ok(TaskColumn {
+                    id: row.get(0)?,
+                    directory_id: row.get(1)?,
+                    status_key: row.get(2)?,
+                    name: row.get(3)?,
+                    color: row.get(4)?,
+                    sort_order: row.get(5)?,
+                    is_visible: row.get::<_, i32>(6)? != 0,
+                    created_at: row.get(7)?,
+                    updated_at: row.get(8)?,
+                })
+            })
+            .map_err(|e| format!("查询失败: {}", e))?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|e| format!("读取数据失败: {}", e))?;
+
+        Ok(columns)
+    })
+}
+
+/// 创建新列
+#[tauri::command]
+pub fn task_column_create(
+    directory_id: String,
+    status_key: String,
+    name: String,
+    color: String,
+) -> Result<TaskColumn, String> {
+    let id = uuid::Uuid::new_v4().to_string();
+    let now = chrono::Utc::now().to_rfc3339();
+
+    with_db!(conn, {
+        let max_order: Option<i32> = conn
+            .query_row(
+                "SELECT MAX(sort_order) FROM task_columns WHERE directory_id = ?1",
+                params![directory_id],
+                |row| row.get(0),
+            )
+            .unwrap_or(None);
+
+        let sort_order = max_order.unwrap_or(-1) + 1;
+
+        conn.execute(
+            "INSERT INTO task_columns (id, directory_id, status_key, name, color, sort_order, is_visible, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, 1, ?7, ?8)",
+            params![id, directory_id, status_key, name, color, sort_order, now, now],
+        )
+        .map_err(|e| format!("创建列失败: {}", e))?;
+    });
+
+    column_get(id)
+}
+
+/// 更新列（名称/颜色/排序）
+#[tauri::command]
+pub fn task_column_update(id: String, patch: serde_json::Value) -> Result<TaskColumn, String> {
+    let col = column_get(id.clone())?;
+    let now = chrono::Utc::now().to_rfc3339();
+
+    let name = patch.get("name").and_then(|v| v.as_str()).map(String::from).unwrap_or(col.name);
+    let color = patch.get("color").and_then(|v| v.as_str()).map(String::from).unwrap_or(col.color);
+    let sort_order = patch.get("sortOrder").and_then(|v| v.as_i64()).map(|v| v as i32).unwrap_or(col.sort_order);
+
+    with_db!(conn, {
+        conn.execute(
+            "UPDATE task_columns SET name = ?1, color = ?2, sort_order = ?3, updated_at = ?4 WHERE id = ?5",
+            params![name, color, sort_order, now, id],
+        )
+        .map_err(|e| format!("更新列失败: {}", e))?;
+    });
+
+    column_get(id)
+}
+
+/// 切换列显示/隐藏
+#[tauri::command]
+pub fn task_column_toggle_visibility(id: String) -> Result<TaskColumn, String> {
+    let col = column_get(id.clone())?;
+    let now = chrono::Utc::now().to_rfc3339();
+    let new_visible = if col.is_visible { 0 } else { 1 };
+
+    with_db!(conn, {
+        conn.execute(
+            "UPDATE task_columns SET is_visible = ?1, updated_at = ?2 WHERE id = ?3",
+            params![new_visible, now, id],
+        )
+        .map_err(|e| format!("切换显示状态失败: {}", e))?;
+    });
+
+    column_get(id)
+}
+
+/// 删除列（任务迁移到默认列）
+#[tauri::command]
+pub fn task_column_delete(id: String) -> Result<(), String> {
+    with_db!(conn, {
+        // 获取该列信息
+        let col: TaskColumn = conn.query_row(
+            "SELECT id, directory_id, status_key, name, color, sort_order, is_visible, created_at, updated_at
+             FROM task_columns WHERE id = ?1",
+            params![id],
+            |row| {
+                Ok(TaskColumn {
+                    id: row.get(0)?,
+                    directory_id: row.get(1)?,
+                    status_key: row.get(2)?,
+                    name: row.get(3)?,
+                    color: row.get(4)?,
+                    sort_order: row.get(5)?,
+                    is_visible: row.get::<_, i32>(6)? != 0,
+                    created_at: row.get(7)?,
+                    updated_at: row.get(8)?,
+                })
+            },
+        )
+        .map_err(|e| format!("列不存在: {}", e))?;
+
+        // 检查是否只剩一列
+        let count: i32 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM task_columns WHERE directory_id = ?1",
+                params![col.directory_id],
+                |row| row.get(0),
+            )
+            .unwrap_or(0);
+
+        if count <= 1 {
+            return Err("至少保留一列".to_string());
+        }
+
+        // 查找目标列（优先 todo，其次按 sort_order 第一）
+        let target_key: String = conn
+            .query_row(
+                "SELECT status_key FROM task_columns
+                 WHERE directory_id = ?1 AND id != ?2
+                 ORDER BY CASE WHEN status_key = 'todo' THEN 0 ELSE 1 END, sort_order ASC
+                 LIMIT 1",
+                params![col.directory_id, id],
+                |row| row.get(0),
+            )
+            .map_err(|e| format!("查找目标列失败: {}", e))?;
+
+        // 将该列任务迁移到目标列
+        conn.execute(
+            "UPDATE tasks SET status = ?1 WHERE directory_id = ?2 AND status = ?3 AND parent_id IS NULL",
+            params![target_key, col.directory_id, col.status_key],
+        )
+        .map_err(|e| format!("迁移任务失败: {}", e))?;
+
+        // 删除列
+        conn.execute("DELETE FROM task_columns WHERE id = ?1", params![id])
+            .map_err(|e| format!("删除列失败: {}", e))?;
+    });
+
+    Ok(())
+}
+
+/// 为目录初始化默认列（当目录启用 task 模块时调用）
+#[tauri::command]
+pub fn task_column_init_defaults(directory_id: String) -> Result<Vec<TaskColumn>, String> {
+    let now = chrono::Utc::now().to_rfc3339();
+    let defaults = vec![
+        ("todo", "To Do", "#9CA3AF", 0),
+        ("in_progress", "In Progress", "#3B82F6", 1),
+        ("done", "Done", "#10B981", 2),
+    ];
+
+    with_db!(conn, {
+        let mut err_msg = String::new();
+        for (status_key, name, color, sort_order) in defaults {
+            if let Err(e) = conn.execute(
+                "INSERT OR IGNORE INTO task_columns (id, directory_id, status_key, name, color, sort_order, is_visible, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, 1, ?7, ?8)",
+                params![
+                    uuid::Uuid::new_v4().to_string(),
+                    directory_id,
+                    status_key,
+                    name,
+                    color,
+                    sort_order,
+                    now,
+                    now
+                ],
+            ) {
+                err_msg = format!("创建列失败: {}", e);
+            }
+        }
+        if !err_msg.is_empty() {
+            return Err(err_msg);
+        }
+    });
+
+    task_column_list(directory_id)
+}
+

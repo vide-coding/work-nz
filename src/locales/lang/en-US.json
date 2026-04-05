@@ -69,6 +69,7 @@
     "fileModules": "File Modules",
     "moduleOverview": "Module Overview",
     "items": "items",
+    "columns": "columns",
     "noModule": "No module",
     "noModules": "No modules yet",
     "codeRepositories": "Code Repositories",
@@ -298,6 +299,13 @@
     "deleteConfirm": "Are you sure you want to delete this task?",
     "noTasks": "No tasks yet",
     "createFirst": "Create your first task",
-    "subtasks": "Subtasks"
+    "subtasks": "Subtasks",
+    "columnSettings": "Column Settings",
+    "addColumn": "Add Column",
+    "statusKey": "Status key",
+    "columnName": "Column name",
+    "color": "Color",
+    "visible": "Visible",
+    "hidden": "Hidden"
   }
 }

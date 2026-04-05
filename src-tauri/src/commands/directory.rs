@@ -1,4 +1,5 @@
 use crate::commands::module::module_get;
+use crate::commands::task::task_column_init_defaults;
 use crate::commands::project::project_get;
 use crate::types::*;
 use crate::with_db;
@@ -302,6 +303,11 @@ pub fn directory_enable_module(
         )
         .map_err(|e| format!("启用模块失败: {}", e))?;
     });
+
+    // 如果启用的是 task 模块，初始化默认列
+    if module_id == "builtin:task" {
+        task_column_init_defaults(id.clone())?;
+    }
 
     directory_get(id)
 }

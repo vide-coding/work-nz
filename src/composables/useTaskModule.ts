@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
 import { directoryHasCapability } from './useModuleRegistry'
 import { taskApi } from './useApi'
-import type { Directory, Task } from '@/types'
+import type { Directory, Task, TaskColumn } from '@/types'
 
 /**
  * Task type for the Task module
@@ -344,6 +344,91 @@ export function useTaskModule(directory: Directory) {
     }
   }
 
+  // Column state
+  const columns = ref<TaskColumn[]>([])
+  const columnsLoading = ref(false)
+
+  // Visible columns only (sorted by sortOrder)
+  const visibleColumns = computed(() =>
+    columns.value.filter((c) => c.isVisible).sort((a, b) => a.sortOrder - b.sortOrder)
+  )
+
+  // Load column configurations
+  async function loadColumns() {
+    columnsLoading.value = true
+    try {
+      const cols = await taskApi.listColumns(directory.id)
+      columns.value = cols
+    } catch (e) {
+      console.error('Failed to load columns:', e)
+    } finally {
+      columnsLoading.value = false
+    }
+  }
+
+  // Create a new column
+  async function createColumn(statusKey: string, name: string, color: string): Promise<TaskColumn | null> {
+    try {
+      const col = await taskApi.createColumn(directory.id, statusKey, name, color)
+      columns.value.push(col)
+      return col
+    } catch (e) {
+      console.error('Failed to create column:', e)
+      return null
+    }
+  }
+
+  // Update a column
+  async function updateColumn(id: string, patch: Partial<Pick<TaskColumn, 'name' | 'color' | 'sortOrder'>>): Promise<TaskColumn | null> {
+    try {
+      const updated = await taskApi.updateColumn(id, patch)
+      const idx = columns.value.findIndex((c) => c.id === id)
+      if (idx !== -1) {
+        columns.value[idx] = updated
+      }
+      return updated
+    } catch (e) {
+      console.error('Failed to update column:', e)
+      return null
+    }
+  }
+
+  // Toggle column visibility
+  async function toggleColumnVisibility(id: string): Promise<TaskColumn | null> {
+    try {
+      const updated = await taskApi.toggleColumnVisibility(id)
+      const idx = columns.value.findIndex((c) => c.id === id)
+      if (idx !== -1) {
+        columns.value[idx] = updated
+      }
+      return updated
+    } catch (e) {
+      console.error('Failed to toggle column visibility:', e)
+      return null
+    }
+  }
+
+  // Delete a column
+  async function deleteColumn(id: string): Promise<boolean> {
+    try {
+      await taskApi.deleteColumn(id)
+      columns.value = columns.value.filter((c) => c.id !== id)
+      return true
+    } catch (e) {
+      console.error('Failed to delete column:', e)
+      return false
+    }
+  }
+
+  // Convert column to status value format for template compatibility
+  const columnStatusValues = computed(() =>
+    columns.value.map((c) => ({
+      id: c.statusKey,
+      name: c.name,
+      color: c.color,
+    }))
+  )
+
   return {
     // State
     tasks: filteredTasks,
@@ -353,11 +438,14 @@ export function useTaskModule(directory: Directory) {
     filter,
     sort,
     childTasksMap,
+    columns,
+    columnsLoading,
 
     // Computed
     hasTaskCapability,
     moduleConfig,
-    statusValues,
+    statusValues: columnStatusValues,
+    visibleColumns,
     priorityValues,
 
     // Actions
@@ -375,5 +463,10 @@ export function useTaskModule(directory: Directory) {
     setFilter,
     setSort,
     clearFilter,
+    loadColumns,
+    createColumn,
+    updateColumn,
+    toggleColumnVisibility,
+    deleteColumn,
   }
 }

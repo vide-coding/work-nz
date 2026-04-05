@@ -30,6 +30,7 @@ import type {
   DirectoryTemplateUpdateInput,
   TemplateScope,
   Task,
+  TaskColumn,
 } from '@/types'
 
 // Workspace API
@@ -434,5 +435,29 @@ export const taskApi = {
 
   async deleteChild(id: string): Promise<void> {
     return invoke('task_delete_child', { id })
+  },
+
+  async listColumns(directoryId: string): Promise<TaskColumn[]> {
+    return invoke('task_column_list', { directoryId })
+  },
+
+  async createColumn(directoryId: string, statusKey: string, name: string, color: string): Promise<TaskColumn> {
+    return invoke('task_column_create', { directoryId, statusKey, name, color })
+  },
+
+  async updateColumn(id: string, patch: Partial<Pick<TaskColumn, 'name' | 'color' | 'sortOrder'>>): Promise<TaskColumn> {
+    return invoke('task_column_update', { id, patch })
+  },
+
+  async toggleColumnVisibility(id: string): Promise<TaskColumn> {
+    return invoke('task_column_toggle_visibility', { id })
+  },
+
+  async deleteColumn(id: string): Promise<void> {
+    return invoke('task_column_delete', { id })
+  },
+
+  async initColumnDefaults(directoryId: string): Promise<TaskColumn[]> {
+    return invoke('task_column_init_defaults', { directoryId })
   },
 }

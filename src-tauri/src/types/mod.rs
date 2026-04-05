@@ -848,3 +848,17 @@ pub struct Task {
     pub created_at: String,
     pub updated_at: String,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskColumn {
+    pub id: String,
+    pub directory_id: String,
+    pub status_key: String,
+    pub name: String,
+    pub color: String,
+    pub sort_order: i32,
+    pub is_visible: bool,
+    pub created_at: String,
+    pub updated_at: String,
+}

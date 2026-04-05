@@ -149,12 +149,14 @@ fn run_migrations(conn: &Connection) -> Result<()> {
         }
     }
 
+    // 迁移 7: 创建 task_columns 表
+    migrate_task_columns(conn)?;
+
     Ok(())
 }
 
 /// 数据库迁移：为 projects 表添加 visible 列
 fn migrate_add_visible_column(conn: &Connection) -> Result<()> {
-    // 检查 visible 列是否存在
     let mut stmt = conn.prepare("PRAGMA table_info(projects)")?;
     let table_info: Vec<(String, String)> = stmt
         .query_map([], |row| Ok((row.get(1)?, row.get(2)?)))?
@@ -168,6 +170,77 @@ fn migrate_add_visible_column(conn: &Connection) -> Result<()> {
             "ALTER TABLE projects ADD COLUMN visible INTEGER NOT NULL DEFAULT 1",
             [],
         )?;
+    }
+
+    Ok(())
+}
+
+/// 数据库迁移：创建 task_columns 表并初始化默认列
+fn migrate_task_columns(conn: &Connection) -> Result<()> {
+    // 检查 task_columns 表是否存在
+    let has_table = conn
+        .query_row(
+            "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='task_columns'",
+            [],
+            |row| row.get::<_, i32>(0),
+        )
+        .unwrap_or(0)
+        > 0;
+
+    if !has_table {
+        // 创建表（已在 SCHEMA 中定义，这里仅处理迁移）
+        conn.execute_batch(
+            "CREATE TABLE IF NOT EXISTS task_columns (
+              id TEXT PRIMARY KEY,
+              directory_id TEXT NOT NULL,
+              status_key TEXT NOT NULL,
+              name TEXT NOT NULL,
+              color TEXT NOT NULL,
+              sort_order INTEGER NOT NULL DEFAULT 0,
+              is_visible INTEGER NOT NULL DEFAULT 1,
+              created_at TEXT NOT NULL,
+              updated_at TEXT NOT NULL,
+              UNIQUE(directory_id, status_key)
+            );
+            CREATE INDEX IF NOT EXISTS idx_task_columns_directory_id ON task_columns(directory_id);",
+        )?;
+
+        // 为已有的 task 模块目录初始化默认列
+        let now = chrono::Utc::now().to_rfc3339();
+        let default_columns = vec![
+            ("todo", "To Do", "#9CA3AF", 0),
+            ("in_progress", "In Progress", "#3B82F6", 1),
+            ("done", "Done", "#10B981", 2),
+        ];
+
+        let mut stmt = conn.prepare(
+            "SELECT d.id FROM directories d
+             JOIN modules m ON d.module_id = m.id
+             WHERE m.key = 'task'",
+        )?;
+        let task_dirs: Vec<String> = stmt
+            .query_map([], |row| row.get(0))?
+            .filter_map(|r| r.ok())
+            .collect();
+
+        for dir_id in task_dirs {
+            for (status_key, name, color, sort_order) in &default_columns {
+                conn.execute(
+                    "INSERT OR IGNORE INTO task_columns (id, directory_id, status_key, name, color, sort_order, is_visible, created_at, updated_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, 1, ?7, ?8)",
+                    params![
+                        uuid::Uuid::new_v4().to_string(),
+                        dir_id,
+                        status_key,
+                        name,
+                        color,
+                        sort_order,
+                        now,
+                        now
+                    ],
+                )?;
+            }
+        }
     }
 
     Ok(())
