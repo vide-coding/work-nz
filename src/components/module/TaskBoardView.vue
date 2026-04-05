@@ -17,7 +17,7 @@ interface Props {
 const props = defineProps<Props>()
 
 const {
-  tasks,
+  allTasks,
   loading,
   error,
   loadTasks,
@@ -55,16 +55,21 @@ const boardColumns = computed(() =>
     }))
 )
 
-// Group tasks by status - returns same reference when no changes
+// Group tasks by status and sort by sortOrder within each column
+// Uses allTasks (shallowRef, stable reference) to avoid vuedraggable instability
 const tasksByStatus = computed(() => {
   const map: Record<string, Task[]> = {}
   for (const col of columns.value) {
     map[col.statusKey] = []
   }
-  for (const task of tasks.value) {
+  for (const task of allTasks.value) {
     if (map[task.status]) {
       map[task.status].push(task)
     }
+  }
+  // Sort each column by sortOrder for consistent display
+  for (const key of Object.keys(map)) {
+    map[key].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
   }
   return map
 })
