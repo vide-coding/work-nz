@@ -44,7 +44,7 @@ function onCardClick() {
 </script>
 
 <template>
-  <div class="bg-white border border-gray-200 rounded-lg overflow-hidden transition-shadow hover:shadow-md" :class="{ 'border-gray-300': isExpanded }">
+  <div class="bg-white border border-gray-200 rounded-lg overflow-hidden transition-shadow hover:shadow-md" :class="{ 'border-gray-300': isExpanded }" :data-task-id="task.id">
     <div class="flex items-start gap-2 p-2.5 cursor-pointer" @click="onCardClick">
       <div class="text-gray-300 cursor-grab flex-shrink-0 pt-0.5 active:cursor-grabbing">
         <GripVertical :size="14" />
