@@ -253,9 +253,10 @@ export function useTaskModule(directory: Directory) {
     error.value = null
     try {
       const updated = await taskApi.reorder(taskId, newStatus, newSortOrder)
+      // Mutate in place to keep the same array reference for vuedraggable reactivity
       const index = tasks.value.findIndex((t) => t.id === taskId)
       if (index !== -1) {
-        tasks.value = tasks.value.map((t) => (t.id === taskId ? updated : t))
+        tasks.value[index] = updated
       }
       return updated
     } catch (e) {
