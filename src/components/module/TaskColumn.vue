@@ -22,6 +22,7 @@ const emit = defineEmits<{
   'task-click': [task: Task]
   'add-task': [statusKey: string]
   'tasks-changed': [tasks: Task[]]
+  'task-cross-column-move': [payload: { taskId: string; newStatus: string; newIndex: number }]
   'toggle-child': [childId: string]
   'delete-child': [childId: string]
   'add-child': [parentId: string, title: string]
@@ -41,6 +42,17 @@ function onAddClick() {
 
 function onModelValueUpdate(newTasks: Task[]) {
   emit('tasks-changed', newTasks)
+}
+
+function onTaskAdded(evt: { item: HTMLElement; newIndex: number }) {
+  const taskId = evt.item.dataset.taskId
+  if (taskId) {
+    emit('task-cross-column-move', {
+      taskId,
+      newStatus: props.statusKey,
+      newIndex: evt.newIndex,
+    })
+  }
 }
 </script>
 
@@ -62,6 +74,7 @@ function onModelValueUpdate(newTasks: Task[]) {
       <draggable
         :model-value="tasks"
         @update:model-value="onModelValueUpdate"
+        @add="onTaskAdded"
         :group="{ name: 'tasks' }"
         item-key="id"
         class="flex flex-col gap-2 min-h-10"
