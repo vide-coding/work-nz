@@ -28,7 +28,7 @@
     "undoWarning": "This action cannot be undone"
   },
   "workspace": {
-    "description": "Select a workspace folder, app data and projects will be stored here",
+    "description": "Description",
     "recentWorkspaces": "Recent Workspaces",
     "noRecentWorkspaces": "No workspace selected yet",
     "selectFolder": "Select Folder",
@@ -63,7 +63,7 @@
     "docsOverview": "Docs Overview",
     "designOverview": "Design Overview",
     "repositories": "repositories",
-    "directories": "directories",
+    "directories": "Directories",
     "gitProjects": "Git Projects",
     "taskModules": "Task Modules",
     "fileModules": "File Modules",
@@ -103,7 +103,6 @@
     "repoNameEditHint": "Modify repository display name (does not affect directory)",
     "descriptionPlaceholder": "Enter description (optional)",
     "editRepo": "Edit Repository",
-    "description": "Description",
     "rename": "Rename",
     "nameHint": "Name will replace path in the list",
     "selectOrCreate": "Select or Create Workspace",
@@ -112,7 +111,6 @@
     "namePlaceholder": "Enter name",
     "cloneUrlPlaceholder": "https://github.com/...",
     "cloneTargetPlaceholder": "my-repo",
-    "directories": "Directories",
     "addDirectory": "+ Add",
     "noDirectories": "No directories yet",
     "createFirstDirectory": "Create First Directory",
@@ -316,6 +314,7 @@
     "titlePlaceholder": "Task title",
     "collapse": "Collapse",
     "expand": "Expand",
-    "expandSubtasks": "Expand subtasks"
+    "expandSubtasks": "Expand subtasks",
+    "dragHere": "Drag here"
   }
 }

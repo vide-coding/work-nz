@@ -80,7 +80,8 @@ function onChange(evt: { added?: { element: Task; newIndex: number }; moved?: { 
         @change="onChange"
         :group="{ name: 'tasks' }"
         item-key="id"
-        class="flex flex-col gap-2 min-h-10"
+        class="flex flex-col gap-2"
+        :class="tasks.length === 0 ? 'min-h-48' : 'min-h-10'"
         animation="200"
         force-fallback="true"
         ghost-class="opacity-50"
@@ -96,11 +97,13 @@ function onChange(evt: { added?: { element: Task; newIndex: number }; moved?: { 
             @add-child="(parentId, title) => emit('add-child', parentId, title)"
           />
         </template>
+        <template #footer>
+          <div v-if="tasks.length === 0" class="flex flex-col items-center justify-center h-32 border-2 border-dashed border-gray-300 rounded-lg text-gray-400">
+            <span class="text-[13px]">{{ $t('task.noTasks') }}</span>
+            <span class="text-[11px] mt-1">{{ $t('task.dragHere') }}</span>
+          </div>
+        </template>
       </draggable>
-
-      <div v-if="tasks.length === 0" class="text-center text-gray-400 text-[13px] py-6">
-        {{ $t('task.noTasks') }}
-      </div>
     </div>
   </div>
 </template>
