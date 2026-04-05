@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
 import { Plus } from 'lucide-vue-next'
 import draggable from 'vuedraggable'
 import type { Task } from '@/types'
@@ -29,13 +28,6 @@ const emit = defineEmits<{
   'add-child': [parentId: string, title: string]
 }>()
 
-// props.modelValue is readonly (from parent). Make it writable locally
-// so vuedraggable can mutate the array in-place.
-const localTasks = computed({
-  get: () => props.modelValue,
-  set: (val: Task[]) => emit('update:modelValue', val),
-})
-
 function getChildren(taskId: string): Task[] {
   return props.childTasksMap[taskId] || []
 }
@@ -48,18 +40,30 @@ function onAddClick() {
   emit('add-task', props.statusKey)
 }
 
-// Cross-column move: use move callback (fires before @change, has full context)
-function onMove(evt: { data: Task; futureIndex: number; to: HTMLElement }) {
-  if (!evt.data) return false
-  const toColumn = evt.to.closest('[data-column-key]') as HTMLElement | null
-  const toStatusKey = toColumn?.dataset.columnKey ?? props.statusKey
-  emit('task-moved', {
-    task: evt.data,
-    from: props.statusKey,
-    to: toStatusKey,
-    newIndex: evt.futureIndex,
-  })
-  return true
+// @change: vuedraggable 内部已修改数组，evt.added/evt.removed 描述变化
+// we emit to parent so it can update columnTasks (shallowRef needs manual trigger)
+function onChange(evt: { added?: { element: Task; newIndex: number }; removed?: { element: Task; oldIndex: number }; moved?: { element: Task; newIndex: number; oldIndex: number } }) {
+  // Cross-column: element was added to this column from another
+  if (evt.added) {
+    emit('update:modelValue', [...props.modelValue])
+    emit('task-moved', {
+      task: evt.added.element,
+      from: '__unknown__', // parent resolves actual from via columnTasks diff
+      to: props.statusKey,
+      newIndex: evt.added.newIndex,
+    })
+  }
+  // In-column reorder: element moved within same column
+  if (evt.moved) {
+    emit('update:modelValue', [...props.modelValue])
+    emit('task-moved', {
+      task: evt.moved.element,
+      from: props.statusKey,
+      to: props.statusKey,
+      newIndex: evt.moved.newIndex,
+    })
+  }
+  // evt.removed is ignored — source column handles its own update
 }
 </script>
 
@@ -71,7 +75,7 @@ function onMove(evt: { data: Task; futureIndex: number; to: HTMLElement }) {
         :style="{ backgroundColor: statusColor }"
       />
       <span class="text-sm font-semibold text-gray-700 flex-1">{{ statusName }}</span>
-      <span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{{ localTasks.length }}</span>
+      <span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{{ modelValue.length }}</span>
       <button class="flex items-center justify-center w-6 h-6 text-gray-400 bg-transparent rounded hover:bg-gray-100 hover:text-gray-700 transition-colors" @click="onAddClick" :title="$t('task.add')">
         <Plus :size="14" />
       </button>
@@ -79,15 +83,14 @@ function onMove(evt: { data: Task; futureIndex: number; to: HTMLElement }) {
 
     <div class="flex-1 p-2 overflow-y-auto">
       <draggable
-        v-model="localTasks"
-        @change="() => {}"
+        v-model="props.modelValue"
+        @change="onChange"
         :group="{ name: 'tasks' }"
         item-key="id"
         class="flex flex-col gap-2 min-h-10"
         animation="200"
         force-fallback="true"
         ghost-class="opacity-50"
-        :move="onMove"
       >
         <template #item="{ element }">
           <TaskCard
