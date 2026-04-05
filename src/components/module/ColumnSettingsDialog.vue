@@ -45,6 +45,7 @@ const previousOrder = ref<Record<string, number>>({})
 watch(
   () => props.columns,
   (cols) => {
+    if (!cols) return
     previousOrder.value = {}
     cols.forEach((c) => { previousOrder.value[c.id] = c.sortOrder })
     localColumns.value = [...cols].sort((a, b) => a.sortOrder - b.sortOrder)

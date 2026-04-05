@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { Settings } from 'lucide-vue-next'
 import type { Directory, Task } from '@/types'
 import { useTaskModule } from '@/composables/useTaskModule'
@@ -74,7 +74,7 @@ const showDetailPanel = computed(() => selectedTask.value !== null)
 const showColumnSettings = ref(false)
 
 // Watch selected task to load child tasks
-watch(selectedTask, async (task) => {
+const stopSelectedTaskWatch = watch(selectedTask, async (task) => {
   if (task) {
     await loadChildTasks(task.id)
   }
@@ -108,6 +108,10 @@ const selectedChildCounts = computed(() => {
 onMounted(() => {
   loadTasks()
   loadColumns()
+})
+
+onBeforeUnmount(() => {
+  stopSelectedTaskWatch()
 })
 
 async function onQuickAdd(title: string) {
