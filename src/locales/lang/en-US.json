@@ -314,7 +314,6 @@
     "titlePlaceholder": "Task title",
     "collapse": "Collapse",
     "expand": "Expand",
-    "expandSubtasks": "Expand subtasks",
-    "dragHere": "Drag here"
+    "expandSubtasks": "Expand subtasks"
   }
 }

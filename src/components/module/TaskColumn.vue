@@ -98,10 +98,7 @@ function onChange(evt: { added?: { element: Task; newIndex: number }; moved?: { 
           />
         </template>
         <template #footer>
-          <div v-if="tasks.length === 0" class="flex flex-col items-center justify-center h-32 border-2 border-dashed border-gray-300 rounded-lg text-gray-400">
-            <span class="text-[13px]">{{ $t('task.noTasks') }}</span>
-            <span class="text-[11px] mt-1">{{ $t('task.dragHere') }}</span>
-          </div>
+          <div v-if="tasks.length === 0" class="h-32 border-2 border-dashed border-gray-300 rounded-lg" />
         </template>
       </draggable>
     </div>

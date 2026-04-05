@@ -314,7 +314,6 @@
     "titlePlaceholder": "任务标题",
     "collapse": "折叠",
     "expand": "展开",
-    "expandSubtasks": "展开子任务",
-    "dragHere": "拖拽到此处"
+    "expandSubtasks": "展开子任务"
   }
 }
