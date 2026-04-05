@@ -134,6 +134,23 @@ async function onDetailDelete(id: string) {
 
 // Called when a task is reordered (in-column) or moved to another column (cross-column)
 async function onTasksReordered(payload: { taskId: string; newStatus: string; newIndex: number }) {
+  // After drag, vuedraggable has reordered its internal list.
+  // We need to update sortOrder for ALL tasks in the target column to match
+  // the visual order, otherwise filteredTasks re-sort will conflict with DOM.
+  // Get current tasks in this status from the allTasks ref directly.
+  const colTasks = allTasks.value
+    .filter((t) => t.status === payload.newStatus)
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+
+  // Assign consistent sortOrder based on current order
+  for (let i = 0; i < colTasks.length; i++) {
+    const t = colTasks[i]
+    const idx = allTasks.value.findIndex((x) => x.id === t.id)
+    if (idx !== -1) {
+      allTasks.value[idx] = { ...allTasks.value[idx], sortOrder: i }
+    }
+  }
+
   await reorderTask(payload.taskId, payload.newStatus, payload.newIndex)
 }
 

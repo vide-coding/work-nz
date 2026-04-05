@@ -252,13 +252,8 @@ export function useTaskModule(directory: Directory) {
     saving.value = true
     error.value = null
     try {
-      const updated = await taskApi.reorder(taskId, newStatus, newSortOrder)
-      // Mutate in place to keep the same array reference for vuedraggable reactivity
-      const index = tasks.value.findIndex((t) => t.id === taskId)
-      if (index !== -1) {
-        tasks.value[index] = updated
-      }
-      return updated
+      // Call API without updating local state — parent updates allTasks directly
+      return await taskApi.reorder(taskId, newStatus, newSortOrder)
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to reorder task'
       return null
