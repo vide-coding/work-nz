@@ -17,69 +17,16 @@ function onSubmit() {
 </script>
 
 <template>
-  <div class="task-quick-add">
+  <div class="flex gap-2 p-3 bg-white border-b border-gray-200">
     <input
       v-model="title"
-      class="task-quick-add__input"
+      class="flex-1 px-3.5 py-2 text-sm text-gray-900 border border-gray-200 rounded-lg transition-colors focus:outline-none focus:border-blue-500 placeholder:text-gray-400"
       :placeholder="$t('task.quickAdd')"
       @keydown.enter="onSubmit"
     />
-    <button class="task-quick-add__btn" :disabled="!title.trim()" @click="onSubmit">
+    <button class="flex items-center gap-1 px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600" :disabled="!title.trim()" @click="onSubmit">
       <Plus :size="16" />
       {{ $t('task.add') }}
     </button>
   </div>
 </template>
-
-<style scoped>
-.task-quick-add {
-  display: flex;
-  gap: 8px;
-  padding: 12px 16px;
-  background: white;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.task-quick-add__input {
-  flex: 1;
-  padding: 8px 14px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 14px;
-  color: #111827;
-  transition: border-color 0.15s;
-}
-
-.task-quick-add__input:focus {
-  outline: none;
-  border-color: #3b82f6;
-}
-
-.task-quick-add__input::placeholder {
-  color: #9ca3af;
-}
-
-.task-quick-add__btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 16px;
-  border: none;
-  background: #3b82f6;
-  color: white;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s, opacity 0.15s;
-}
-
-.task-quick-add__btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.task-quick-add__btn:not(:disabled):hover {
-  background: #2563eb;
-}
-</style>

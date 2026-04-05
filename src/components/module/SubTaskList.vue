@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import draggable from 'vuedraggable'
 import type { Task } from '@/types'
 import SubTaskItem from './SubTaskItem.vue'
@@ -17,6 +17,12 @@ const emit = defineEmits<{
   'add': [parentId: string, title: string]
 }>()
 
+const localTasks = ref<Task[]>([...props.childTasks])
+
+watch(() => props.childTasks, (tasks) => {
+  localTasks.value = [...tasks]
+})
+
 const newTaskTitle = ref('')
 
 function onAdd() {
@@ -28,11 +34,11 @@ function onAdd() {
 </script>
 
 <template>
-  <div class="subtask-list">
+  <div class="border-t border-gray-200 pt-2 mt-2">
     <draggable
-      v-model="childTasks"
+      v-model="localTasks"
       item-key="id"
-      class="subtask-list__items"
+      class="flex flex-col gap-1"
       handle=".subtask-item"
     >
       <template #item="{ element }">
@@ -44,53 +50,13 @@ function onAdd() {
       </template>
     </draggable>
 
-    <div class="subtask-list__add">
+    <div class="mt-2">
       <input
         v-model="newTaskTitle"
-        class="subtask-list__input"
+        class="w-full px-2.5 py-1.5 text-[13px] text-gray-700 bg-transparent border border-dashed border-gray-300 rounded-md transition-colors focus:outline-none focus:border-blue-500 focus:border-solid placeholder:text-gray-400"
         :placeholder="$t('task.quickAdd')"
         @keydown.enter="onAdd"
       />
     </div>
   </div>
 </template>
-
-<style scoped>
-.subtask-list {
-  border-top: 1px solid #e5e7eb;
-  padding-top: 8px;
-  margin-top: 8px;
-}
-
-.subtask-list__items {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.subtask-list__add {
-  margin-top: 8px;
-}
-
-.subtask-list__input {
-  width: 100%;
-  padding: 6px 10px;
-  border: 1px dashed #d1d5db;
-  border-radius: 6px;
-  font-size: 13px;
-  color: #374151;
-  background: transparent;
-  transition: border-color 0.15s;
-  box-sizing: border-box;
-}
-
-.subtask-list__input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  border-style: solid;
-}
-
-.subtask-list__input::placeholder {
-  color: #9ca3af;
-}
-</style>

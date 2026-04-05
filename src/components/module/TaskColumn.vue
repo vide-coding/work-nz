@@ -47,27 +47,27 @@ function onAddClick() {
 </script>
 
 <template>
-  <div class="task-column">
-    <div class="task-column__header">
+  <div class="flex flex-col min-w-[280px] max-w-[320px] flex-1 bg-gray-50 rounded-xl overflow-hidden">
+    <div class="flex items-center gap-2 px-4 py-3 bg-white border-b border-gray-200">
       <span
-        class="task-column__dot"
+        class="w-2.5 h-2.5 rounded-full flex-shrink-0"
         :style="{ backgroundColor: statusColor }"
       />
-      <span class="task-column__name">{{ statusName }}</span>
-      <span class="task-column__count">{{ tasks.length }}</span>
-      <button class="task-column__add" @click="onAddClick" :title="$t('task.add')">
+      <span class="text-sm font-semibold text-gray-700 flex-1">{{ statusName }}</span>
+      <span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{{ tasks.length }}</span>
+      <button class="flex items-center justify-center w-6 h-6 text-gray-400 bg-transparent rounded hover:bg-gray-100 hover:text-gray-700 transition-colors" @click="onAddClick" :title="$t('task.add')">
         <Plus :size="14" />
       </button>
     </div>
 
-    <div class="task-column__body">
+    <div class="flex-1 p-2 overflow-y-auto">
       <draggable
         v-model="localTasks"
         :group="{ name: 'tasks' }"
         item-key="id"
-        class="task-column__list"
-        ghost-class="task-card--ghost"
-        drag-class="task-card--drag"
+        class="flex flex-col gap-2 min-h-10"
+        ghost-class="opacity-40 bg-blue-100 border-2 border-dashed border-blue-500"
+        drag-class="rotate-2 shadow-xl"
       >
         <template #item="{ element }">
           <TaskCard
@@ -82,97 +82,12 @@ function onAddClick() {
         </template>
       </draggable>
 
-      <div v-if="tasks.length === 0" class="task-column__empty">
+      <div v-if="tasks.length === 0" class="text-center text-gray-400 text-[13px] py-6">
         {{ $t('task.noTasks') }}
       </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-.task-column {
-  display: flex;
-  flex-direction: column;
-  min-width: 280px;
-  max-width: 320px;
-  flex: 1;
-  background: #f9fafb;
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.task-column__header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  background: white;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.task-column__dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.task-column__name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #374151;
-  flex: 1;
-}
-
-.task-column__count {
-  font-size: 12px;
-  color: #9ca3af;
-  background: #f3f4f6;
-  padding: 2px 8px;
-  border-radius: 10px;
-}
-
-.task-column__add {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border: none;
-  background: transparent;
-  color: #9ca3af;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-
-.task-column__add:hover {
-  background: #f3f4f6;
-  color: #374151;
-}
-
-.task-column__body {
-  flex: 1;
-  padding: 8px;
-  overflow-y: auto;
-}
-
-.task-column__list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-height: 40px;
-}
-
-.task-column__empty {
-  text-align: center;
-  color: #9ca3af;
-  font-size: 13px;
-  padding: 24px 0;
-}
-</style>
-
-<style>
 .task-card--ghost {
   opacity: 0.4;
   background: #dbeafe;

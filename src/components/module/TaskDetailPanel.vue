@@ -97,47 +97,47 @@ function onAddChild() {
 
 <template>
   <Transition name="slide">
-    <div v-if="visible && task" class="task-detail-panel">
-      <div class="task-detail-panel__header">
-        <h3 class="task-detail-panel__title">{{ $t('task.title') }}</h3>
-        <button class="task-detail-panel__close" @click="onClose">
+    <div v-if="visible && task" class="fixed top-0 right-0 w-[400px] h-screen bg-white shadow-[-4px_0_24px_rgba(0,0,0,0.1)] z-[100] flex flex-col overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+        <h3 class="m-0 text-base font-semibold text-gray-900">{{ $t('task.title') }}</h3>
+        <button class="flex items-center justify-center w-8 h-8 text-gray-500 bg-transparent rounded-md hover:bg-gray-100" @click="onClose">
           <X :size="18" />
         </button>
       </div>
 
-      <div class="task-detail-panel__body">
-        <div class="form-field">
-          <label class="form-field__label">{{ $t('task.title') }}</label>
+      <div class="flex-1 px-5 py-5 overflow-y-auto flex flex-col gap-4">
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-medium text-gray-500 uppercase tracking-wide">{{ $t('task.title') }}</label>
           <input
             v-model="editTitle"
-            class="form-field__input"
+            class="px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded-md transition-colors focus:outline-none focus:border-blue-500"
             @blur="save"
           />
         </div>
 
-        <div class="form-field">
-          <label class="form-field__label">{{ $t('task.description') }}</label>
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-medium text-gray-500 uppercase tracking-wide">{{ $t('task.description') }}</label>
           <textarea
             v-model="editDescription"
-            class="form-field__textarea"
+            class="px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded-md resize-y min-h-20 transition-colors focus:outline-none focus:border-blue-500"
             rows="4"
             @blur="save"
           />
         </div>
 
-        <div class="form-row">
-          <div class="form-field">
-            <label class="form-field__label">{{ $t('task.status') }}</label>
-            <select v-model="editStatus" class="form-field__select" @change="save">
+        <div class="grid grid-cols-2 gap-3">
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-medium text-gray-500 uppercase tracking-wide">{{ $t('task.status') }}</label>
+            <select v-model="editStatus" class="px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded-md transition-colors focus:outline-none focus:border-blue-500" @change="save">
               <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">
                 {{ opt.label }}
               </option>
             </select>
           </div>
 
-          <div class="form-field">
-            <label class="form-field__label">{{ $t('task.priority') }}</label>
-            <select v-model="editPriority" class="form-field__select" @change="save">
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-medium text-gray-500 uppercase tracking-wide">{{ $t('task.priority') }}</label>
+            <select v-model="editPriority" class="px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded-md transition-colors focus:outline-none focus:border-blue-500" @change="save">
               <option v-for="opt in priorityOptions" :key="opt.value" :value="opt.value">
                 {{ opt.label }}
               </option>
@@ -145,22 +145,22 @@ function onAddChild() {
           </div>
         </div>
 
-        <div class="form-row">
-          <div class="form-field">
-            <label class="form-field__label">{{ $t('task.assignee') }}</label>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-medium text-gray-500 uppercase tracking-wide">{{ $t('task.assignee') }}</label>
             <input
               v-model="editAssignee"
-              class="form-field__input"
+              class="px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded-md transition-colors focus:outline-none focus:border-blue-500"
               @blur="save"
             />
           </div>
 
-          <div class="form-field">
-            <label class="form-field__label">{{ $t('task.dueDate') }}</label>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-medium text-gray-500 uppercase tracking-wide">{{ $t('task.dueDate') }}</label>
             <input
               v-model="editDueDate"
               type="date"
-              class="form-field__input"
+              class="px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded-md transition-colors focus:outline-none focus:border-blue-500"
               @blur="save"
             />
           </div>
@@ -168,36 +168,36 @@ function onAddChild() {
       </div>
 
       <!-- Subtasks section -->
-      <div class="task-detail-panel__subtasks">
-        <div class="task-detail-panel__subtasks-header">
-          <span class="task-detail-panel__subtasks-title">
+      <div class="border-t border-gray-200 px-5 py-4 bg-gray-50">
+        <div class="mb-3">
+          <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">
             {{ $t('task.subtasks') || 'Subtasks' }}
-            <span v-if="childCount.total > 0" class="task-detail-panel__subtasks-count">
+            <span v-if="childCount.total > 0" class="ml-2 font-normal text-gray-400">
               {{ childCount.completed }}/{{ childCount.total }}
             </span>
           </span>
         </div>
 
-        <div class="task-detail-panel__subtasks-list">
+        <div class="flex flex-col gap-1 mb-2 max-h-[200px] overflow-y-auto">
           <div
             v-for="child in childTasks"
             :key="child.id"
-            class="task-detail-panel__subtask-item"
+            class="group flex items-center gap-2 p-1.5 bg-white border border-gray-200 rounded-md"
           >
             <input
               type="checkbox"
               :checked="child.isCompleted"
-              class="task-detail-panel__subtask-checkbox"
+              class="w-3.5 h-3.5 cursor-pointer flex-shrink-0"
               @change="emit('toggle-child', child.id)"
             />
             <span
-              class="task-detail-panel__subtask-title"
-              :class="{ 'task-detail-panel__subtask-title--done': child.isCompleted }"
+              class="flex-1 text-[13px] text-gray-700 overflow-hidden text-ellipsis whitespace-nowrap"
+              :class="{ 'line-through text-gray-400': child.isCompleted }"
             >
               {{ child.title }}
             </span>
             <button
-              class="task-detail-panel__subtask-delete"
+              class="opacity-0 group-hover:opacity-100 flex items-center justify-center w-5 h-5 text-gray-300 hover:text-red-500 rounded transition-all flex-shrink-0"
               @click="emit('delete-child', child.id)"
             >
               <Trash2 :size="12" />
@@ -205,21 +205,21 @@ function onAddChild() {
           </div>
         </div>
 
-        <div class="task-detail-panel__subtasks-add">
+        <div class="flex gap-2">
           <input
             v-model="newChildTitle"
-            class="task-detail-panel__subtasks-input"
+            class="flex-1 px-2.5 py-1.5 text-[13px] text-gray-700 bg-white border border-dashed border-gray-300 rounded-md transition-colors focus:outline-none focus:border-blue-500 focus:border-solid placeholder:text-gray-400"
             :placeholder="$t('task.quickAdd')"
             @keydown.enter="onAddChild"
           />
-          <button class="task-detail-panel__subtasks-btn" @click="onAddChild">
+          <button class="px-3 py-1.5 text-[13px] font-medium text-white bg-blue-500 rounded-md transition-colors hover:bg-blue-600" @click="onAddChild">
             {{ $t('task.add') }}
           </button>
         </div>
       </div>
 
-      <div class="task-detail-panel__footer">
-        <button class="task-detail-panel__delete" @click="onDelete">
+      <div class="px-5 py-4 border-t border-gray-200 flex justify-start">
+        <button class="flex items-center gap-1.5 px-4 py-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md transition-colors hover:bg-red-100" @click="onDelete">
           <Trash2 :size="16" />
           {{ $t('task.delete') }}
         </button>
@@ -229,259 +229,6 @@ function onAddChild() {
 </template>
 
 <style scoped>
-.task-detail-panel {
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: 400px;
-  height: 100vh;
-  background: white;
-  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.1);
-  z-index: 100;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.task-detail-panel__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.task-detail-panel__title {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #111827;
-}
-
-.task-detail-panel__close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: transparent;
-  color: #6b7280;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.task-detail-panel__close:hover {
-  background: #f3f4f6;
-}
-
-.task-detail-panel__body {
-  flex: 1;
-  padding: 20px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.form-field__label {
-  font-size: 12px;
-  font-weight: 500;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.form-field__input,
-.form-field__select,
-.form-field__textarea {
-  padding: 8px 12px;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  font-size: 14px;
-  color: #111827;
-  background: white;
-  transition: border-color 0.15s;
-}
-
-.form-field__input:focus,
-.form-field__select:focus,
-.form-field__textarea:focus {
-  outline: none;
-  border-color: #3b82f6;
-}
-
-.form-field__textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-.task-detail-panel__footer {
-  padding: 16px 20px;
-  border-top: 1px solid #e5e7eb;
-  display: flex;
-  justify-content: flex-start;
-}
-
-.task-detail-panel__subtasks {
-  border-top: 1px solid #e5e7eb;
-  padding: 16px 20px;
-  background: #f9fafb;
-}
-
-.task-detail-panel__subtasks-header {
-  margin-bottom: 12px;
-}
-
-.task-detail-panel__subtasks-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.task-detail-panel__subtasks-count {
-  margin-left: 8px;
-  font-weight: 400;
-  color: #9ca3af;
-}
-
-.task-detail-panel__subtasks-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-bottom: 8px;
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.task-detail-panel__subtask-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  background: white;
-  border-radius: 6px;
-  border: 1px solid #e5e7eb;
-}
-
-.task-detail-panel__subtask-checkbox {
-  width: 14px;
-  height: 14px;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.task-detail-panel__subtask-title {
-  flex: 1;
-  font-size: 13px;
-  color: #374151;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.task-detail-panel__subtask-title--done {
-  text-decoration: line-through;
-  color: #9ca3af;
-}
-
-.task-detail-panel__subtask-delete {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border: none;
-  background: transparent;
-  color: #d1d5db;
-  border-radius: 4px;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s, color 0.15s;
-  flex-shrink: 0;
-}
-
-.task-detail-panel__subtask-item:hover .task-detail-panel__subtask-delete {
-  opacity: 1;
-}
-
-.task-detail-panel__subtask-delete:hover {
-  color: #ef4444;
-}
-
-.task-detail-panel__subtasks-add {
-  display: flex;
-  gap: 8px;
-}
-
-.task-detail-panel__subtasks-input {
-  flex: 1;
-  padding: 6px 10px;
-  border: 1px dashed #d1d5db;
-  border-radius: 6px;
-  font-size: 13px;
-  color: #374151;
-  background: white;
-  transition: border-color 0.15s;
-}
-
-.task-detail-panel__subtasks-input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  border-style: solid;
-}
-
-.task-detail-panel__subtasks-input::placeholder {
-  color: #9ca3af;
-}
-
-.task-detail-panel__subtasks-btn {
-  padding: 6px 12px;
-  border: none;
-  background: #3b82f6;
-  color: white;
-  border-radius: 6px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.task-detail-panel__subtasks-btn:hover {
-  background: #2563eb;
-}
-
-.task-detail-panel__delete {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border: 1px solid #fca5a5;
-  background: #fef2f2;
-  color: #dc2626;
-  border-radius: 6px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.task-detail-panel__delete:hover {
-  background: #fee2e2;
-}
-
 .slide-enter-active,
 .slide-leave-active {
   transition: transform 0.3s ease;

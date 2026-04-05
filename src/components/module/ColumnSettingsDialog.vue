@@ -116,17 +116,17 @@ function cancelDelete() {
 
 <template>
   <Transition name="fade">
-    <div v-if="visible" class="settings-overlay" @click.self="emit('close')">
-      <div class="settings-dialog">
-        <div class="settings-dialog__header">
-          <h3 class="settings-dialog__title">{{ $t('task.columnSettings') }}</h3>
-          <button class="settings-dialog__close" @click="emit('close')">
+    <div v-if="visible" class="fixed inset-0 bg-black/40 flex items-center justify-center z-[200]" @click.self="emit('close')">
+      <div class="bg-white rounded-xl w-[480px] max-w-[90vw] max-h-[80vh] flex flex-col overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.2)]">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+          <h3 class="m-0 text-base font-semibold text-gray-900">{{ $t('task.columnSettings') }}</h3>
+          <button class="flex items-center justify-center w-8 h-8 text-gray-500 bg-transparent border-none rounded-md cursor-pointer hover:bg-gray-100" @click="emit('close')">
             <X :size="18" />
           </button>
         </div>
 
-        <div class="settings-dialog__body">
-          <div v-if="loading" class="settings-dialog__loading">
+        <div class="flex-1 px-5 py-4 overflow-y-auto">
+          <div v-if="loading" class="text-center text-gray-500 py-6">
             {{ $t('common.loading') }}
           </div>
 
@@ -136,48 +136,48 @@ function cancelDelete() {
               v-model="localColumns"
               item-key="id"
               handle=".column-item__drag"
-              class="settings-dialog__list"
+              class="flex flex-col gap-1.5 mb-3"
               @end="onDragEnd"
             >
               <template #item="{ element: col }">
-                <div class="column-item">
-                  <div class="column-item__drag">
+                <div class="group flex items-center gap-2 px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-lg">
+                  <div class="text-gray-300 cursor-grab flex-shrink-0">
                     <GripVertical :size="14" />
                   </div>
 
                   <div
-                    class="column-item__dot"
+                    class="w-3 h-3 rounded-full flex-shrink-0"
                     :style="{ backgroundColor: col.color }"
                   />
 
-                  <div v-if="editingId === col.id" class="column-item__edit">
+                  <div v-if="editingId === col.id" class="flex-1 flex items-center gap-1.5">
                     <input
                       v-model="editName"
-                      class="column-item__edit-name"
+                      class="flex-1 px-2 py-1 text-[13px] border border-gray-300 rounded"
                       @keydown.enter="submitEdit(col.id)"
                       @keydown.esc="cancelEdit"
                     />
                     <input
                       v-model="editColor"
                       type="color"
-                      class="column-item__edit-color"
+                      class="w-7 h-7 p-0.5 border border-gray-300 rounded cursor-pointer"
                     />
-                    <button class="column-item__edit-btn" @click="submitEdit(col.id)">
+                    <button class="px-2 py-1 text-[12px] font-medium text-white bg-blue-500 border-none rounded cursor-pointer" @click="submitEdit(col.id)">
                       {{ $t('common.save') }}
                     </button>
-                    <button class="column-item__edit-cancel" @click="cancelEdit">
+                    <button class="px-2 py-1 text-[12px] text-gray-600 bg-gray-100 border border-gray-200 rounded cursor-pointer" @click="cancelEdit">
                       {{ $t('common.cancel') }}
                     </button>
                   </div>
 
-                  <div v-else class="column-item__info">
-                    <span class="column-item__name" @dblclick="startEdit(col)">{{ col.name }}</span>
-                    <span class="column-item__key">{{ col.statusKey }}</span>
+                  <div v-else class="flex-1 flex items-center gap-2 min-w-0">
+                    <span class="text-sm font-medium text-gray-700 cursor-text" @dblclick="startEdit(col)">{{ col.name }}</span>
+                    <span class="text-[11px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded flex-shrink-0">{{ col.statusKey }}</span>
                   </div>
 
                   <button
-                    class="column-item__visibility"
-                    :class="{ 'column-item__visibility--hidden': !col.isVisible }"
+                    class="flex-shrink-0 px-2 py-1 text-[11px] border border-gray-200 bg-white text-gray-700 rounded cursor-pointer"
+                    :class="{ 'bg-amber-50 border-amber-300 text-amber-800': !col.isVisible }"
                     @click="emit('toggle-visibility', col.id)"
                     :title="col.isVisible ? $t('task.hideColumn') : $t('task.showColumn')"
                   >
@@ -186,7 +186,7 @@ function cancelDelete() {
 
                   <button
                     v-if="pendingDeleteId === col.id"
-                    class="column-item__delete column-item__delete--confirm"
+                    class="flex-shrink-0 px-1.5 py-0.5 text-[11px] text-white bg-red-500 border-none rounded cursor-pointer"
                     @click="onDelete(col.id)"
                     :title="$t('common.confirm')"
                   >
@@ -194,7 +194,7 @@ function cancelDelete() {
                   </button>
                   <button
                     v-else
-                    class="column-item__delete"
+                    class="flex-shrink-0 flex items-center justify-center w-6 h-6 text-gray-300 bg-transparent border-none rounded cursor-pointer hover:text-red-500 hover:bg-red-50"
                     @click="onDelete(col.id)"
                     :title="$t('common.delete')"
                   >
@@ -202,7 +202,7 @@ function cancelDelete() {
                   </button>
                   <button
                     v-if="pendingDeleteId === col.id"
-                    class="column-item__delete-cancel"
+                    class="flex-shrink-0 flex items-center justify-center h-6 px-1.5 text-[11px] text-gray-600 bg-gray-100 border-none rounded cursor-pointer hover:bg-gray-200"
                     @click="cancelDelete"
                   >
                     {{ $t('common.cancel') }}
@@ -212,25 +212,25 @@ function cancelDelete() {
             </draggable>
 
             <!-- Add new column form -->
-            <div v-if="showAddForm" class="add-form">
+            <div v-if="showAddForm" class="flex flex-col gap-2 p-3 bg-gray-50 border border-dashed border-gray-300 rounded-lg">
               <input
                 v-model="newStatusKey"
-                class="add-form__input"
+                class="px-2.5 py-1.5 text-[13px] border border-gray-200 rounded-md"
                 :placeholder="$t('task.statusKey')"
               />
               <input
                 v-model="newName"
-                class="add-form__input"
+                class="px-2.5 py-1.5 text-[13px] border border-gray-200 rounded-md"
                 :placeholder="$t('task.columnName')"
               />
-              <div class="add-form__color-row">
-                <span class="add-form__color-label">{{ $t('task.color') }}</span>
-                <div class="add-form__color-presets">
+              <div class="flex items-center gap-2">
+                <span class="text-[12px] text-gray-500 flex-shrink-0">{{ $t('task.color') }}</span>
+                <div class="flex flex-wrap gap-1">
                   <button
                     v-for="c in PRESET_COLORS"
                     :key="c"
-                    class="add-form__color-swatch"
-                    :class="{ 'add-form__color-swatch--active': newColor === c }"
+                    class="w-[18px] h-[18px] rounded cursor-pointer border-2"
+                    :class="newColor === c ? 'border-gray-700' : 'border-transparent'"
                     :style="{ backgroundColor: c }"
                     @click="newColor = c"
                   />
@@ -238,20 +238,20 @@ function cancelDelete() {
                 <input
                   v-model="newColor"
                   type="color"
-                  class="add-form__color-picker"
+                  class="w-7 h-7 p-0.5 border border-gray-200 rounded cursor-pointer"
                 />
               </div>
-              <div class="add-form__actions">
-                <button class="add-form__submit" @click="submitAdd">
+              <div class="flex gap-2">
+                <button class="px-3 py-1.5 text-[13px] font-medium text-white bg-blue-500 border-none rounded-md cursor-pointer transition-colors hover:bg-blue-600" @click="submitAdd">
                   {{ $t('common.create') }}
                 </button>
-                <button class="add-form__cancel" @click="cancelAdd">
+                <button class="px-3 py-1.5 text-[13px] text-gray-600 bg-gray-100 border border-gray-200 rounded-md cursor-pointer" @click="cancelAdd">
                   {{ $t('common.cancel') }}
                 </button>
               </div>
             </div>
 
-            <button v-else class="add-column-btn" @click="openAddForm">
+            <button v-else class="w-full flex items-center justify-center gap-1.5 px-2 py-2 text-[13px] text-gray-500 bg-transparent border border-dashed border-gray-300 rounded-lg cursor-pointer transition-colors hover:border-blue-500 hover:text-blue-500" @click="openAddForm">
               <Plus :size="14" />
               {{ $t('task.addColumn') }}
             </button>
@@ -263,343 +263,6 @@ function cancelDelete() {
 </template>
 
 <style scoped>
-.settings-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 200;
-}
-
-.settings-dialog {
-  background: white;
-  border-radius: 12px;
-  width: 480px;
-  max-width: 90vw;
-  max-height: 80vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-}
-
-.settings-dialog__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.settings-dialog__title {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #111827;
-}
-
-.settings-dialog__close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: transparent;
-  color: #6b7280;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.settings-dialog__close:hover {
-  background: #f3f4f6;
-}
-
-.settings-dialog__body {
-  flex: 1;
-  padding: 16px 20px;
-  overflow-y: auto;
-}
-
-.settings-dialog__loading {
-  text-align: center;
-  color: #6b7280;
-  padding: 24px;
-}
-
-.settings-dialog__list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-
-.column-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-}
-
-.column-item__drag {
-  color: #d1d5db;
-  cursor: grab;
-  flex-shrink: 0;
-}
-
-.column-item__drag:active {
-  cursor: grabbing;
-}
-
-.column-item__dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.column-item__info {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.column-item__name {
-  font-size: 14px;
-  font-weight: 500;
-  color: #374151;
-  cursor: text;
-}
-
-.column-item__key {
-  font-size: 11px;
-  color: #9ca3af;
-  background: #f3f4f6;
-  padding: 1px 6px;
-  border-radius: 4px;
-  flex-shrink: 0;
-}
-
-.column-item__edit {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.column-item__edit-name {
-  flex: 1;
-  padding: 4px 8px;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  font-size: 13px;
-}
-
-.column-item__edit-color {
-  width: 28px;
-  height: 28px;
-  padding: 2px;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.column-item__edit-btn {
-  padding: 4px 8px;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.column-item__edit-cancel {
-  padding: 4px 8px;
-  background: #f3f4f6;
-  color: #6b7280;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.column-item__visibility {
-  padding: 3px 8px;
-  border: 1px solid #e5e7eb;
-  background: white;
-  color: #374151;
-  border-radius: 4px;
-  font-size: 11px;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.column-item__visibility--hidden {
-  background: #fef3c7;
-  border-color: #fcd34d;
-  color: #92400e;
-}
-
-.column-item__delete {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border: none;
-  background: transparent;
-  color: #d1d5db;
-  border-radius: 4px;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.column-item__delete:hover {
-  color: #ef4444;
-  background: #fef2f2;
-}
-
-.column-item__delete--confirm {
-  width: auto;
-  padding: 2px 6px;
-  background: #ef4444;
-  color: white;
-  font-size: 11px;
-}
-
-.column-item__delete-cancel {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 24px;
-  padding: 2px 6px;
-  border: none;
-  background: #f3f4f6;
-  color: #6b7280;
-  border-radius: 4px;
-  font-size: 11px;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.column-item__delete-cancel:hover {
-  background: #e5e7eb;
-}
-
-.add-form {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-  background: #f9fafb;
-  border: 1px dashed #d1d5db;
-  border-radius: 8px;
-}
-
-.add-form__input {
-  padding: 6px 10px;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  font-size: 13px;
-}
-
-.add-form__color-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.add-form__color-label {
-  font-size: 12px;
-  color: #6b7280;
-  flex-shrink: 0;
-}
-
-.add-form__color-presets {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-
-.add-form__color-swatch {
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
-  border: 2px solid transparent;
-  cursor: pointer;
-}
-
-.add-form__color-swatch--active {
-  border-color: #374151;
-}
-
-.add-form__color-picker {
-  width: 28px;
-  height: 28px;
-  padding: 2px;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.add-form__actions {
-  display: flex;
-  gap: 8px;
-}
-
-.add-form__submit {
-  padding: 6px 12px;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.add-form__submit:hover {
-  background: #2563eb;
-}
-
-.add-form__cancel {
-  padding: 6px 12px;
-  background: #f3f4f6;
-  color: #6b7280;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.add-column-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100%;
-  padding: 8px;
-  border: 1px dashed #d1d5db;
-  background: transparent;
-  color: #6b7280;
-  border-radius: 8px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
-}
-
-.add-column-btn:hover {
-  border-color: #3b82f6;
-  color: #3b82f6;
-}
-
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.2s ease;

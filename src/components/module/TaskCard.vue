@@ -44,39 +44,39 @@ function onCardClick() {
 </script>
 
 <template>
-  <div class="task-card" :class="{ 'task-card--expanded': isExpanded }">
-    <div class="task-card__main" @click="onCardClick">
-      <div class="task-card__drag-handle">
+  <div class="bg-white border border-gray-200 rounded-lg overflow-hidden transition-shadow hover:shadow-md" :class="{ 'border-gray-300': isExpanded }">
+    <div class="flex items-start gap-2 p-2.5 cursor-pointer" @click="onCardClick">
+      <div class="text-gray-300 cursor-grab flex-shrink-0 pt-0.5 active:cursor-grabbing">
         <GripVertical :size="14" />
       </div>
-      <div class="task-card__content">
-        <div class="task-card__title-row">
-          <span class="task-card__title">{{ task.title }}</span>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-1">
+          <span class="flex-1 text-sm font-medium text-gray-800 leading-tight truncate">{{ task.title }}</span>
           <button
             v-if="childCount.total > 0"
-            class="task-card__expand-btn"
-            @click="toggleExpand"
+            class="flex items-center gap-0.5 px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded-full text-[11px] transition-colors hover:bg-gray-200 hover:text-gray-700 flex-shrink-0"
+            @click.stop="toggleExpand"
             :title="isExpanded ? 'Collapse' : 'Expand'"
           >
-            <span class="task-card__progress">{{ childCount.completed }}/{{ childCount.total }}</span>
+            <span class="font-semibold">{{ childCount.completed }}/{{ childCount.total }}</span>
             <component :is="isExpanded ? ChevronDown : ChevronRight" :size="14" />
           </button>
           <button
             v-else
-            class="task-card__expand-btn task-card__expand-btn--hint"
-            @click="toggleExpand"
+            class="p-0.5 text-gray-400 hover:text-gray-600 transition-colors"
+            @click.stop="toggleExpand"
             :title="'Expand subtasks'"
           >
             <ChevronRight :size="14" />
           </button>
         </div>
-        <div class="task-card__meta">
+        <div class="flex items-center gap-2 mt-1.5">
           <span
-            class="task-card__priority"
+            class="w-2 h-2 rounded-full flex-shrink-0"
             :style="{ backgroundColor: priorityColor }"
             :title="task.priority"
           />
-          <span v-if="task.assignee" class="task-card__assignee">
+          <span v-if="task.assignee" class="text-xs text-gray-500">
             {{ task.assignee }}
           </span>
         </div>
@@ -85,7 +85,7 @@ function onCardClick() {
 
     <!-- Subtask list -->
     <Transition name="expand">
-      <div v-if="isExpanded && childTasks.length > 0" class="task-card__subtasks">
+      <div v-if="isExpanded && childTasks.length > 0" class="border-t border-gray-100 p-2 pb-3 bg-gray-50">
         <SubTaskList
           :parent-id="task.id"
           :child-tasks="childTasks"
@@ -99,117 +99,6 @@ function onCardClick() {
 </template>
 
 <style scoped>
-.task-card {
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  overflow: hidden;
-  transition: box-shadow 0.15s;
-}
-
-.task-card:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.task-card--expanded {
-  border-color: #d1d5db;
-}
-
-.task-card__main {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 10px 12px;
-  cursor: pointer;
-}
-
-.task-card__drag-handle {
-  color: #d1d5db;
-  cursor: grab;
-  flex-shrink: 0;
-  padding-top: 2px;
-}
-
-.task-card__drag-handle:active {
-  cursor: grabbing;
-}
-
-.task-card__content {
-  flex: 1;
-  min-width: 0;
-}
-
-.task-card__title-row {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.task-card__title {
-  flex: 1;
-  font-size: 14px;
-  font-weight: 500;
-  color: #1f2937;
-  line-height: 1.4;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.task-card__expand-btn {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 2px 6px;
-  border: none;
-  background: #f3f4f6;
-  color: #6b7280;
-  border-radius: 10px;
-  font-size: 11px;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  flex-shrink: 0;
-}
-
-.task-card__expand-btn:hover {
-  background: #e5e7eb;
-  color: #374151;
-}
-
-.task-card__expand-btn--hint {
-  padding: 2px 4px;
-}
-
-.task-card__progress {
-  font-weight: 600;
-}
-
-.task-card__meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 6px;
-}
-
-.task-card__priority {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.task-card__assignee {
-  font-size: 12px;
-  color: #6b7280;
-}
-
-.task-card__subtasks {
-  border-top: 1px solid #f3f4f6;
-  padding: 8px 12px 12px;
-  background: #fafafa;
-}
-
-/* Expand transition */
 .expand-enter-active,
 .expand-leave-active {
   transition: opacity 0.2s ease, max-height 0.2s ease;

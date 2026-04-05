@@ -16,84 +16,21 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="subtask-item">
+  <div class="group flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-md transition-colors hover:bg-gray-100">
     <input
       type="checkbox"
       :checked="task.isCompleted"
-      class="subtask-item__checkbox"
+      class="w-3.5 h-3.5 cursor-pointer flex-shrink-0"
       @change="emit('toggle', task.id)"
     />
     <span
-      class="subtask-item__title"
-      :class="{ 'subtask-item__title--completed': task.isCompleted }"
+      class="flex-1 text-[13px] text-gray-700 leading-tight min-w-0 overflow-hidden text-ellipsis whitespace-nowrap"
+      :class="{ 'line-through text-gray-400': task.isCompleted }"
     >
       {{ task.title }}
     </span>
-    <button class="subtask-item__delete" @click="emit('delete', task.id)">
+    <button class="opacity-0 group-hover:opacity-100 flex items-center justify-center w-5 h-5 text-gray-300 hover:text-red-500 rounded transition-all flex-shrink-0" @click="emit('delete', task.id)">
       <Trash2 :size="12" />
     </button>
   </div>
 </template>
-
-<style scoped>
-.subtask-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  background: #f9fafb;
-  border-radius: 6px;
-  transition: background 0.15s;
-}
-
-.subtask-item:hover {
-  background: #f3f4f6;
-}
-
-.subtask-item__checkbox {
-  width: 14px;
-  height: 14px;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.subtask-item__title {
-  flex: 1;
-  font-size: 13px;
-  color: #374151;
-  line-height: 1.4;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.subtask-item__title--completed {
-  text-decoration: line-through;
-  color: #9ca3af;
-}
-
-.subtask-item__delete {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border: none;
-  background: transparent;
-  color: #d1d5db;
-  border-radius: 4px;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s, color 0.15s;
-  flex-shrink: 0;
-}
-
-.subtask-item:hover .subtask-item__delete {
-  opacity: 1;
-}
-
-.subtask-item__delete:hover {
-  color: #ef4444;
-}
-</style>

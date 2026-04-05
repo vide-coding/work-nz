@@ -618,43 +618,43 @@ watch(
 </script>
 
 <template>
-  <div class="git-module">
-    <div class="git-module__content">
+  <div class="h-full flex p-4 overflow-hidden">
+    <div class="flex-1 min-w-0 overflow-y-auto pr-4">
       <!-- Header -->
-      <div class="git-module__header">
-        <h3 class="git-module__title">{{ t('git.title') }}</h3>
-        <div class="git-module__header-actions">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="m-0 text-base font-semibold text-gray-900">{{ t('git.title') }}</h3>
+        <div class="flex items-center gap-2">
           <button
-            class="git-module__refresh-btn"
+            class="flex items-center justify-center p-1.5 text-gray-500 bg-transparent border border-gray-300 rounded-md cursor-pointer transition-all hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
             :disabled="refreshing || scanning"
             :title="$t('git.refresh')"
             @click="refreshAllRepoStatuses"
           >
             <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': refreshing || scanning }" />
           </button>
-          <button class="git-module__clone-btn" @click="showCloneDialog = true">
+          <button class="px-3 py-1.5 text-[13px] font-medium text-white bg-blue-500 border-none rounded-md cursor-pointer transition-colors hover:bg-blue-600" @click="showCloneDialog = true">
             {{ t('git.cloneButton') }}
           </button>
         </div>
       </div>
 
       <!-- Directory path -->
-      <div v-if="directory.relativePath" class="git-module__path">
-        <span class="git-module__path-label">{{ t('git.directory') }}</span>
-        <span class="git-module__path-value">{{ directory.relativePath }}</span>
+      <div v-if="directory.relativePath" class="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-md mb-4 text-[13px]">
+        <span class="text-gray-500">{{ t('git.directory') }}</span>
+        <span class="text-gray-900 font-mono">{{ directory.relativePath }}</span>
       </div>
 
       <!-- Error state -->
-      <div v-if="error" class="git-module__error">
+      <div v-if="error" class="text-center p-8 text-red-500">
         {{ error }}
       </div>
 
       <!-- Clone progress items -->
-      <div v-if="Object.keys(cloneTasks).length > 0" class="git-module__list">
+      <div v-if="Object.keys(cloneTasks).length > 0" class="flex-1">
         <div
           v-for="(task, taskId) in cloneTasks"
           :key="'clone-' + taskId"
-          class="git-module__clone-card"
+          class="bg-white rounded-xl p-4 border border-gray-200 mb-3 dark:bg-gray-800 dark:border-gray-700"
         >
           <div class="flex items-center gap-3">
             <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
@@ -713,7 +713,7 @@ watch(
       </div>
 
       <!-- Repository list with drag and drop -->
-      <div v-if="draggedRepos.length > 0" class="git-module__list">
+      <div v-if="draggedRepos.length > 0" class="flex-1">
         <draggable
           :model-value="draggedRepos"
           @update:model-value="onModelValueUpdate"
@@ -743,9 +743,9 @@ watch(
       </div>
 
       <!-- Empty state -->
-      <div v-else class="git-module__empty">
+      <div v-else class="flex-1 flex flex-col items-center justify-center text-gray-500">
         <p>{{ t('git.noRepos') }}</p>
-        <p class="git-module__empty-hint">{{ t('git.noReposHint') }}</p>
+        <p class="text-[13px] text-gray-400 mt-1">{{ t('git.noReposHint') }}</p>
       </div>
     </div>
 
@@ -834,159 +834,3 @@ watch(
     </BaseDialog>
   </div>
 </template>
-
-<style scoped>
-.git-module {
-  height: 100%;
-  display: flex;
-  padding: 16px;
-  overflow: hidden;
-}
-
-.git-module__content {
-  flex: 1;
-  min-width: 0;
-  overflow-y: auto;
-  padding-right: 16px;
-}
-
-.git-module__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.git-module__header-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.git-module__title {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #111827;
-}
-
-.git-module__refresh-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px;
-  background-color: transparent;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  color: #6b7280;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.git-module__refresh-btn:hover:not(:disabled) {
-  background-color: #f3f4f6;
-  color: #374151;
-}
-
-.git-module__refresh-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.dark .git-module__refresh-btn {
-  border-color: #4b5563;
-  color: #9ca3af;
-}
-
-.dark .git-module__refresh-btn:hover:not(:disabled) {
-  background-color: #374151;
-  color: #f3f4f6;
-}
-
-.git-module__clone-btn {
-  padding: 6px 12px;
-  background-color: #3b82f6;
-  border: none;
-  border-radius: 6px;
-  color: white;
-  font-size: 13px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.git-module__clone-btn:hover {
-  background-color: #2563eb;
-}
-
-.git-module__path {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background-color: #f3f4f6;
-  border-radius: 6px;
-  margin-bottom: 16px;
-  font-size: 13px;
-}
-
-.git-module__path-label {
-  color: #6b7280;
-}
-
-.git-module__path-value {
-  color: #111827;
-  font-family: monospace;
-}
-
-.git-module__loading,
-.git-module__error {
-  text-align: center;
-  padding: 32px;
-  color: #6b7280;
-}
-
-.git-module__error {
-  color: #dc2626;
-}
-
-.git-module__list {
-  flex: 1;
-}
-
-.git-module__clone-card {
-  background: white;
-  border-radius: 0.75rem;
-  padding: 1rem;
-  border: 1px solid #e5e7eb;
-  margin-bottom: 0.75rem;
-}
-
-.dark .git-module__clone-card {
-  background: #1f2937;
-  border-color: #374151;
-}
-
-.git-module__ghost {
-  opacity: 0.5;
-  background: #dbeafe;
-}
-
-.dark .git-module__ghost {
-  background: #1e3a8a;
-}
-
-.git-module__empty {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #6b7280;
-}
-
-.git-module__empty-hint {
-  font-size: 13px;
-  color: #9ca3af;
-  margin-top: 4px;
-}
-</style>

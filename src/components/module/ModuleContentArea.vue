@@ -28,21 +28,19 @@ const moduleType = computed(() => module.value?.key)
 </script>
 
 <template>
-  <div class="module-content-area">
+  <div class="h-full flex flex-col">
     <!-- No module assigned -->
-    <div v-if="!module" class="module-content-area__empty">
-      <div class="module-content-area__empty-content">
-        <p class="module-content-area__empty-title">{{ t('module.noModule') }}</p>
-        <p class="module-content-area__empty-description">
-          {{ t('module.selectHint') }}
-        </p>
+    <div v-if="!module" class="flex-1 flex items-center justify-center p-8">
+      <div class="text-center text-gray-500">
+        <p class="m-0 mb-2 text-lg font-semibold text-gray-700">{{ t('module.noModule') }}</p>
+        <p class="m-0 text-sm">{{ t('module.selectHint') }}</p>
       </div>
     </div>
 
     <!-- Module enabled -->
-    <div v-else class="module-content-area__content">
+    <div v-else class="h-full flex flex-col">
       <!-- Module-specific content -->
-      <div class="module-content-area__body">
+      <div class="flex-1 p-4 overflow-y-auto">
         <!-- Git Module Content -->
         <template v-if="moduleType === 'git'">
           <GitModuleView :directory="props.directory" />
@@ -60,70 +58,12 @@ const moduleType = computed(() => module.value?.key)
 
         <!-- Unknown module type -->
         <template v-else>
-          <div class="module-content-area__unknown">
+          <div class="text-gray-700">
             <p>{{ t('module.notImplemented') }}</p>
-            <p class="module-content-area__hint">{{ module.name }}</p>
+            <p class="mt-2 text-[13px] text-gray-400">{{ module.name }}</p>
           </div>
         </template>
       </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-.module-content-area {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.module-content-area__empty {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 32px;
-}
-
-.module-content-area__empty-content {
-  text-align: center;
-  color: #6b7280;
-}
-
-.module-content-area__empty-title {
-  margin: 0 0 8px;
-  font-size: 18px;
-  font-weight: 600;
-  color: #374151;
-}
-
-.module-content-area__empty-description {
-  margin: 0;
-  font-size: 14px;
-}
-
-.module-content-area__content {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.module-content-area__body {
-  flex: 1;
-  padding: 16px;
-  overflow-y: auto;
-}
-
-.module-content-area__hint {
-  margin-top: 8px;
-  font-size: 13px;
-  color: #9ca3af;
-}
-
-.module-content-area__git,
-.module-content-area__tasks,
-.module-content-area__files,
-.module-content-area__unknown {
-  color: #374151;
-}
-</style>

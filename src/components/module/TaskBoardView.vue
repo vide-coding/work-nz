@@ -187,34 +187,34 @@ const priorityOptions = computed(() =>
 </script>
 
 <template>
-  <div class="task-board">
+  <div class="flex flex-col h-full bg-gray-100">
     <TaskQuickAdd @add="onQuickAdd" />
 
-    <div class="task-board__toolbar">
-      <span class="task-board__column-count">
+    <div class="flex items-center justify-end gap-2 px-4 pb-2">
+      <span class="text-xs text-gray-400">
         {{ boardColumns.length }} {{ $t('workspace.columns') || 'columns' }}
       </span>
-      <button class="task-board__settings-btn" @click="showColumnSettings = true" :title="$t('settings.title')">
+      <button class="flex items-center justify-center w-7 h-7 bg-transparent text-gray-400 border-none rounded-md cursor-pointer transition-colors hover:bg-gray-200 hover:text-gray-600" @click="showColumnSettings = true" :title="$t('settings.title')">
         <Settings :size="16" />
       </button>
     </div>
 
-    <div v-if="loading" class="task-board__loading">
+    <div v-if="loading" class="flex-1 flex items-center justify-center text-sm text-gray-500">
       Loading...
     </div>
 
-    <div v-else-if="error" class="task-board__error">
+    <div v-else-if="error" class="flex-1 flex items-center justify-center text-sm text-red-500">
       {{ error }}
     </div>
 
-    <div v-else-if="boardColumns.length === 0" class="task-board__empty">
+    <div v-else-if="boardColumns.length === 0" class="flex-1 flex flex-col items-center justify-center gap-3 text-sm text-gray-500">
       <p>{{ $t('task.noVisibleColumns') }}</p>
-      <button class="task-board__empty-btn" @click="showColumnSettings = true">
+      <button class="px-4 py-2 text-[13px] font-medium text-white bg-blue-500 border-none rounded-lg cursor-pointer transition-colors hover:bg-blue-600" @click="showColumnSettings = true">
         {{ $t('task.configureColumns') }}
       </button>
     </div>
 
-    <div v-else class="task-board__columns">
+    <div v-else class="flex-1 flex gap-4 p-4 overflow-x-auto overflow-y-hidden">
       <TaskColumn
         v-for="col in boardColumns"
         :key="col.key"
@@ -260,83 +260,3 @@ const priorityOptions = computed(() =>
     />
   </div>
 </template>
-
-<style scoped>
-.task-board {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  background: #f3f4f6;
-}
-
-.task-board__toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 0 16px 8px;
-}
-
-.task-board__column-count {
-  font-size: 12px;
-  color: #9ca3af;
-}
-
-.task-board__settings-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: none;
-  background: transparent;
-  color: #9ca3af;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-
-.task-board__settings-btn:hover {
-  background: #e5e7eb;
-  color: #374151;
-}
-
-.task-board__loading,
-.task-board__error,
-.task-board__empty {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  color: #6b7280;
-}
-
-.task-board__empty {
-  flex-direction: column;
-  gap: 12px;
-}
-
-.task-board__empty-btn {
-  padding: 8px 16px;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.task-board__empty-btn:hover {
-  background: #2563eb;
-}
-
-.task-board__columns {
-  flex: 1;
-  display: flex;
-  gap: 16px;
-  padding: 16px;
-  overflow-x: auto;
-  overflow-y: hidden;
-}
-</style>

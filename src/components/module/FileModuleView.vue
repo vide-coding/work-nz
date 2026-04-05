@@ -471,14 +471,14 @@ watch([() => props.directory.id, () => currentPath.value], () => {
 </script>
 
 <template>
-  <div class="file-module" @click="handleClickOutside">
+  <div class="h-full flex flex-col overflow-hidden" @click="handleClickOutside">
     <!-- Toolbar -->
-    <div class="file-module__toolbar">
-      <div class="file-module__toolbar-left">
+    <div class="flex justify-between items-center px-4 py-3 bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+      <div class="flex items-center gap-2">
         <!-- Back button -->
         <button
           v-if="currentPath"
-          class="file-module__btn-icon"
+          class="flex items-center justify-center w-8 h-8 text-gray-500 bg-transparent border-none rounded-md cursor-pointer transition-all hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-gray-100"
           @click="navigateToParent"
           :title="$t('common.back')"
         >
@@ -486,15 +486,15 @@ watch([() => props.directory.id, () => currentPath.value], () => {
         </button>
 
         <!-- Current path -->
-        <span v-if="currentDirPath" class="file-module__path">
+        <span v-if="currentDirPath" class="text-[13px] text-gray-500 font-mono dark:text-gray-400">
           {{ currentDirPath }}
         </span>
       </div>
 
-      <div class="file-module__toolbar-right">
+      <div class="flex items-center gap-2">
         <!-- New File button -->
         <button
-          class="file-module__btn-icon"
+          class="flex items-center justify-center w-8 h-8 text-gray-500 bg-transparent border-none rounded-md cursor-pointer transition-all hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-gray-100"
           @click="showCreateFileDialog = true"
           :title="$t('file.newFile')"
         >
@@ -503,7 +503,7 @@ watch([() => props.directory.id, () => currentPath.value], () => {
 
         <!-- New Folder button -->
         <button
-          class="file-module__btn-icon"
+          class="flex items-center justify-center w-8 h-8 text-gray-500 bg-transparent border-none rounded-md cursor-pointer transition-all hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-gray-100"
           @click="showCreateFolderDialog = true"
           :title="$t('workspace.newFolder')"
         >
@@ -511,17 +511,17 @@ watch([() => props.directory.id, () => currentPath.value], () => {
         </button>
 
         <!-- View mode toggle -->
-        <div class="file-module__view-toggle">
+        <div class="flex bg-gray-100 rounded-md p-0.5 dark:bg-gray-700">
           <button
-            class="file-module__view-btn"
-            :class="{ 'file-module__view-btn--active': viewMode === 'grid' }"
+            class="flex items-center justify-center w-7 h-7 border-none rounded cursor-pointer transition-all"
+            :class="viewMode === 'grid' ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-600 dark:text-white' : 'text-gray-500 bg-transparent'"
             @click="viewMode = 'grid'"
           >
             <Grid class="w-4 h-4" />
           </button>
           <button
-            class="file-module__view-btn"
-            :class="{ 'file-module__view-btn--active': viewMode === 'list' }"
+            class="flex items-center justify-center w-7 h-7 border-none rounded cursor-pointer transition-all"
+            :class="viewMode === 'list' ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-600 dark:text-white' : 'text-gray-500 bg-transparent'"
             @click="viewMode = 'list'"
           >
             <List class="w-4 h-4" />
@@ -531,35 +531,35 @@ watch([() => props.directory.id, () => currentPath.value], () => {
     </div>
 
     <!-- Main Content Area -->
-    <div class="file-module__main">
+    <div class="flex-1 flex overflow-hidden">
       <!-- File Browser -->
       <div
-        class="file-module__content"
-        :class="{ 'file-module__content--drag-over': isDraggingOver }"
+        class="flex-1 overflow-auto p-4 relative"
+        :class="{ 'bg-blue-50 dark:bg-blue-950': isDraggingOver }"
         @dragover="handleDragOver"
         @dragleave="handleDragLeave"
         @drop="handleDrop"
       >
         <!-- Loading state -->
-        <div v-if="isLoadingTree" class="file-module__loading">
+        <div v-if="isLoadingTree" class="flex items-center justify-center h-full">
           <Loader2 class="w-8 h-8 animate-spin" />
         </div>
 
         <!-- Error state -->
-        <div v-else-if="error" class="file-module__error">
+        <div v-else-if="error" class="flex items-center justify-center h-full text-red-500">
           {{ error }}
         </div>
 
         <!-- Empty state -->
-        <div v-else-if="sortedFiles.length === 0" class="file-module__empty">
+        <div v-else-if="sortedFiles.length === 0" class="flex flex-col items-center justify-center h-full text-gray-500">
           <Folder class="w-16 h-16 opacity-50" />
-          <p>{{ $t('workspace.emptyDirectory') }}</p>
-          <div class="file-module__empty-actions">
-            <button class="file-module__btn-primary" @click="showCreateFileDialog = true">
+          <p class="mt-3 text-[15px]">{{ $t('workspace.emptyDirectory') }}</p>
+          <div class="flex gap-3 mt-4">
+            <button class="flex items-center gap-1.5 px-4 py-2 text-[13px] font-medium text-white bg-indigo-600 border-none rounded-lg cursor-pointer transition-colors hover:bg-indigo-700" @click="showCreateFileDialog = true">
               <FilePlus class="w-4 h-4" />
               {{ $t('file.newFile') }}
             </button>
-            <button class="file-module__btn-primary" @click="showCreateFolderDialog = true">
+            <button class="flex items-center gap-1.5 px-4 py-2 text-[13px] font-medium text-white bg-indigo-600 border-none rounded-lg cursor-pointer transition-colors hover:bg-indigo-700" @click="showCreateFolderDialog = true">
               <FolderPlus class="w-4 h-4" />
               {{ $t('workspace.createFolder') }}
             </button>
@@ -567,15 +567,15 @@ watch([() => props.directory.id, () => currentPath.value], () => {
         </div>
 
         <!-- Grid View -->
-        <div v-else-if="viewMode === 'grid'" class="file-module__grid">
+        <div v-else-if="viewMode === 'grid'" class="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-3">
           <div
             v-for="node in sortedFiles"
             :key="node.path"
-            class="file-module__grid-item"
+            class="flex flex-col items-center p-4 rounded-lg cursor-pointer transition-colors"
             :class="{
-              'file-module__grid-item--renaming': renamingNode?.path === node.path,
-              'file-module__grid-item--selected':
-                previewFile?.path === node.path && node.kind === 'file',
+              'bg-indigo-100 dark:bg-indigo-900': renamingNode?.path === node.path,
+              'bg-blue-50 dark:bg-indigo-900/50': previewFile?.path === node.path && node.kind === 'file',
+              'hover:bg-gray-100 dark:hover:bg-gray-700': !(previewFile?.path === node.path && node.kind === 'file') && renamingNode?.path !== node.path,
             }"
             @click="handleSingleClick(node)"
             @dblclick.stop="handleDoubleClick(node)"
@@ -585,7 +585,7 @@ watch([() => props.directory.id, () => currentPath.value], () => {
             <input
               v-if="renamingNode?.path === node.path"
               v-model="renameValue"
-              class="file-module__rename-input"
+              class="flex-1 px-1 py-0.5 text-sm border-2 border-indigo-500 rounded outline-none bg-white dark:bg-gray-800 dark:text-white"
               @keyup.enter="confirmRename"
               @keyup.escape="cancelRename"
               @blur="confirmRename"
@@ -593,29 +593,29 @@ watch([() => props.directory.id, () => currentPath.value], () => {
               autofocus
             />
             <template v-else>
-              <component :is="getFileIcon(node)" class="file-module__icon" />
-              <span class="file-module__name">{{ node.name }}</span>
+              <component :is="getFileIcon(node)" class="w-12 h-12 text-gray-400 mb-2" />
+              <span class="text-[13px] text-gray-900 text-center break-words dark:text-gray-100">{{ node.name }}</span>
             </template>
           </div>
         </div>
 
         <!-- List View -->
-        <div v-else class="file-module__list">
+        <div v-else class="flex flex-col gap-1">
           <!-- Header -->
-          <div class="file-module__list-header">
-            <span class="file-module__list-col-name">{{ $t('file.name') }}</span>
-            <span class="file-module__list-col-size">{{ $t('file.size') }}</span>
-            <span class="file-module__list-col-date">{{ $t('file.modified') }}</span>
+          <div class="flex items-center gap-3 px-3 py-2 text-[12px] font-medium text-gray-500 border-b border-gray-200 mb-1 dark:text-gray-400 dark:border-gray-700">
+            <span class="flex-1">{{ $t('file.name') }}</span>
+            <span class="w-20 text-right">{{ $t('file.size') }}</span>
+            <span class="w-24 text-right">{{ $t('file.modified') }}</span>
           </div>
           <!-- Items -->
           <div
             v-for="node in sortedFiles"
             :key="node.path"
-            class="file-module__list-item"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors"
             :class="{
-              'file-module__list-item--renaming': renamingNode?.path === node.path,
-              'file-module__list-item--selected':
-                previewFile?.path === node.path && node.kind === 'file',
+              'bg-indigo-100 dark:bg-indigo-900': renamingNode?.path === node.path,
+              'bg-blue-50 dark:bg-indigo-900/50': previewFile?.path === node.path && node.kind === 'file',
+              'hover:bg-gray-100 dark:hover:bg-gray-700': !(previewFile?.path === node.path && node.kind === 'file') && renamingNode?.path !== node.path,
             }"
             @click="handleSingleClick(node)"
             @dblclick.stop="handleDoubleClick(node)"
@@ -623,28 +623,28 @@ watch([() => props.directory.id, () => currentPath.value], () => {
           >
             <!-- Rename input -->
             <template v-if="renamingNode?.path === node.path">
-              <component :is="getFileIcon(node)" class="file-module__list-icon" />
+              <component :is="getFileIcon(node)" class="w-5 h-5 text-gray-400 flex-shrink-0" />
               <input
                 v-model="renameValue"
-                class="file-module__rename-input"
+                class="flex-1 px-1 py-0.5 text-sm border-2 border-indigo-500 rounded outline-none bg-white dark:bg-gray-800 dark:text-white"
                 @keyup.enter="confirmRename"
                 @keyup.escape="cancelRename"
                 @blur="confirmRename"
                 @click.stop
                 autofocus
               />
-              <span class="file-module__list-col-size">—</span>
-              <span class="file-module__list-col-date">—</span>
+              <span class="w-20 text-right text-[13px] text-gray-400">—</span>
+              <span class="w-24 text-right text-[13px] text-gray-400">—</span>
             </template>
             <template v-else>
-              <div class="file-module__list-item-main">
-                <component :is="getFileIcon(node)" class="file-module__list-icon" />
-                <span class="file-module__list-name">{{ node.name }}</span>
+              <div class="flex-1 flex items-center gap-3 min-w-0">
+                <component :is="getFileIcon(node)" class="w-5 h-5 text-gray-400 flex-shrink-0" />
+                <span class="text-sm text-gray-900 overflow-hidden text-ellipsis whitespace-nowrap dark:text-gray-100">{{ node.name }}</span>
               </div>
-              <span class="file-module__list-col-size">
+              <span class="w-20 text-right text-[13px] text-gray-500 dark:text-gray-400">
                 {{ node.kind === 'dir' ? '—' : formatFileSize((node as any).size) }}
               </span>
-              <span class="file-module__list-col-date">
+              <span class="w-24 text-right text-[13px] text-gray-500 dark:text-gray-400">
                 {{ formatDate((node as any).modifiedAt) }}
               </span>
             </template>
@@ -652,10 +652,10 @@ watch([() => props.directory.id, () => currentPath.value], () => {
         </div>
 
         <!-- Drag over indicator -->
-        <div v-if="isDraggingOver" class="file-module__drop-overlay">
-          <div class="file-module__drop-content">
+        <div v-if="isDraggingOver" class="absolute inset-0 flex items-center justify-center bg-indigo-500/10 border-2 border-dashed border-indigo-500 rounded-lg pointer-events-none">
+          <div class="flex flex-col items-center gap-2 text-indigo-600 dark:text-indigo-400">
             <FilePlus class="w-12 h-12" />
-            <p>{{ $t('file.dropToImport') }}</p>
+            <p class="text-[15px] font-medium">{{ $t('file.dropToImport') }}</p>
           </div>
         </div>
       </div>
@@ -673,35 +673,35 @@ watch([() => props.directory.id, () => currentPath.value], () => {
     </div>
 
     <!-- Footer with file count -->
-    <div v-if="!isLoadingTree && sortedFiles.length > 0" class="file-module__footer">
+    <div v-if="!isLoadingTree && sortedFiles.length > 0" class="flex justify-end px-4 py-2 bg-white border-t border-gray-200 text-[13px] text-gray-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400">
       <span>{{ fileCount }} {{ $t('file.itemCount') }}</span>
     </div>
 
     <!-- Context Menu -->
     <div
       v-if="showContextMenu"
-      class="file-module__context-menu"
+      class="fixed bg-white border border-gray-200 rounded-lg shadow-lg p-1 z-[1000] min-w-[160px] dark:bg-gray-800 dark:border-gray-700"
       :style="{ left: contextMenuPosition.x + 'px', top: contextMenuPosition.y + 'px' }"
       @click.stop
     >
       <template v-if="contextMenuTarget?.kind === 'dir'">
-        <button class="file-module__context-item" @click="openInExplorer(contextMenuTarget!)">
+        <button class="flex items-center gap-2 w-full px-3 py-2 text-[13px] text-gray-900 bg-transparent border-none rounded cursor-pointer transition-colors hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700" @click="openInExplorer(contextMenuTarget!)">
           <FolderOpen class="w-4 h-4" />
           {{ $t('file.openInExplorer') }}
         </button>
       </template>
       <template v-else>
-        <button class="file-module__context-item" @click="openFile(contextMenuTarget!)">
+        <button class="flex items-center gap-2 w-full px-3 py-2 text-[13px] text-gray-900 bg-transparent border-none rounded cursor-pointer transition-colors hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700" @click="openFile(contextMenuTarget!)">
           <ExternalLink class="w-4 h-4" />
           {{ $t('file.open') }}
         </button>
       </template>
-      <button class="file-module__context-item" @click="startRename(contextMenuTarget!)">
+      <button class="flex items-center gap-2 w-full px-3 py-2 text-[13px] text-gray-900 bg-transparent border-none rounded cursor-pointer transition-colors hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700" @click="startRename(contextMenuTarget!)">
         <Pencil class="w-4 h-4" />
         {{ $t('common.edit') }}
       </button>
       <button
-        class="file-module__context-item file-module__context-item--danger"
+        class="flex items-center gap-2 w-full px-3 py-2 text-[13px] text-red-600 bg-transparent border-none rounded cursor-pointer transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900"
         @click="showDeleteConfirm(contextMenuTarget!)"
       >
         <Trash2 class="w-4 h-4" />
@@ -733,527 +733,24 @@ watch([() => props.directory.id, () => currentPath.value], () => {
       :title="$t('common.delete')"
       @close="showDeleteDialog = false"
     >
-      <div class="file-module__delete-content">
-        <p>
+      <div class="p-4">
+        <p class="text-gray-900 dark:text-gray-100 m-0">
           {{ $t('file.deleteConfirm') }}
           <strong>{{ deleteTarget?.name }}</strong
           >?
         </p>
-        <p v-if="deleteTarget?.kind === 'dir'" class="file-module__delete-warning">
+        <p v-if="deleteTarget?.kind === 'dir'" class="mt-2 text-[13px] text-red-500">
           {{ $t('file.deleteFolderWarning') }}
         </p>
       </div>
-      <div class="file-module__delete-actions">
-        <button class="file-module__btn-secondary" @click="showDeleteDialog = false">
+      <div class="flex justify-end gap-2 px-4 py-3 border-t border-gray-200 dark:border-gray-700">
+        <button class="px-4 py-2 text-[13px] text-gray-700 bg-gray-100 border-none rounded-md cursor-pointer transition-colors hover:bg-gray-200 dark:text-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600" @click="showDeleteDialog = false">
           {{ $t('common.cancel') }}
         </button>
-        <button class="file-module__btn-danger" @click="handleDelete">
+        <button class="px-4 py-2 text-[13px] font-medium text-white bg-red-500 border-none rounded-md cursor-pointer transition-colors hover:bg-red-600" @click="handleDelete">
           {{ $t('common.delete') }}
         </button>
       </div>
     </BaseDialog>
   </div>
 </template>
-
-<style scoped>
-.file-module {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.file-module__toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  background-color: rgb(255 255 255);
-  border-bottom: 1px solid rgb(229 231 239);
-}
-
-:deep(.dark) .file-module__toolbar {
-  background-color: rgb(31 41 55);
-  border-bottom-color: rgb(55 65 81);
-}
-
-.file-module__toolbar-left,
-.file-module__toolbar-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.file-module__path {
-  font-size: 13px;
-  color: rgb(107 114 128);
-  font-family: monospace;
-}
-
-:deep(.dark) .file-module__path {
-  color: rgb(156 163 175);
-}
-
-.file-module__btn-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: transparent;
-  border-radius: 6px;
-  cursor: pointer;
-  color: rgb(107 114 128);
-  transition: all 0.2s;
-}
-
-.file-module__btn-icon:hover {
-  background-color: rgb(243 244 246);
-  color: rgb(17 24 39);
-}
-
-:deep(.dark) .file-module__btn-icon:hover {
-  background-color: rgb(55 65 81);
-  color: rgb(249 250 251);
-}
-
-.file-module__view-toggle {
-  display: flex;
-  background-color: rgb(243 244 246);
-  border-radius: 6px;
-  padding: 2px;
-}
-
-:deep(.dark) .file-module__view-toggle {
-  background-color: rgb(55 65 81);
-}
-
-.file-module__view-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: none;
-  background: transparent;
-  border-radius: 4px;
-  cursor: pointer;
-  color: rgb(107 114 128);
-  transition: all 0.2s;
-}
-
-.file-module__view-btn--active {
-  background-color: rgb(255 255 255);
-  color: rgb(17 24 39);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-:deep(.dark) .file-module__view-btn--active {
-  background-color: rgb(75 85 99);
-  color: rgb(249 250 251);
-}
-
-.file-module__main {
-  flex: 1;
-  display: flex;
-  overflow: hidden;
-}
-
-.file-module__content {
-  flex: 1;
-  overflow: auto;
-  padding: 16px;
-  position: relative;
-}
-
-.file-module__content--drag-over {
-  background-color: rgb(239 246 255);
-}
-
-:deep(.dark) .file-module__content--drag-over {
-  background-color: rgb(30 58 95);
-}
-
-.file-module__loading,
-.file-module__error,
-.file-module__empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: rgb(107 114 128);
-}
-
-.file-module__error {
-  color: rgb(220 38 38);
-}
-
-.file-module__empty p {
-  margin-top: 12px;
-  font-size: 15px;
-}
-
-.file-module__empty-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 16px;
-}
-
-.file-module__btn-primary {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  background-color: rgb(79 70 229);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.file-module__btn-primary:hover {
-  background-color: rgb(67 56 202);
-}
-
-.file-module__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 12px;
-}
-
-.file-module__grid-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 16px 8px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.file-module__grid-item:hover {
-  background-color: rgb(243 244 246);
-}
-
-.file-module__grid-item--selected {
-  background-color: rgb(238 242 255);
-}
-
-:deep(.dark) .file-module__grid-item:hover {
-  background-color: rgb(55 65 81);
-}
-
-:deep(.dark) .file-module__grid-item--selected {
-  background-color: rgb(67 56 202);
-}
-
-.file-module__icon {
-  width: 48px;
-  height: 48px;
-  color: rgb(156 163 175);
-  margin-bottom: 8px;
-}
-
-.file-module__name {
-  font-size: 13px;
-  color: rgb(17 24 39);
-  text-align: center;
-  word-break: break-word;
-}
-
-:deep(.dark) .file-module__name {
-  color: rgb(249 250 251);
-}
-
-.file-module__list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.file-module__list-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-  font-size: 12px;
-  font-weight: 500;
-  color: rgb(107 114 128);
-  border-bottom: 1px solid rgb(229 231 239);
-  margin-bottom: 4px;
-}
-
-:deep(.dark) .file-module__list-header {
-  color: rgb(156 163 175);
-  border-bottom-color: rgb(55 65 81);
-}
-
-.file-module__list-col-name {
-  flex: 1;
-}
-
-.file-module__list-col-size {
-  width: 80px;
-  text-align: right;
-  flex-shrink: 0;
-}
-
-.file-module__list-col-date {
-  width: 100px;
-  text-align: right;
-  flex-shrink: 0;
-}
-
-.file-module__list-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.file-module__list-item:hover {
-  background-color: rgb(243 244 246);
-}
-
-.file-module__list-item--selected {
-  background-color: rgb(238 242 255);
-}
-
-:deep(.dark) .file-module__list-item:hover {
-  background-color: rgb(55 65 81);
-}
-
-:deep(.dark) .file-module__list-item--selected {
-  background-color: rgb(67 56 202);
-}
-
-.file-module__list-item-main {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-}
-
-.file-module__list-icon {
-  width: 20px;
-  height: 20px;
-  color: rgb(156 163 175);
-  flex-shrink: 0;
-}
-
-.file-module__list-name {
-  font-size: 14px;
-  color: rgb(17 24 39);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-:deep(.dark) .file-module__list-name {
-  color: rgb(249 250 251);
-}
-
-.file-module__list-item .file-module__list-col-size,
-.file-module__list-item .file-module__list-col-date {
-  font-size: 13px;
-  color: rgb(107 114 128);
-}
-
-:deep(.dark) .file-module__list-item .file-module__list-col-size,
-:deep(.dark) .file-module__list-item .file-module__list-col-date {
-  color: rgb(156 163 175);
-}
-
-.file-module__rename-input {
-  flex: 1;
-  padding: 4px 8px;
-  border: 2px solid rgb(79 70 229);
-  border-radius: 4px;
-  font-size: 14px;
-  outline: none;
-  background-color: rgb(255 255 255);
-  color: rgb(17 24 39);
-}
-
-:deep(.dark) .file-module__rename-input {
-  background-color: rgb(31 41 55);
-  color: rgb(249 250 251);
-}
-
-.file-module__drop-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: rgba(79, 70, 229, 0.1);
-  border: 2px dashed rgb(79 70 229);
-  border-radius: 8px;
-  pointer-events: none;
-}
-
-.file-module__drop-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  color: rgb(79 70 229);
-}
-
-.file-module__drop-content p {
-  font-size: 15px;
-  font-weight: 500;
-}
-
-.file-module__footer {
-  display: flex;
-  justify-content: flex-end;
-  padding: 8px 16px;
-  background-color: rgb(255 255 255);
-  border-top: 1px solid rgb(229 231 239);
-  font-size: 13px;
-  color: rgb(107 114 128);
-}
-
-:deep(.dark) .file-module__footer {
-  background-color: rgb(31 41 55);
-  border-top-color: rgb(55 65 81);
-  color: rgb(156 163 175);
-}
-
-.file-module__context-menu {
-  position: fixed;
-  background-color: rgb(255 255 255);
-  border: 1px solid rgb(229 231 239);
-  border-radius: 8px;
-  box-shadow:
-    0 10px 15px -3px rgba(0, 0, 0, 0.1),
-    0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  padding: 4px;
-  z-index: 1000;
-  min-width: 160px;
-}
-
-:deep(.dark) .file-module__context-menu {
-  background-color: rgb(31 41 55);
-  border-color: rgb(55 65 81);
-}
-
-.file-module__context-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 8px 12px;
-  border: none;
-  background: transparent;
-  border-radius: 4px;
-  font-size: 13px;
-  color: rgb(17 24 39);
-  cursor: pointer;
-  text-align: left;
-  transition: background-color 0.15s;
-}
-
-.file-module__context-item:hover {
-  background-color: rgb(243 244 246);
-}
-
-:deep(.dark) .file-module__context-item {
-  color: rgb(249 250 251);
-}
-
-:deep(.dark) .file-module__context-item:hover {
-  background-color: rgb(55 65 81);
-}
-
-.file-module__context-item--danger {
-  color: rgb(220 38 38);
-}
-
-.file-module__context-item--danger:hover {
-  background-color: rgb(254 242 242);
-}
-
-:deep(.dark) .file-module__context-item--danger:hover {
-  background-color: rgb(127 29 29);
-}
-
-.file-module__delete-content {
-  padding: 16px;
-}
-
-.file-module__delete-content p {
-  color: rgb(17 24 39);
-  margin: 0;
-}
-
-:deep(.dark) .file-module__delete-content p {
-  color: rgb(249 250 251);
-}
-
-.file-module__delete-warning {
-  margin-top: 8px;
-  font-size: 13px;
-  color: rgb(220 38 38);
-}
-
-.file-module__delete-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 12px 16px;
-  border-top: 1px solid rgb(229 231 239);
-}
-
-:deep(.dark) .file-module__delete-actions {
-  border-top-color: rgb(55 65 81);
-}
-
-.file-module__btn-secondary {
-  padding: 8px 16px;
-  background-color: rgb(243 244 246);
-  color: rgb(17 24 39);
-  border: none;
-  border-radius: 6px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.file-module__btn-secondary:hover {
-  background-color: rgb(229 231 239);
-}
-
-:deep(.dark) .file-module__btn-secondary {
-  background-color: rgb(55 65 81);
-  color: rgb(249 250 251);
-}
-
-:deep(.dark) .file-module__btn-secondary:hover {
-  background-color: rgb(75 85 99);
-}
-
-.file-module__btn-danger {
-  padding: 8px 16px;
-  background-color: rgb(220 38 38);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.file-module__btn-danger:hover {
-  background-color: rgb(185 28 28);
-}
-</style>
