@@ -55,8 +55,7 @@ const boardColumns = computed(() =>
     }))
 )
 
-// columnTasks: shallowRef，vuedraggable 修改数组后需要手动更新
-// 初始化时从 allTasks 同步
+// columnTasks: shallowRef，TaskColumn 的本地副本变化后 emit 过来
 const columnTasks = shallowRef<Record<string, Task[]>>({})
 
 function syncColumnTasks() {
@@ -77,33 +76,21 @@ function syncColumnTasks() {
 
 watch([allTasks, columns], syncColumnTasks, { immediate: true })
 
-// vuedraggable 修改数组后，Vue shallowRef 不会自动追踪数组内部变化
-// 必须手动更新 columnTasks（替换数组引用或 triggerRef）
+// TaskColumn 本地副本变化后，通知 Vue 更新 shallowRef
 function onColumnUpdate(statusKey: string, newList: Task[]) {
   columnTasks.value[statusKey] = newList
   triggerRef(columnTasks)
 }
 
-// 拖拽完成：检测跨列移动并持久化
-// 当目标列收到 @update:model-value（evt.added）时，
-// 对比 columnTasks 中任务状态，找到实际来源列
+// 拖拽完成：只持久化到 API，不修改 allTasks（allTasks 由 API 响应更新）
 async function onTaskMoved(payload: { task: Task; from: string; to: string; newIndex: number }) {
   const { task, to, newIndex } = payload
-
-  // 找实际来源列：遍历 columnTasks，看任务现在在哪个列
-  let resolvedFrom = task.status
-  for (const [key, list] of Object.entries(columnTasks.value)) {
-    if (list.some((t) => t.id === task.id)) {
-      resolvedFrom = key
-      break
-    }
+  // 跨列移动：to !== '__removed__' 时表示目标是 destination 列
+  // 需要更新任务状态
+  if (to !== '__removed__' && task.status !== to) {
+    await updateTask(task.id, { status: to })
   }
-
-  // 跨列移动：更新 allTasks 中任务状态
-  if (task.status !== resolvedFrom) {
-    await updateTask(task.id, { status: resolvedFrom })
-  }
-  await reorderTask(task.id, to, newIndex)
+  await reorderTask(task.id, to !== '__removed__' ? to : task.status, newIndex)
 }
 
 // Selected task for detail panel
