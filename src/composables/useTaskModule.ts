@@ -31,9 +31,10 @@ export interface TaskSort {
 export function useTaskModule(directory: Directory) {
   const tasks = shallowRef<Task[]>([])
   const loading = ref(false)
+  const saving = ref(false)
   const error = ref<string | null>(null)
   const filter = ref<TaskFilter>({})
-  const sort = ref<TaskSort>({ field: 'createdAt', direction: 'desc' })
+  const sort = ref<TaskSort>({ field: 'sortOrder', direction: 'asc' })
 
   // Check if directory has task capabilities
   const hasTaskCapability = computed(() => directoryHasCapability(directory, 'task.list'))
@@ -76,6 +77,9 @@ export function useTaskModule(directory: Directory) {
     return [...result].sort((a, b) => {
       let comparison = 0
       switch (sort.value.field) {
+        case 'sortOrder':
+          comparison = (a.sortOrder ?? 0) - (b.sortOrder ?? 0)
+          break
         case 'priority':
           comparison = a.priority.localeCompare(b.priority)
           break
@@ -86,6 +90,8 @@ export function useTaskModule(directory: Directory) {
           comparison = a.status.localeCompare(b.status)
           break
         case 'createdAt':
+          comparison = a.createdAt.localeCompare(b.createdAt)
+          break
         default:
           comparison = a.createdAt.localeCompare(b.createdAt)
       }
@@ -183,20 +189,20 @@ export function useTaskModule(directory: Directory) {
       return null
     }
 
-    loading.value = true
+    saving.value = true
     error.value = null
     try {
       const updated = await taskApi.update(taskId, patch)
       const index = tasks.value.findIndex((t) => t.id === taskId)
       if (index !== -1) {
-        tasks.value[index] = updated
+        tasks.value = tasks.value.map((t) => (t.id === taskId ? updated : t))
       }
       return updated
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to update task'
       return null
     } finally {
-      loading.value = false
+      saving.value = false
     }
   }
 
@@ -207,7 +213,7 @@ export function useTaskModule(directory: Directory) {
       return false
     }
 
-    loading.value = true
+    saving.value = true
     error.value = null
     try {
       await taskApi.delete(taskId)
@@ -220,7 +226,7 @@ export function useTaskModule(directory: Directory) {
       error.value = e instanceof Error ? e.message : 'Failed to delete task'
       return false
     } finally {
-      loading.value = false
+      saving.value = false
     }
   }
 
@@ -243,20 +249,20 @@ export function useTaskModule(directory: Directory) {
   async function reorderTask(taskId: string, newStatus: string, newSortOrder: number): Promise<Task | null> {
     if (!hasTaskCapability.value) return null
 
-    loading.value = true
+    saving.value = true
     error.value = null
     try {
       const updated = await taskApi.reorder(taskId, newStatus, newSortOrder)
       const index = tasks.value.findIndex((t) => t.id === taskId)
       if (index !== -1) {
-        tasks.value[index] = updated
+        tasks.value = tasks.value.map((t) => (t.id === taskId ? updated : t))
       }
       return updated
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to reorder task'
       return null
     } finally {
-      loading.value = false
+      saving.value = false
     }
   }
 
@@ -434,6 +440,7 @@ export function useTaskModule(directory: Directory) {
     tasks: filteredTasks,
     allTasks: tasks,
     loading,
+    saving,
     error,
     filter,
     sort,

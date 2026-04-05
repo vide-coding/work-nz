@@ -146,8 +146,8 @@ describe('useTaskModule', () => {
 
       expect(taskApi.list).toHaveBeenCalledWith(mockDirectory.id)
       expect(tasks.value).toHaveLength(2)
-      // Default sort is createdAt desc: Task 2 (newer) comes first
-      expect(tasks.value[0].title).toBe('Task 2')
+      // Default sort is sortOrder asc: Task 1 (sortOrder=0) comes first
+      expect(tasks.value[0].title).toBe('Task 1')
       expect(loading.value).toBe(false)
     })
 
