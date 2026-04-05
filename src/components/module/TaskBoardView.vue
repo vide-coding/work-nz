@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, shallowRef, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, shallowRef, triggerRef, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { Settings } from 'lucide-vue-next'
 import draggable from 'vuedraggable'
 import type { Directory, Task } from '@/types'
@@ -55,9 +55,13 @@ const boardColumns = computed(() =>
     }))
 )
 
-// Group tasks by status and sort by sortOrder within each column
-// Uses allTasks (shallowRef, stable reference) to avoid vuedraggable instability
-const tasksByStatus = computed(() => {
+// columnDisplayOrder: 前端显示顺序，shallowRef 保持稳定引用
+// 拖拽时直接更新这个 map，不触发 tasksByStatus 的 filter+sort
+const columnDisplayOrder = shallowRef<Record<string, Task[]>>({})
+
+// 当 allTasks 加载或变化时，从 allTasks 同步到 columnDisplayOrder
+// 初始化或重置时按 sortOrder 排序
+function syncColumnDisplayOrder() {
   const map: Record<string, Task[]> = {}
   for (const col of columns.value) {
     map[col.statusKey] = []
@@ -67,12 +71,53 @@ const tasksByStatus = computed(() => {
       map[task.status].push(task)
     }
   }
-  // Sort each column by sortOrder for consistent display
+  // 初始同步按 sortOrder 排，后续拖拽由 columnDisplayOrder 自己维护
   for (const key of Object.keys(map)) {
     map[key].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
   }
-  return map
-})
+  columnDisplayOrder.value = map
+  triggerRef(columnDisplayOrder)
+}
+
+// 任务状态变更时，同步 columnDisplayOrder（不触发完整重建）
+function syncStatusChange(taskId: string, newStatus: string) {
+  const task = allTasks.value.find((t) => t.id === taskId)
+  if (!task) return
+  const oldStatus = task.status
+  if (oldStatus === newStatus) return
+  const map = { ...columnDisplayOrder.value }
+  const fromList = [...(map[oldStatus] || [])]
+  const idx = fromList.findIndex((t) => t.id === taskId)
+  if (idx !== -1) {
+    fromList.splice(idx, 1)
+    map[oldStatus] = fromList
+    const toList = [...(map[newStatus] || [])]
+    toList.push(task)
+    map[newStatus] = toList
+    columnDisplayOrder.value = map
+    triggerRef(columnDisplayOrder)
+  }
+}
+
+// 任务删除时，从 columnDisplayOrder 移除
+function syncTaskDelete(taskId: string) {
+  const task = allTasks.value.find((t) => t.id === taskId)
+  if (!task) return
+  const map = { ...columnDisplayOrder.value }
+  const list = [...(map[task.status] || [])]
+  const idx = list.findIndex((t) => t.id === taskId)
+  if (idx !== -1) {
+    list.splice(idx, 1)
+    map[task.status] = list
+    columnDisplayOrder.value = map
+    triggerRef(columnDisplayOrder)
+  }
+}
+
+watch([allTasks, columns], syncColumnDisplayOrder, { immediate: true })
+
+// tasksByStatus 直接返回稳定的 columnDisplayOrder 引用
+const tasksByStatus = computed(() => columnDisplayOrder.value)
 
 // Selected task for detail panel
 const selectedTask = ref<Task | null>(null)
@@ -121,7 +166,11 @@ function onDetailClose() {
 }
 
 async function onDetailUpdate(id: string, patch: Partial<Task>) {
+  const oldTask = allTasks.value.find((t) => t.id === id)
   await updateTask(id, patch)
+  if (patch.status && oldTask && oldTask.status !== patch.status) {
+    syncStatusChange(id, patch.status)
+  }
   if (selectedTask.value?.id === id) {
     selectedTask.value = { ...selectedTask.value, ...patch } as Task
   }
@@ -129,28 +178,39 @@ async function onDetailUpdate(id: string, patch: Partial<Task>) {
 
 async function onDetailDelete(id: string) {
   await deleteTask(id)
+  syncTaskDelete(id)
   selectedTask.value = null
 }
 
 // Called when a task is reordered (in-column) or moved to another column (cross-column)
+// 关键：只更新 columnDisplayOrder（stable 引用），不修改 allTasks 的 sortOrder
+// 这样 tasksByStatus computed 不会触发重新排序，vuedraggable DOM 顺序得以保留
 async function onTasksReordered(payload: { taskId: string; newStatus: string; newIndex: number }) {
-  // After drag, vuedraggable has reordered its internal list.
-  // We need to update sortOrder for ALL tasks in the target column to match
-  // the visual order, otherwise filteredTasks re-sort will conflict with DOM.
-  // Get current tasks in this status from the allTasks ref directly.
-  const colTasks = allTasks.value
-    .filter((t) => t.status === payload.newStatus)
-    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+  const map = { ...columnDisplayOrder.value }
+  const task = allTasks.value.find((t) => t.id === payload.taskId)
+  if (!task) return
 
-  // Assign consistent sortOrder based on current order
-  for (let i = 0; i < colTasks.length; i++) {
-    const t = colTasks[i]
-    const idx = allTasks.value.findIndex((x) => x.id === t.id)
-    if (idx !== -1) {
-      allTasks.value[idx] = { ...allTasks.value[idx], sortOrder: i }
-    }
+  // 从原列中移除
+  const fromStatus = task.status
+  const fromList = [...(map[fromStatus] || [])]
+  const fromIdx = fromList.findIndex((t) => t.id === payload.taskId)
+  if (fromIdx !== -1) {
+    fromList.splice(fromIdx, 1)
   }
 
+  // 插入到新列
+  const toList = fromStatus === payload.newStatus ? fromList : [...(map[payload.newStatus] || [])]
+  toList.splice(payload.newIndex, 0, task)
+  map[fromStatus] = fromList
+  if (fromStatus !== payload.newStatus) {
+    map[payload.newStatus] = toList
+  }
+
+  // 立即更新 columnDisplayOrder，stable 引用，vuedraggable DOM 同步
+  columnDisplayOrder.value = map
+  triggerRef(columnDisplayOrder)
+
+  // 后台调用 API 持久化 sortOrder
   await reorderTask(payload.taskId, payload.newStatus, payload.newIndex)
 }
 
