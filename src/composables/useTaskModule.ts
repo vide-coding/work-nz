@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, shallowRef, computed } from 'vue'
 import { directoryHasCapability } from './useModuleRegistry'
 import { taskApi } from './useApi'
 import type { Directory, Task, TaskColumn } from '@/types'
@@ -29,7 +29,7 @@ export interface TaskSort {
  * Composable for Task module operations on a directory
  */
 export function useTaskModule(directory: Directory) {
-  const tasks = ref<Task[]>([])
+  const tasks = shallowRef<Task[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
   const filter = ref<TaskFilter>({})
@@ -161,7 +161,7 @@ export function useTaskModule(directory: Directory) {
         input.dueDate,
         input.status
       )
-      tasks.value.push(newTask)
+      tasks.value = [...tasks.value, newTask]
       return newTask
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to create task'
@@ -213,7 +213,7 @@ export function useTaskModule(directory: Directory) {
       await taskApi.delete(taskId)
       const index = tasks.value.findIndex((t) => t.id === taskId)
       if (index !== -1) {
-        tasks.value.splice(index, 1)
+        tasks.value = tasks.value.filter((t) => t.id !== taskId)
       }
       return true
     } catch (e) {

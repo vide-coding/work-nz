@@ -51,6 +51,7 @@ pub fn task_create(
     priority: Option<String>,
     assignee: Option<String>,
     due_date: Option<String>,
+    status: Option<String>,
 ) -> Result<Task, String> {
     let id = uuid::Uuid::new_v4().to_string();
     let now = chrono::Utc::now().to_rfc3339();
@@ -65,17 +66,19 @@ pub fn task_create(
             .unwrap_or(None);
 
         let sort_order = max_order.unwrap_or(-1) + 1;
+        let status = status.unwrap_or_else(|| "todo".to_string());
 
         conn.execute(
             "INSERT INTO tasks (id, directory_id, parent_id, title, description, status, priority,
                                assignee, due_date, sort_order, is_completed, created_at, updated_at)
-             VALUES (?1, ?2, NULL, ?3, ?4, 'todo', ?5, ?6, ?7, ?8, 0, ?9, ?10)",
+             VALUES (?1, ?2, NULL, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 0, ?10, ?11)",
             params![
                 id,
                 directory_id,
                 title,
                 description,
                 priority.unwrap_or_else(|| "medium".to_string()),
+                status,
                 assignee,
                 due_date,
                 sort_order,

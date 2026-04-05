@@ -79,30 +79,28 @@ async function handleApply(template: DirectoryTemplate) {
 </script>
 
 <template>
-  <div class="template-selector">
+  <div class="flex flex-col gap-4">
     <!-- Header -->
-    <div class="template-selector__header">
-      <h3 class="template-selector__title">{{ t('template.selectTitle') }}</h3>
+    <div class="flex flex-col gap-3">
+      <h3 class="m-0 text-lg font-semibold">{{ t('template.selectTitle') }}</h3>
 
       <!-- Search -->
-      <div class="template-selector__search">
+      <div class="w-full">
         <input
           v-model="searchQuery"
           type="text"
           :placeholder="t('template.searchPlaceholder')"
-          class="template-selector__search-input"
+          class="w-full px-3 py-2 text-sm border border-gray-200 rounded-md"
         />
       </div>
 
       <!-- Scope Tabs -->
-      <div class="template-selector__tabs">
+      <div class="flex gap-2 border-b border-gray-200">
         <button
           v-for="(label, scope) in scopeLabels"
           :key="scope"
-          :class="[
-            'template-selector__tab',
-            { 'template-selector__tab--active': activeScope === scope },
-          ]"
+          class="px-4 py-2 text-sm text-gray-500 bg-transparent border-none cursor-pointer border-b-2 transition-all"
+          :class="activeScope === scope ? 'text-blue-500 border-blue-500' : 'border-transparent hover:text-gray-700'"
           @click="activeScope = scope as TemplateScope | 'all'"
         >
           {{ label }}
@@ -111,33 +109,38 @@ async function handleApply(template: DirectoryTemplate) {
     </div>
 
     <!-- Loading State -->
-    <div v-if="loading" class="template-selector__loading">
+    <div v-if="loading" class="text-center text-gray-500 py-6">
       <span>{{ t('template.loading') }}</span>
     </div>
 
     <!-- Error State -->
-    <div v-else-if="error" class="template-selector__error">
+    <div v-else-if="error" class="text-center text-red-500 py-6">
       {{ error }}
     </div>
 
     <!-- Template Grid -->
-    <div v-else class="template-selector__grid">
+    <div v-else class="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
       <div
         v-for="template in filteredTemplates"
         :key="template.id"
-        :class="[
-          'template-card',
-          { 'template-card--selected': selectedTemplateId === template.id },
-        ]"
+        class="flex flex-col p-4 border border-gray-200 rounded-lg cursor-pointer transition-all"
+        :class="selectedTemplateId === template.id ? 'border-blue-500 bg-blue-50' : 'hover:border-blue-500 hover:shadow-md'"
         @click="selectTemplate(template)"
       >
-        <div class="template-card__header">
-          <span :class="['template-card__scope', `template-card__scope--${template.scope}`]">
+        <div class="flex items-center justify-between mb-2">
+          <span
+            class="px-2 py-0.5 text-[12px] font-medium rounded uppercase tracking-wide"
+            :class="{
+              'bg-blue-100 text-blue-800': template.scope === 'official',
+              'bg-green-100 text-green-800': template.scope === 'project',
+              'bg-amber-100 text-amber-800': template.scope === 'local',
+            }"
+          >
             {{ template.scope }}
           </span>
           <button
             v-if="projectId"
-            class="template-card__apply-btn"
+            class="px-3 py-1 text-[12px] font-medium text-white bg-blue-500 border-none rounded cursor-pointer transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed hover:bg-blue-600"
             :disabled="applyingTemplate"
             @click.stop="handleApply(template)"
           >
@@ -145,221 +148,35 @@ async function handleApply(template: DirectoryTemplate) {
           </button>
         </div>
 
-        <h4 class="template-card__name">{{ template.name }}</h4>
-        <p v-if="template.description" class="template-card__description">
+        <h4 class="m-0 mb-1 text-base font-semibold">{{ template.name }}</h4>
+        <p v-if="template.description" class="m-0 mb-3 text-sm text-gray-500">
           {{ template.description }}
         </p>
 
-        <div class="template-card__meta">
-          <span class="template-card__item-count">{{
-            t('template.itemCount', { n: template.items.length })
-          }}</span>
+        <div class="mb-3 text-[12px] text-gray-400">
+          <span>{{ t('template.itemCount', { n: template.items.length }) }}</span>
         </div>
 
         <!-- Preview Items -->
-        <div class="template-card__items">
+        <div class="flex flex-col gap-1">
           <div
             v-for="(item, index) in template.items.slice(0, 3)"
             :key="index"
-            class="template-card__item"
+            class="flex justify-between text-[12px]"
           >
-            <span class="template-card__item-path">{{ item.relativePath }}</span>
-            <span class="template-card__item-module">{{ item.moduleId }}</span>
+            <span class="text-gray-700">{{ item.relativePath }}</span>
+            <span class="text-gray-400">{{ item.moduleId }}</span>
           </div>
-          <div v-if="template.items.length > 3" class="template-card__item-more">
+          <div v-if="template.items.length > 3" class="text-[12px] text-gray-400 italic">
             {{ t('template.moreItems', { n: template.items.length - 3 }) }}
           </div>
         </div>
       </div>
 
       <!-- Empty State -->
-      <div v-if="filteredTemplates.length === 0" class="template-selector__empty">
+      <div v-if="filteredTemplates.length === 0" class="col-span-full text-center text-gray-500 py-6">
         <p>{{ t('template.noResults') }}</p>
       </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-.template-selector {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.template-selector__header {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.template-selector__title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.template-selector__search-input {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  font-size: 14px;
-}
-
-.template-selector__tabs {
-  display: flex;
-  gap: 8px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.template-selector__tab {
-  padding: 8px 16px;
-  border: none;
-  background: none;
-  cursor: pointer;
-  font-size: 14px;
-  color: #6b7280;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s;
-}
-
-.template-selector__tab:hover {
-  color: #374151;
-}
-
-.template-selector__tab--active {
-  color: #3b82f6;
-  border-bottom-color: #3b82f6;
-}
-
-.template-selector__loading,
-.template-selector__error,
-.template-selector__empty {
-  padding: 24px;
-  text-align: center;
-  color: #6b7280;
-}
-
-.template-selector__error {
-  color: #ef4444;
-}
-
-.template-selector__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
-}
-
-.template-card {
-  padding: 16px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.template-card:hover {
-  border-color: #3b82f6;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
-}
-
-.template-card--selected {
-  border-color: #3b82f6;
-  background-color: #eff6ff;
-}
-
-.template-card__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.template-card__scope {
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-  text-transform: capitalize;
-}
-
-.template-card__scope--official {
-  background-color: #dbeafe;
-  color: #1d4ed8;
-}
-
-.template-card__scope--project {
-  background-color: #d1fae5;
-  color: #047857;
-}
-
-.template-card__scope--local {
-  background-color: #fef3c7;
-  color: #b45309;
-}
-
-.template-card__apply-btn {
-  padding: 4px 12px;
-  border: none;
-  border-radius: 4px;
-  background-color: #3b82f6;
-  color: white;
-  font-size: 12px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.template-card__apply-btn:hover:not(:disabled) {
-  background-color: #2563eb;
-}
-
-.template-card__apply-btn:disabled {
-  background-color: #9ca3af;
-  cursor: not-allowed;
-}
-
-.template-card__name {
-  margin: 0 0 4px;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.template-card__description {
-  margin: 0 0 12px;
-  font-size: 14px;
-  color: #6b7280;
-}
-
-.template-card__meta {
-  margin-bottom: 12px;
-  font-size: 12px;
-  color: #9ca3af;
-}
-
-.template-card__items {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.template-card__item {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-}
-
-.template-card__item-path {
-  color: #374151;
-}
-
-.template-card__item-module {
-  color: #9ca3af;
-}
-
-.template-card__item-more {
-  font-size: 12px;
-  color: #9ca3af;
-  font-style: italic;
-}
-</style>

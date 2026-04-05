@@ -1,6 +1,7 @@
 <template>
   <div
     :class="['markdown-body', `markdown-theme-${theme}`, { 'markdown-body-compact': compact }]"
+    class="animate-fade-in"
     v-html="htmlContent"
     @click="handleContentClick"
   />
@@ -318,21 +319,6 @@ watch(
 </script>
 
 <style scoped>
-.markdown-body {
-  animation: fadeIn 0.3s ease-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(5px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 .markdown-body-compact {
   padding: 0.5rem;
   font-size: 13px;
@@ -350,5 +336,20 @@ watch(
 
 .markdown-body-compact :deep(p) {
   margin-bottom: 0.5rem;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
 }
 </style>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, shallowRef, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { Settings } from 'lucide-vue-next'
+import draggable from 'vuedraggable'
 import type { Directory, Task } from '@/types'
 import { useTaskModule } from '@/composables/useTaskModule'
 import TaskColumn from './TaskColumn.vue'
@@ -53,10 +54,9 @@ const boardColumns = computed(() =>
     }))
 )
 
-// Group tasks by status
+// Group tasks by status - returns same reference when no changes
 const tasksByStatus = computed(() => {
   const map: Record<string, Task[]> = {}
-  // Initialize with all visible column keys to avoid undefined
   for (const col of columns.value) {
     map[col.statusKey] = []
   }
@@ -78,31 +78,6 @@ const stopSelectedTaskWatch = watch(selectedTask, async (task) => {
   if (task) {
     await loadChildTasks(task.id)
   }
-})
-
-// Get child tasks for a task
-function getChildren(taskId: string): Task[] {
-  return childTasksMap.value[taskId] || []
-}
-
-// Get child counts for a task
-function getCounts(taskId: string): { total: number; completed: number } {
-  const children = getChildren(taskId)
-  return {
-    total: children.length,
-    completed: children.filter((c) => c.isCompleted).length,
-  }
-}
-
-// Get child tasks for selected task
-const selectedChildTasks = computed(() => {
-  if (!selectedTask.value) return []
-  return getChildren(selectedTask.value.id)
-})
-
-const selectedChildCounts = computed(() => {
-  if (!selectedTask.value) return { total: 0, completed: 0 }
-  return getCounts(selectedTask.value.id)
 })
 
 onMounted(() => {
@@ -144,6 +119,7 @@ async function onDetailDelete(id: string) {
   selectedTask.value = null
 }
 
+// Called when drag ends within a column (reorder within same column)
 async function onTasksChanged(statusKey: string, newTasks: Task[]) {
   if (newTasks.length > 0) {
     const last = newTasks[newTasks.length - 1]
@@ -154,7 +130,6 @@ async function onTasksChanged(statusKey: string, newTasks: Task[]) {
 // Child task handlers
 async function onToggleChild(childId: string) {
   await toggleChildComplete(childId)
-  // Refresh child tasks for selected task
   if (selectedTask.value) {
     await loadChildTasks(selectedTask.value.id)
   }
@@ -171,7 +146,6 @@ async function onAddChild(parentId: string, title: string) {
   await createChildTask(parentId, title)
 }
 
-// Card-level child task handlers
 async function onCardToggleChild(childId: string) {
   await toggleChildComplete(childId)
 }
@@ -184,7 +158,6 @@ async function onCardAddChild(parentId: string, title: string) {
   await createChildTask(parentId, title)
 }
 
-// Options passed to the detail panel for localized labels
 const statusOptions = computed(() =>
   statusValues.value.map((sv) => ({ value: sv.id, label: sv.name }))
 )
@@ -192,6 +165,11 @@ const statusOptions = computed(() =>
 const priorityOptions = computed(() =>
   priorityValues.value.map((pv) => ({ value: pv.id, label: pv.name }))
 )
+
+function getSelectedChildTasks(): Task[] {
+  if (!selectedTask.value) return []
+  return childTasksMap.value[selectedTask.value.id] || []
+}
 </script>
 
 <template>
@@ -231,7 +209,7 @@ const priorityOptions = computed(() =>
         :status-color="col.color"
         :tasks="tasksByStatus[col.key] || []"
         :child-tasks-map="childTasksMap"
-        :get-child-counts="getCounts"
+        :get-child-counts="getChildCounts"
         @task-click="onTaskClick"
         @add-task="onAddTask"
         @tasks-changed="(t) => onTasksChanged(col.key, t)"
@@ -257,8 +235,8 @@ const priorityOptions = computed(() =>
       :visible="showDetailPanel"
       :status-options="statusOptions"
       :priority-options="priorityOptions"
-      :child-tasks="selectedChildTasks"
-      :child-count="selectedChildCounts"
+      :child-tasks="getSelectedChildTasks()"
+      :child-count="selectedTask ? getChildCounts(selectedTask.id) : { total: 0, completed: 0 }"
       @close="onDetailClose"
       @update="onDetailUpdate"
       @delete="onDetailDelete"
