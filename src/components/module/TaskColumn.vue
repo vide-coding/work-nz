@@ -21,7 +21,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   'task-click': [task: Task]
   'add-task': [statusKey: string]
-  'tasks-changed': [tasks: Task[]]
+  'tasks-reordered': [payload: { taskId: string; newStatus: string; newIndex: number }]
   'task-cross-column-move': [payload: { taskId: string; newStatus: string; newIndex: number }]
   'toggle-child': [childId: string]
   'delete-child': [childId: string]
@@ -40,17 +40,21 @@ function onAddClick() {
   emit('add-task', props.statusKey)
 }
 
-function onModelValueUpdate(newTasks: Task[]) {
-  emit('tasks-changed', newTasks)
-}
-
-function onTaskAdded(evt: { item: HTMLElement; newIndex: number }) {
-  const taskId = evt.item.dataset.taskId
-  if (taskId) {
-    emit('task-cross-column-move', {
-      taskId,
+// Handle vuedraggable change events for in-column reorder
+function onChange(evt: { added?: { element: Task; newIndex: number }; moved?: { element: Task; newIndex: number } }) {
+  if (evt.moved) {
+    // In-column reorder: use the moved element directly
+    emit('tasks-reordered', {
+      taskId: evt.moved.element.id,
       newStatus: props.statusKey,
-      newIndex: evt.newIndex,
+      newIndex: evt.moved.newIndex,
+    })
+  } else if (evt.added) {
+    // Cross-column move into this column
+    emit('task-cross-column-move', {
+      taskId: evt.added.element.id,
+      newStatus: props.statusKey,
+      newIndex: evt.added.newIndex,
     })
   }
 }
@@ -73,8 +77,7 @@ function onTaskAdded(evt: { item: HTMLElement; newIndex: number }) {
     <div class="flex-1 p-2 overflow-y-auto">
       <draggable
         :model-value="tasks"
-        @update:model-value="onModelValueUpdate"
-        @add="onTaskAdded"
+        @change="onChange"
         :group="{ name: 'tasks' }"
         item-key="id"
         class="flex flex-col gap-2 min-h-10"

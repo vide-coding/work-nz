@@ -8,6 +8,7 @@ import TaskColumn from './TaskColumn.vue'
 import TaskDetailPanel from './TaskDetailPanel.vue'
 import TaskQuickAdd from './TaskQuickAdd.vue'
 import ColumnSettingsDialog from './ColumnSettingsDialog.vue'
+import TaskAddDialog from './TaskAddDialog.vue'
 
 interface Props {
   directory: Directory
@@ -72,6 +73,9 @@ const tasksByStatus = computed(() => {
 const selectedTask = ref<Task | null>(null)
 const showDetailPanel = computed(() => selectedTask.value !== null)
 const showColumnSettings = ref(false)
+const showAddTaskDialog = ref(false)
+const addTaskStatusKey = ref('')
+const addTaskStatusName = ref('')
 
 // Watch selected task to load child tasks
 const stopSelectedTaskWatch = watch(selectedTask, async (task) => {
@@ -93,10 +97,14 @@ async function onQuickAdd(title: string) {
   await createTask({ title })
 }
 
-async function onAddTask(statusKey: string) {
-  const title = window.prompt('Task title:')
-  if (!title) return
-  await createTask({ title, status: statusKey })
+async function onAddTask(statusKey: string, statusName: string) {
+  addTaskStatusKey.value = statusKey
+  addTaskStatusName.value = statusName
+  showAddTaskDialog.value = true
+}
+
+async function onAddTaskConfirm(title: string) {
+  await createTask({ title, status: addTaskStatusKey.value })
 }
 
 function onTaskClick(task: Task) {
@@ -119,12 +127,9 @@ async function onDetailDelete(id: string) {
   selectedTask.value = null
 }
 
-// Called when drag ends within a column (reorder within same column)
-async function onTasksChanged(statusKey: string, newTasks: Task[]) {
-  if (newTasks.length > 0) {
-    const last = newTasks[newTasks.length - 1]
-    await reorderTask(last.id, statusKey, newTasks.length - 1)
-  }
+// Called when a task is reordered (in-column) or moved to another column (cross-column)
+async function onTasksReordered(payload: { taskId: string; newStatus: string; newIndex: number }) {
+  await reorderTask(payload.taskId, payload.newStatus, payload.newIndex)
 }
 
 // Child task handlers
@@ -200,22 +205,40 @@ function getSelectedChildTasks(): Task[] {
       </button>
     </div>
 
-    <div v-else class="flex-1 flex gap-4 p-4 overflow-x-auto overflow-y-hidden">
-      <TaskColumn
-        v-for="col in boardColumns"
-        :key="col.key"
-        :status-key="col.key"
-        :status-name="col.name"
-        :status-color="col.color"
-        :tasks="tasksByStatus[col.key] || []"
-        :child-tasks-map="childTasksMap"
-        :get-child-counts="getChildCounts"
-        @task-click="onTaskClick"
-        @add-task="onAddTask"
-        @tasks-changed="(t) => onTasksChanged(col.key, t)"
-        @toggle-child="onCardToggleChild"
-        @delete-child="onCardDeleteChild"
-        @add-child="onCardAddChild"
+    <div v-else class="flex-1 flex overflow-hidden">
+      <div class="flex-1 flex gap-4 p-4 overflow-x-auto overflow-y-hidden">
+        <TaskColumn
+          v-for="col in boardColumns"
+          :key="col.key"
+          :status-key="col.key"
+          :status-name="col.name"
+          :status-color="col.color"
+          :tasks="tasksByStatus[col.key] || []"
+          :child-tasks-map="childTasksMap"
+          :get-child-counts="getChildCounts"
+          @task-click="onTaskClick"
+          @add-task="(key) => onAddTask(key, col.name)"
+          @tasks-reordered="onTasksReordered"
+          @toggle-child="onCardToggleChild"
+          @delete-child="onCardDeleteChild"
+          @add-child="onCardAddChild"
+          @task-cross-column-move="onTasksReordered"
+        />
+      </div>
+
+      <TaskDetailPanel
+        :task="selectedTask"
+        :visible="showDetailPanel"
+        :status-options="statusOptions"
+        :priority-options="priorityOptions"
+        :child-tasks="getSelectedChildTasks()"
+        :child-count="selectedTask ? getChildCounts(selectedTask.id) : { total: 0, completed: 0 }"
+        @close="onDetailClose"
+        @update="onDetailUpdate"
+        @delete="onDetailDelete"
+        @toggle-child="onToggleChild"
+        @delete-child="onDeleteChild"
+        @add-child="onAddChild"
       />
     </div>
 
@@ -230,19 +253,11 @@ function getSelectedChildTasks(): Task[] {
       @delete="deleteColumn"
     />
 
-    <TaskDetailPanel
-      :task="selectedTask"
-      :visible="showDetailPanel"
-      :status-options="statusOptions"
-      :priority-options="priorityOptions"
-      :child-tasks="getSelectedChildTasks()"
-      :child-count="selectedTask ? getChildCounts(selectedTask.id) : { total: 0, completed: 0 }"
-      @close="onDetailClose"
-      @update="onDetailUpdate"
-      @delete="onDetailDelete"
-      @toggle-child="onToggleChild"
-      @delete-child="onDeleteChild"
-      @add-child="onAddChild"
+    <TaskAddDialog
+      :visible="showAddTaskDialog"
+      :status-name="addTaskStatusName"
+      @update:visible="showAddTaskDialog = $event"
+      @confirm="onAddTaskConfirm"
     />
   </div>
 </template>
