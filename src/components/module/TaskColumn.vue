@@ -80,9 +80,8 @@ function onChange(evt: { added?: { element: Task; newIndex: number }; moved?: { 
         @change="onChange"
         :group="{ name: 'tasks' }"
         item-key="id"
-        class="flex flex-col gap-2 min-h-10"
+        class="flex flex-col gap-2 min-h-full flex-1"
         animation="200"
-        force-fallback="true"
         ghost-class="opacity-50"
       >
         <template #item="{ element }">
