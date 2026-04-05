@@ -1,4 +1,4 @@
-import { ref, shallowRef, computed } from 'vue'
+import { ref, computed } from 'vue'
 import { directoryHasCapability } from './useModuleRegistry'
 import { taskApi } from './useApi'
 import type { Directory, Task, TaskColumn } from '@/types'
@@ -29,7 +29,7 @@ export interface TaskSort {
  * Composable for Task module operations on a directory
  */
 export function useTaskModule(directory: Directory) {
-  const tasks = shallowRef<Task[]>([])
+  const tasks = ref<Task[]>([])
   const loading = ref(false)
   const saving = ref(false)
   const error = ref<string | null>(null)
