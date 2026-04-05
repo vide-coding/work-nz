@@ -98,7 +98,7 @@ function onChange(evt: { added?: { element: Task; newIndex: number }; moved?: { 
           />
         </template>
         <template #footer>
-          <div v-if="tasks.length === 0" class="h-32 border-2 border-dashed border-gray-300 rounded-lg" />
+          <div v-if="tasks.length === 0" class="h-32" />
         </template>
       </draggable>
     </div>
