@@ -67,13 +67,16 @@ function onChange(evt: { added?: { element: Task; newIndex: number }; removed?: 
       emit('task-moved', { task: evt.removed.element, from: props.statusKey, to: '__removed__', newIndex: -1 })
     } else if (evt.added) {
       emit('update:modelValue', [...localTasks.value])
-      emit('task-moved', { task: evt.added.element, from: '__unknown__', to: props.statusKey, newIndex: evt.added.newIndex })
+      // 从 drop 后的 localTasks 找到任务的实际索引（最可靠）
+      const actualIndex = localTasks.value.findIndex((t) => t.id === evt.added!.element.id)
+      emit('task-moved', { task: evt.added.element, from: '__unknown__', to: props.statusKey, newIndex: actualIndex >= 0 ? actualIndex : evt.added.newIndex })
     } else if (evt.moved) {
       emit('update:modelValue', [...localTasks.value])
-      emit('task-moved', { task: evt.moved.element, from: props.statusKey, to: props.statusKey, newIndex: evt.moved.newIndex })
+      // 同列排序：从 localTasks 找到实际位置
+      const actualIndex = localTasks.value.findIndex((t) => t.id === evt.moved!.element.id)
+      emit('task-moved', { task: evt.moved.element, from: props.statusKey, to: props.statusKey, newIndex: actualIndex >= 0 ? actualIndex : evt.moved.newIndex })
     }
   } finally {
-    // 等 DOM 更新完成（vuedraggable 内部会更新），再允许外部同步
     setTimeout(() => { isDragging = false }, 0)
   }
 }
