@@ -24,7 +24,6 @@ const {
   createTask,
   updateTask,
   deleteTask,
-  reorderTask,
   statusValues,
   priorityValues,
   childTasksMap,
@@ -59,19 +58,35 @@ const boardColumns = computed(() =>
 const columnTasks = shallowRef<Record<string, Task[]>>({})
 
 function syncColumnTasks() {
-  const map: Record<string, Task[]> = {}
-  for (const col of columns.value) {
-    map[col.statusKey] = []
-  }
-  for (const task of allTasks.value) {
-    if (map[task.status]) {
-      map[task.status].push(task)
+  // 原地修改数组，保持 columnTasks[destColumn] === TaskColumn.localTasks 引用
+  // 这样 onTaskMoved 中的 colTasks 和 columnTasks.value[destColumn] 始终是同一数组
+  const map = columnTasks.value
+  const existingKeys = Object.keys(map)
+  const newKeys = columns.value.map((c) => c.statusKey)
+
+  // 新增列：创建空数组
+  for (const key of newKeys) {
+    if (!map[key]) {
+      map[key] = []
     }
   }
-  for (const key of Object.keys(map)) {
-    map[key].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+  // 删除列：从 map 中移除
+  for (const key of existingKeys) {
+    if (!newKeys.includes(key)) {
+      delete map[key]
+    }
   }
-  columnTasks.value = map
+  // 重建所有列的任务（原地清空+填充，不替换数组引用）
+  for (const col of columns.value) {
+    map[col.statusKey].length = 0
+    for (const task of allTasks.value) {
+      if (task.status === col.statusKey) {
+        map[col.statusKey].push(task)
+      }
+    }
+    map[col.statusKey].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+  }
+  triggerRef(columnTasks)
 }
 
 watch([allTasks, columns], syncColumnTasks, { immediate: true })
@@ -82,15 +97,24 @@ function onColumnUpdate(statusKey: string, newList: Task[]) {
   triggerRef(columnTasks)
 }
 
-// 拖拽完成：只持久化到 API，不修改 allTasks（allTasks 由 API 响应更新）
+// 拖拽完成：跨列移动时，调用 reorderTask 持久化到 API。
+// 关键：必须同时更新 allTasks 中目标列所有任务的 sortOrder 到视觉顺序，
+// 否则 filteredTasks 重新计算时会把其他任务的旧 sortOrder 当作正确顺序，
+// 导致拖拽后的位置被覆盖。
 async function onTaskMoved(payload: { task: Task; from: string; to: string; newIndex: number }) {
   const { task, to, newIndex } = payload
-  // 跨列移动：to !== '__removed__' 时表示目标是 destination 列
-  // 需要更新任务状态
-  if (to !== '__removed__' && task.status !== to) {
-    await updateTask(task.id, { status: to })
+  const destColumn = to !== '__removed__' ? to : task.status
+
+  // 更新 allTasks 中目标列所有任务的 sortOrder（匹配 columnTasks 视觉顺序）
+  const colTasks = columnTasks.value[destColumn] || []
+  await Promise.all(
+    colTasks.map((t, i) => updateTask(t.id, { sortOrder: i }))
+  )
+
+  // 跨列移动时，持久化状态变更
+  if (task.status !== destColumn) {
+    await updateTask(task.id, { status: destColumn })
   }
-  await reorderTask(task.id, to !== '__removed__' ? to : task.status, newIndex)
 }
 
 // Selected task for detail panel
@@ -149,38 +173,6 @@ async function onDetailUpdate(id: string, patch: Partial<Task>) {
 async function onDetailDelete(id: string) {
   await deleteTask(id)
   selectedTask.value = null
-}
-
-// Called when a task is reordered (in-column) or moved to another column (cross-column)
-// 关键：只更新 columnDisplayOrder（stable 引用），不修改 allTasks 的 sortOrder
-// 这样 tasksByStatus computed 不会触发重新排序，vuedraggable DOM 顺序得以保留
-async function onTasksReordered(payload: { taskId: string; newStatus: string; newIndex: number }) {
-  const map = { ...columnDisplayOrder.value }
-  const task = allTasks.value.find((t) => t.id === payload.taskId)
-  if (!task) return
-
-  // 从原列中移除
-  const fromStatus = task.status
-  const fromList = [...(map[fromStatus] || [])]
-  const fromIdx = fromList.findIndex((t) => t.id === payload.taskId)
-  if (fromIdx !== -1) {
-    fromList.splice(fromIdx, 1)
-  }
-
-  // 插入到新列
-  const toList = fromStatus === payload.newStatus ? fromList : [...(map[payload.newStatus] || [])]
-  toList.splice(payload.newIndex, 0, task)
-  map[fromStatus] = fromList
-  if (fromStatus !== payload.newStatus) {
-    map[payload.newStatus] = toList
-  }
-
-  // 立即更新 columnDisplayOrder，stable 引用，vuedraggable DOM 同步
-  columnDisplayOrder.value = map
-  triggerRef(columnDisplayOrder)
-
-  // 后台调用 API 持久化 sortOrder
-  await reorderTask(payload.taskId, payload.newStatus, payload.newIndex)
 }
 
 // Child task handlers
