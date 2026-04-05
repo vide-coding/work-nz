@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import { Plus } from 'lucide-vue-next'
 import draggable from 'vuedraggable'
 import type { Task } from '@/types'
@@ -29,9 +28,6 @@ const emit = defineEmits<{
   'add-child': [parentId: string, title: string]
 }>()
 
-// Track global drag state for empty column drop zone
-const isDragOver = ref(false)
-
 function getChildren(taskId: string): Task[] {
   return props.childTasksMap[taskId] || []
 }
@@ -46,7 +42,6 @@ function onAddClick() {
 
 // Handle vuedraggable change events for in-column reorder
 function onChange(evt: { added?: { element: Task; newIndex: number }; moved?: { element: Task; newIndex: number } }) {
-  isDragOver.value = false
   if (evt.moved) {
     // In-column reorder: use the moved element directly
     emit('tasks-reordered', {
@@ -62,26 +57,6 @@ function onChange(evt: { added?: { element: Task; newIndex: number }; moved?: { 
       newIndex: evt.added.newIndex,
     })
   }
-}
-
-// Global drag handlers for empty column (outside draggable container)
-function onBodyDragOver(e: DragEvent) {
-  if (props.tasks.length === 0) {
-    e.preventDefault()
-    isDragOver.value = true
-  }
-}
-function onBodyDragEnter(e: DragEvent) {
-  if (props.tasks.length === 0) {
-    e.preventDefault()
-    isDragOver.value = true
-  }
-}
-function onBodyDragLeave() {
-  isDragOver.value = false
-}
-function onBodyDrop(e: DragEvent) {
-  isDragOver.value = false
 }
 </script>
 
@@ -99,13 +74,7 @@ function onBodyDrop(e: DragEvent) {
       </button>
     </div>
 
-    <div
-      class="flex-1 p-2 overflow-y-auto"
-      @dragover.prevent="onBodyDragOver"
-      @dragenter="onBodyDragEnter"
-      @dragleave="onBodyDragLeave"
-      @drop.prevent="onBodyDrop"
-    >
+    <div class="flex-1 p-2 overflow-y-auto">
       <draggable
         :model-value="tasks"
         @change="onChange"
@@ -126,9 +95,6 @@ function onBodyDrop(e: DragEvent) {
             @delete-child="emit('delete-child', $event)"
             @add-child="(parentId, title) => emit('add-child', parentId, title)"
           />
-        </template>
-        <template #footer>
-          <div v-if="tasks.length === 0 && isDragOver" class="h-32" />
         </template>
       </draggable>
     </div>
