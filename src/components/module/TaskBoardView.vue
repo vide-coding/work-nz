@@ -55,7 +55,11 @@ const boardColumns = computed(() =>
 
 // Group tasks by status
 const tasksByStatus = computed(() => {
-  const map: Record<string, Task[]> = { todo: [], in_progress: [], done: [] }
+  const map: Record<string, Task[]> = {}
+  // Initialize with all visible column keys to avoid undefined
+  for (const col of columns.value) {
+    map[col.statusKey] = []
+  }
   for (const task of tasks.value) {
     if (map[task.status]) {
       map[task.status].push(task)
@@ -221,7 +225,7 @@ const priorityOptions = computed(() =>
         :status-key="col.key"
         :status-name="col.name"
         :status-color="col.color"
-        :tasks="tasksByStatus[col.key]"
+        :tasks="tasksByStatus[col.key] || []"
         :child-tasks-map="childTasksMap"
         :get-child-counts="getCounts"
         @task-click="onTaskClick"
