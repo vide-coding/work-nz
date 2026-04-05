@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, shallowRef, triggerRef, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { Settings } from 'lucide-vue-next'
 import draggable from 'vuedraggable'
 import type { Directory, Task } from '@/types'
@@ -55,13 +55,8 @@ const boardColumns = computed(() =>
     }))
 )
 
-// columnDisplayOrder: 前端显示顺序，shallowRef 保持稳定引用
-// 拖拽时直接更新这个 map，不触发 tasksByStatus 的 filter+sort
-const columnDisplayOrder = shallowRef<Record<string, Task[]>>({})
-
-// 当 allTasks 加载或变化时，从 allTasks 同步到 columnDisplayOrder
-// 初始化或重置时按 sortOrder 排序
-function syncColumnDisplayOrder() {
+// columnTasks: allTasks 按列分组，驱动 TaskColumn 的 v-model
+const columnTasks = computed(() => {
   const map: Record<string, Task[]> = {}
   for (const col of columns.value) {
     map[col.statusKey] = []
@@ -71,53 +66,20 @@ function syncColumnDisplayOrder() {
       map[task.status].push(task)
     }
   }
-  // 初始同步按 sortOrder 排，后续拖拽由 columnDisplayOrder 自己维护
-  for (const key of Object.keys(map)) {
-    map[key].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+  return map
+})
+
+// 拖拽操作：vuedraggable v-model 直接管理内部列表，
+// 父组件通过 task-moved 事件同步 allTasks（后台 API 调用，不影响显示）
+async function onTaskMoved(payload: { task: Task; from: string; to: string; newIndex: number }) {
+  const { task, to, newIndex } = payload
+  // 更新 allTasks 中任务的状态（后台 API 持久化）
+  if (task.status !== to) {
+    await updateTask(task.id, { status: to })
   }
-  columnDisplayOrder.value = map
-  triggerRef(columnDisplayOrder)
+  // 立即调用 reorder API 持久化 sortOrder
+  await reorderTask(task.id, to, newIndex)
 }
-
-// 任务状态变更时，同步 columnDisplayOrder（不触发完整重建）
-function syncStatusChange(taskId: string, newStatus: string) {
-  const task = allTasks.value.find((t) => t.id === taskId)
-  if (!task) return
-  const oldStatus = task.status
-  if (oldStatus === newStatus) return
-  const map = { ...columnDisplayOrder.value }
-  const fromList = [...(map[oldStatus] || [])]
-  const idx = fromList.findIndex((t) => t.id === taskId)
-  if (idx !== -1) {
-    fromList.splice(idx, 1)
-    map[oldStatus] = fromList
-    const toList = [...(map[newStatus] || [])]
-    toList.push(task)
-    map[newStatus] = toList
-    columnDisplayOrder.value = map
-    triggerRef(columnDisplayOrder)
-  }
-}
-
-// 任务删除时，从 columnDisplayOrder 移除
-function syncTaskDelete(taskId: string) {
-  const task = allTasks.value.find((t) => t.id === taskId)
-  if (!task) return
-  const map = { ...columnDisplayOrder.value }
-  const list = [...(map[task.status] || [])]
-  const idx = list.findIndex((t) => t.id === taskId)
-  if (idx !== -1) {
-    list.splice(idx, 1)
-    map[task.status] = list
-    columnDisplayOrder.value = map
-    triggerRef(columnDisplayOrder)
-  }
-}
-
-watch([allTasks, columns], syncColumnDisplayOrder, { immediate: true })
-
-// tasksByStatus 直接返回稳定的 columnDisplayOrder 引用
-const tasksByStatus = computed(() => columnDisplayOrder.value)
 
 // Selected task for detail panel
 const selectedTask = ref<Task | null>(null)
@@ -166,11 +128,7 @@ function onDetailClose() {
 }
 
 async function onDetailUpdate(id: string, patch: Partial<Task>) {
-  const oldTask = allTasks.value.find((t) => t.id === id)
   await updateTask(id, patch)
-  if (patch.status && oldTask && oldTask.status !== patch.status) {
-    syncStatusChange(id, patch.status)
-  }
   if (selectedTask.value?.id === id) {
     selectedTask.value = { ...selectedTask.value, ...patch } as Task
   }
@@ -178,7 +136,6 @@ async function onDetailUpdate(id: string, patch: Partial<Task>) {
 
 async function onDetailDelete(id: string) {
   await deleteTask(id)
-  syncTaskDelete(id)
   selectedTask.value = null
 }
 
@@ -295,16 +252,15 @@ function getSelectedChildTasks(): Task[] {
           :status-key="col.key"
           :status-name="col.name"
           :status-color="col.color"
-          :tasks="tasksByStatus[col.key] || []"
+          v-model="columnTasks[col.key]"
           :child-tasks-map="childTasksMap"
           :get-child-counts="getChildCounts"
           @task-click="onTaskClick"
           @add-task="(key) => onAddTask(key, col.name)"
-          @tasks-reordered="onTasksReordered"
+          @task-moved="onTaskMoved"
           @toggle-child="onCardToggleChild"
           @delete-child="onCardDeleteChild"
           @add-child="onCardAddChild"
-          @task-cross-column-move="onTasksReordered"
         />
       </div>
 
