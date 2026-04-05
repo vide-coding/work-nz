@@ -142,7 +142,7 @@ function cancelDelete() {
             >
               <template #item="{ element: col }">
                 <div class="group flex items-center gap-2 px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-lg">
-                  <div class="text-gray-300 cursor-grab flex-shrink-0">
+                  <div class="column-item__drag text-gray-300 cursor-grab active:cursor-grabbing flex-shrink-0">
                     <GripVertical :size="14" />
                   </div>
 
@@ -264,6 +264,14 @@ function cancelDelete() {
 </template>
 
 <style scoped>
+.column-item__drag {
+  cursor: grab;
+}
+
+.column-item__drag:active {
+  cursor: grabbing;
+}
+
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.2s ease;
