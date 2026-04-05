@@ -48,7 +48,7 @@ const moduleType = computed(() => module.value?.key)
 
         <!-- Task Module Content -->
         <template v-else-if="moduleType === 'task'">
-          <TaskBoardView :directory="props.directory" />
+          <TaskBoardView :key="props.directory.id" :directory="props.directory" />
         </template>
 
         <!-- File Module Content -->

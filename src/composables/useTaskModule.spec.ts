@@ -8,7 +8,6 @@ vi.mock('./useApi', () => ({
     create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
-    reorder: vi.fn(),
     listChildren: vi.fn(),
     createChild: vi.fn(),
     toggleComplete: vi.fn(),
@@ -426,24 +425,6 @@ describe('useTaskModule', () => {
       const counts = getChildCounts('task-1')
       expect(counts.total).toBe(2)
       expect(counts.completed).toBe(1)
-    })
-  })
-
-  describe('reorderTask', () => {
-    it('should reorder a task', async () => {
-      const { reorderTask, loadTasks } = useTaskModule(mockDirectory)
-      vi.mocked(taskApi.list).mockResolvedValueOnce([...mockTasks])
-      vi.mocked(taskApi.reorder).mockResolvedValueOnce({
-        ...mockTasks[0],
-        status: 'done',
-        sortOrder: 0,
-      })
-
-      await loadTasks()
-      const result = await reorderTask('task-1', 'done', 0)
-
-      expect(taskApi.reorder).toHaveBeenCalledWith('task-1', 'done', 0)
-      expect(result?.status).toBe('done')
     })
   })
 })

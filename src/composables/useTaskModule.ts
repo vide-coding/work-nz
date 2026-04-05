@@ -245,24 +245,7 @@ export function useTaskModule(directory: Directory) {
     filter.value = {}
   }
 
-  // Reorder a task
-  async function reorderTask(taskId: string, newStatus: string, newSortOrder: number): Promise<Task | null> {
-    if (!hasTaskCapability.value) return null
-
-    saving.value = true
-    error.value = null
-    try {
-      // Call API without updating local state — parent updates allTasks directly
-      return await taskApi.reorder(taskId, newStatus, newSortOrder)
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Failed to reorder task'
-      return null
-    } finally {
-      saving.value = false
-    }
-  }
-
-  // Subtask state: parentId -> child tasks
+  // Column state
   const childTasksMap = ref<Record<string, Task[]>>({})
 
   // Load children for a parent task
@@ -456,7 +439,6 @@ export function useTaskModule(directory: Directory) {
     createTask,
     updateTask,
     deleteTask,
-    reorderTask,
     loadChildTasks,
     createChildTask,
     toggleChildComplete,

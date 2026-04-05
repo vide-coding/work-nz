@@ -417,10 +417,6 @@ export const taskApi = {
     return invoke('task_delete', { id })
   },
 
-  async reorder(id: string, newStatus: string, newSortOrder: number): Promise<Task> {
-    return invoke('task_reorder', { id, newStatus, newSortOrder })
-  },
-
   async listChildren(parentId: string): Promise<Task[]> {
     return invoke('task_list_children', { parentId })
   },

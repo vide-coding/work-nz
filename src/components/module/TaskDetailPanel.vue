@@ -47,6 +47,7 @@ const editPriority = ref('')
 const editAssignee = ref('')
 const editDueDate = ref('')
 const newChildTitle = ref('')
+const pendingDelete = ref(false)
 
 watch(
   () => props.task,
@@ -77,9 +78,16 @@ function save() {
 
 function onDelete() {
   if (!props.task) return
-  if (confirm(t('task.deleteConfirm'))) {
+  if (pendingDelete.value) {
     emit('delete', props.task.id)
+    pendingDelete.value = false
+  } else {
+    pendingDelete.value = true
   }
+}
+
+function cancelDelete() {
+  pendingDelete.value = false
 }
 
 function onClose() {
@@ -96,8 +104,12 @@ function onAddChild() {
 </script>
 
 <template>
-  <Transition name="slide">
-    <div v-if="visible && task" class="fixed top-0 right-0 w-[400px] h-screen bg-white shadow-[-4px_0_24px_rgba(0,0,0,0.1)] z-[100] flex flex-col overflow-hidden">
+  <div
+    v-show="visible && task"
+    class="flex-shrink-0 w-0 overflow-hidden transition-all duration-300 ease-in-out"
+    :class="visible && task ? 'w-[400px]' : 'w-0'"
+  >
+    <div class="w-[400px] h-screen bg-white shadow-[-4px_0_24px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden">
       <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200">
         <h3 class="m-0 text-base font-semibold text-gray-900">{{ $t('task.title') }}</h3>
         <button class="flex items-center justify-center w-8 h-8 text-gray-500 bg-transparent rounded-md hover:bg-gray-100" @click="onClose">
@@ -218,24 +230,20 @@ function onAddChild() {
         </div>
       </div>
 
-      <div class="px-5 py-4 border-t border-gray-200 flex justify-start">
-        <button class="flex items-center gap-1.5 px-4 py-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md transition-colors hover:bg-red-100" @click="onDelete">
+      <div class="px-5 py-4 border-t border-gray-200 flex gap-2">
+        <template v-if="pendingDelete">
+          <button class="flex items-center gap-1.5 px-4 py-2 text-sm text-white bg-red-500 border border-red-200 rounded-md transition-colors hover:bg-red-600" @click="onDelete">
+            {{ $t('common.confirm') }}
+          </button>
+          <button class="flex items-center gap-1.5 px-4 py-2 text-sm text-gray-700 bg-gray-100 border border-gray-200 rounded-md transition-colors hover:bg-gray-200" @click="cancelDelete">
+            {{ $t('common.cancel') }}
+          </button>
+        </template>
+        <button v-else class="flex items-center gap-1.5 px-4 py-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md transition-colors hover:bg-red-100" @click="onDelete">
           <Trash2 :size="16" />
           {{ $t('task.delete') }}
         </button>
       </div>
     </div>
-  </Transition>
+  </div>
 </template>
-
-<style scoped>
-.slide-enter-active,
-.slide-leave-active {
-  transition: transform 0.3s ease;
-}
-
-.slide-enter-from,
-.slide-leave-to {
-  transform: translateX(100%);
-}
-</style>

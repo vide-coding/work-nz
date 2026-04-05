@@ -624,6 +624,7 @@ mod tests {
 /// Module capability
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "snake_case")]
+#[allow(dead_code)]
 pub enum ModuleCapability {
     GitClone,
     GitPull,
@@ -644,6 +645,7 @@ pub enum ModuleCapability {
     FileRename,
 }
 
+#[cfg(test)]
 impl ModuleCapability {
     pub fn as_str(&self) -> &'static str {
         match self {
@@ -813,6 +815,7 @@ pub struct DirectoryTemplate {
 /// Task priority
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
+#[allow(dead_code)]
 pub enum TaskPriority {
     Low,
     Medium,

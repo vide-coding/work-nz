@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 import { Plus } from 'lucide-vue-next'
 import draggable from 'vuedraggable'
 import type { Task } from '@/types'
@@ -77,7 +77,7 @@ function onChange(evt: { added?: { element: Task; newIndex: number }; removed?: 
       emit('task-moved', { task: evt.moved.element, from: props.statusKey, to: props.statusKey, newIndex: actualIndex >= 0 ? actualIndex : evt.moved.newIndex })
     }
   } finally {
-    setTimeout(() => { isDragging = false }, 0)
+    nextTick(() => { isDragging = false })
   }
 }
 </script>

@@ -125,6 +125,11 @@ pub fn directory_create(project_id: String, input: serde_json::Value) -> Result<
         .map_err(|e| format!("创建目录失败: {}", e))?;
     });
 
+    // 如果创建的是 task 模块目录，初始化默认列
+    if module_id.as_deref() == Some("builtin:task") {
+        crate::commands::task::task_column_init_defaults(id.clone())?;
+    }
+
     Ok(Directory {
         id,
         project_id,

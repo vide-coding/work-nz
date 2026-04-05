@@ -14,6 +14,7 @@ fn normalize_path(path: &str) -> String {
 
 /// 获取项目的文件系统树
 #[tauri::command]
+#[allow(non_snake_case)]
 pub fn project_fs_tree(projectId: String, relativeRoot: String) -> Result<FileNode, String> {
     let project = project_get(projectId)?;
 
@@ -78,6 +79,7 @@ pub fn fs_read_text(path: String) -> Result<serde_json::Value, String> {
 
 /// 创建目录
 #[tauri::command]
+#[allow(non_snake_case)]
 pub fn fs_create_dir(
     projectId: String,
     relativePath: String,
@@ -107,6 +109,7 @@ pub fn fs_delete(path: String) -> Result<serde_json::Value, String> {
 
 /// 重命名文件或目录
 #[tauri::command]
+#[allow(non_snake_case)]
 pub fn fs_rename(oldPath: String, newName: String) -> Result<serde_json::Value, String> {
     let normalized_old = normalize_path(&oldPath);
     let old = Path::new(&normalized_old);
@@ -122,6 +125,7 @@ pub fn fs_rename(oldPath: String, newName: String) -> Result<serde_json::Value, 
 
 /// 创建文件
 #[tauri::command]
+#[allow(non_snake_case)]
 pub fn fs_create_file(
     projectId: String,
     relativePath: String,
@@ -223,6 +227,7 @@ pub fn fs_open_external(path: String) -> Result<serde_json::Value, String> {
 
 /// 复制文件到目标路径
 #[tauri::command]
+#[allow(non_snake_case)]
 pub fn fs_copy_file(
     sourcePath: String,
     targetPath: String,
