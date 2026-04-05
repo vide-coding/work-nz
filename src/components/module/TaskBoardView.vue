@@ -207,6 +207,13 @@ const priorityOptions = computed(() =>
       {{ error }}
     </div>
 
+    <div v-else-if="boardColumns.length === 0" class="task-board__empty">
+      <p>{{ $t('task.noVisibleColumns') }}</p>
+      <button class="task-board__empty-btn" @click="showColumnSettings = true">
+        {{ $t('task.configureColumns') }}
+      </button>
+    </div>
+
     <div v-else class="task-board__columns">
       <TaskColumn
         v-for="col in boardColumns"
@@ -295,13 +302,33 @@ const priorityOptions = computed(() =>
 }
 
 .task-board__loading,
-.task-board__error {
+.task-board__error,
+.task-board__empty {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 14px;
   color: #6b7280;
+}
+
+.task-board__empty {
+  flex-direction: column;
+  gap: 12px;
+}
+
+.task-board__empty-btn {
+  padding: 8px 16px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.task-board__empty-btn:hover {
+  background: #2563eb;
 }
 
 .task-board__columns {

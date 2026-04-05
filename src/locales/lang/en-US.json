@@ -306,6 +306,10 @@
     "columnName": "Column name",
     "color": "Color",
     "visible": "Visible",
-    "hidden": "Hidden"
+    "hidden": "Hidden",
+    "showColumn": "Hide",
+    "hideColumn": "Show",
+    "noVisibleColumns": "No visible columns",
+    "configureColumns": "Configure columns"
   }
 }

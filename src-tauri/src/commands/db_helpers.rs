@@ -23,7 +23,7 @@ macro_rules! with_db {
 #[macro_export]
 macro_rules! with_db_mut {
     ($conn:ident, $body:block) => {{
-        let db_guard =
+        let mut db_guard =
             $crate::db::get_db().map_err(|e| format!("获取数据库失败: {}", e))?;
         let $conn = (&mut *db_guard).as_mut().ok_or("数据库未初始化")?;
         let __result = { $body };
@@ -118,5 +118,44 @@ pub fn map_module_row(row: &Row) -> SqliteResult<Module> {
         is_built_in: row.get::<_, i32>(9)? != 0,
         created_at: row.get(10)?,
         updated_at: row.get(11)?,
+    })
+}
+
+/// 从 tasks 表行映射为 Task
+/// cols: id(0), directory_id(1), parent_id(2), title(3), description(4),
+///       status(5), priority(6), assignee(7), due_date(8), sort_order(9),
+///       is_completed(10), created_at(11), updated_at(12)
+pub fn map_task_row(row: &Row) -> SqliteResult<Task> {
+    Ok(Task {
+        id: row.get(0)?,
+        directory_id: row.get(1)?,
+        parent_id: row.get(2)?,
+        title: row.get(3)?,
+        description: row.get(4)?,
+        status: row.get(5)?,
+        priority: row.get(6)?,
+        assignee: row.get(7)?,
+        due_date: row.get(8)?,
+        sort_order: row.get(9)?,
+        is_completed: row.get::<_, i32>(10)? != 0,
+        created_at: row.get(11)?,
+        updated_at: row.get(12)?,
+    })
+}
+
+/// 从 task_columns 表行映射为 TaskColumn
+/// cols: id(0), directory_id(1), status_key(2), name(3), color(4),
+///       sort_order(5), is_visible(6), created_at(7), updated_at(8)
+pub fn map_task_column_row(row: &Row) -> SqliteResult<TaskColumn> {
+    Ok(TaskColumn {
+        id: row.get(0)?,
+        directory_id: row.get(1)?,
+        status_key: row.get(2)?,
+        name: row.get(3)?,
+        color: row.get(4)?,
+        sort_order: row.get(5)?,
+        is_visible: row.get::<_, i32>(6)? != 0,
+        created_at: row.get(7)?,
+        updated_at: row.get(8)?,
     })
 }

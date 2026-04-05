@@ -39,10 +39,14 @@ const PRESET_COLORS = [
 const editingId = ref<string | null>(null)
 const editName = ref('')
 const editColor = ref('')
+const pendingDeleteId = ref<string | null>(null)
+const previousOrder = ref<Record<string, number>>({})
 
 watch(
   () => props.columns,
   (cols) => {
+    previousOrder.value = {}
+    cols.forEach((c) => { previousOrder.value[c.id] = c.sortOrder })
     localColumns.value = [...cols].sort((a, b) => a.sortOrder - b.sortOrder)
   },
   { immediate: true }
@@ -68,9 +72,12 @@ function submitAdd() {
 }
 
 function onDragEnd() {
-  // Emit reorder for all columns
+  // Only emit update for columns whose order actually changed
   localColumns.value.forEach((col, index) => {
-    emit('update', col.id, { sortOrder: index })
+    if (previousOrder.value[col.id] !== index) {
+      emit('update', col.id, { sortOrder: index })
+      previousOrder.value[col.id] = index
+    }
   })
 }
 
@@ -92,9 +99,18 @@ function submitEdit(id: string) {
 }
 
 function onDelete(id: string) {
-  if (confirm('Delete this column? Tasks will be moved to another column.')) {
+  if (pendingDeleteId.value === id) {
+    // Second click — confirm delete
     emit('delete', id)
+    pendingDeleteId.value = null
+  } else {
+    // First click — arm confirmation
+    pendingDeleteId.value = id
   }
+}
+
+function cancelDelete() {
+  pendingDeleteId.value = null
 }
 </script>
 
@@ -103,7 +119,7 @@ function onDelete(id: string) {
     <div v-if="visible" class="settings-overlay" @click.self="emit('close')">
       <div class="settings-dialog">
         <div class="settings-dialog__header">
-          <h3 class="settings-dialog__title">{{ $t('task.columnSettings') || 'Column Settings' }}</h3>
+          <h3 class="settings-dialog__title">{{ $t('task.columnSettings') }}</h3>
           <button class="settings-dialog__close" @click="emit('close')">
             <X :size="18" />
           </button>
@@ -163,17 +179,33 @@ function onDelete(id: string) {
                     class="column-item__visibility"
                     :class="{ 'column-item__visibility--hidden': !col.isVisible }"
                     @click="emit('toggle-visibility', col.id)"
-                    :title="col.isVisible ? 'Hide' : 'Show'"
+                    :title="col.isVisible ? $t('task.hideColumn') : $t('task.showColumn')"
                   >
-                    {{ col.isVisible ? ($t('task.visible') || 'Visible') : ($t('task.hidden') || 'Hidden') }}
+                    {{ col.isVisible ? $t('task.visible') : $t('task.hidden') }}
                   </button>
 
                   <button
+                    v-if="pendingDeleteId === col.id"
+                    class="column-item__delete column-item__delete--confirm"
+                    @click="onDelete(col.id)"
+                    :title="$t('common.confirm')"
+                  >
+                    {{ $t('common.confirm') }}
+                  </button>
+                  <button
+                    v-else
                     class="column-item__delete"
                     @click="onDelete(col.id)"
                     :title="$t('common.delete')"
                   >
                     <Trash2 :size="14" />
+                  </button>
+                  <button
+                    v-if="pendingDeleteId === col.id"
+                    class="column-item__delete-cancel"
+                    @click="cancelDelete"
+                  >
+                    {{ $t('common.cancel') }}
                   </button>
                 </div>
               </template>
@@ -184,15 +216,15 @@ function onDelete(id: string) {
               <input
                 v-model="newStatusKey"
                 class="add-form__input"
-                :placeholder="$t('task.statusKey') || 'Status key'"
+                :placeholder="$t('task.statusKey')"
               />
               <input
                 v-model="newName"
                 class="add-form__input"
-                :placeholder="$t('task.columnName') || 'Column name'"
+                :placeholder="$t('task.columnName')"
               />
               <div class="add-form__color-row">
-                <span class="add-form__color-label">{{ $t('task.color') || 'Color' }}</span>
+                <span class="add-form__color-label">{{ $t('task.color') }}</span>
                 <div class="add-form__color-presets">
                   <button
                     v-for="c in PRESET_COLORS"
@@ -221,7 +253,7 @@ function onDelete(id: string) {
 
             <button v-else class="add-column-btn" @click="openAddForm">
               <Plus :size="14" />
-              {{ $t('task.addColumn') || 'Add Column' }}
+              {{ $t('task.addColumn') }}
             </button>
           </template>
         </div>
@@ -433,6 +465,33 @@ function onDelete(id: string) {
 .column-item__delete:hover {
   color: #ef4444;
   background: #fef2f2;
+}
+
+.column-item__delete--confirm {
+  width: auto;
+  padding: 2px 6px;
+  background: #ef4444;
+  color: white;
+  font-size: 11px;
+}
+
+.column-item__delete-cancel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  padding: 2px 6px;
+  border: none;
+  background: #f3f4f6;
+  color: #6b7280;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.column-item__delete-cancel:hover {
+  background: #e5e7eb;
 }
 
 .add-form {

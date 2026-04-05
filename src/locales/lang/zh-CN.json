@@ -306,6 +306,10 @@
     "columnName": "列名称",
     "color": "颜色",
     "visible": "显示",
-    "hidden": "隐藏"
+    "hidden": "隐藏",
+    "showColumn": "隐藏",
+    "hideColumn": "显示",
+    "noVisibleColumns": "没有可见的列",
+    "configureColumns": "配置列"
   }
 }

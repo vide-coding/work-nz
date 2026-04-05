@@ -1,5 +1,6 @@
 use crate::types::{Task, TaskColumn};
 use crate::with_db;
+use crate::with_db_mut;
 use rusqlite::params;
 
 /// 获取单个任务（辅助函数）
@@ -386,6 +387,21 @@ pub fn task_column_create(
     name: String,
     color: String,
 ) -> Result<TaskColumn, String> {
+    // 检查 status_key 是否重复
+    with_db!(conn, {
+        let exists: Option<i32> = conn
+            .query_row(
+                "SELECT 1 FROM task_columns WHERE directory_id = ?1 AND status_key = ?2",
+                params![directory_id, status_key],
+                |row| row.get(0),
+            )
+            .ok()
+            .flatten();
+        if exists.is_some() {
+            return Err("该列已存在".to_string());
+        }
+    });
+
     let id = uuid::Uuid::new_v4().to_string();
     let now = chrono::Utc::now().to_rfc3339();
 
@@ -454,69 +470,73 @@ pub fn task_column_toggle_visibility(id: String) -> Result<TaskColumn, String> {
 #[tauri::command]
 pub fn task_column_delete(id: String) -> Result<(), String> {
     with_db_mut!(conn, {
-        let tx = conn.transaction().map_err(|e| format!("开启事务失败: {}", e))?;
+        let result: Result<(), String> = (|| {
+            let tx = conn.transaction().map_err(|e| format!("开启事务失败: {}", e))?;
 
-    // 获取该列信息
-    let col: TaskColumn = tx.query_row(
-        "SELECT id, directory_id, status_key, name, color, sort_order, is_visible, created_at, updated_at
-         FROM task_columns WHERE id = ?1",
-        params![id],
-        |row| {
-            Ok(TaskColumn {
-                id: row.get(0)?,
-                directory_id: row.get(1)?,
-                status_key: row.get(2)?,
-                name: row.get(3)?,
-                color: row.get(4)?,
-                sort_order: row.get(5)?,
-                is_visible: row.get::<_, i32>(6)? != 0,
-                created_at: row.get(7)?,
-                updated_at: row.get(8)?,
-            })
-        },
-    )
-    .map_err(|e| format!("列不存在: {}", e))?;
+            // 获取该列信息
+            let col: TaskColumn = tx.query_row(
+                "SELECT id, directory_id, status_key, name, color, sort_order, is_visible, created_at, updated_at
+                 FROM task_columns WHERE id = ?1",
+                params![id],
+                |row| {
+                    Ok(TaskColumn {
+                        id: row.get(0)?,
+                        directory_id: row.get(1)?,
+                        status_key: row.get(2)?,
+                        name: row.get(3)?,
+                        color: row.get(4)?,
+                        sort_order: row.get(5)?,
+                        is_visible: row.get::<_, i32>(6)? != 0,
+                        created_at: row.get(7)?,
+                        updated_at: row.get(8)?,
+                    })
+                },
+            )
+            .map_err(|e| format!("列不存在: {}", e))?;
 
-    // 检查是否只剩一列
-    let count: i32 = tx
-        .query_row(
-            "SELECT COUNT(*) FROM task_columns WHERE directory_id = ?1",
-            params![col.directory_id],
-            |row| row.get(0),
-        )
-        .unwrap_or(0);
+            // 检查是否只剩一列
+            let count: i32 = tx
+                .query_row(
+                    "SELECT COUNT(*) FROM task_columns WHERE directory_id = ?1",
+                    params![col.directory_id],
+                    |row| row.get(0),
+                )
+                .unwrap_or(0);
 
-    if count <= 1 {
-        return Err("至少保留一列".to_string());
-    }
+            if count <= 1 {
+                return Err("至少保留一列".to_string());
+            }
 
-    // 查找目标列（优先 todo，其次按 sort_order 第一）
-    let target_key: String = tx
-        .query_row(
-            "SELECT status_key FROM task_columns
-             WHERE directory_id = ?1 AND id != ?2
-             ORDER BY CASE WHEN status_key = 'todo' THEN 0 ELSE 1 END, sort_order ASC
-             LIMIT 1",
-            params![col.directory_id, id],
-            |row| row.get(0),
-        )
-        .map_err(|e| format!("查找目标列失败: {}", e))?;
+            // 查找目标列（优先 todo，其次按 sort_order 第一）
+            let target_key: String = tx
+                .query_row(
+                    "SELECT status_key FROM task_columns
+                     WHERE directory_id = ?1 AND id != ?2
+                     ORDER BY CASE WHEN status_key = 'todo' THEN 0 ELSE 1 END, sort_order ASC
+                     LIMIT 1",
+                    params![col.directory_id, id],
+                    |row| row.get(0),
+                )
+                .map_err(|e| format!("查找目标列失败: {}", e))?;
 
-    // 将该列任务迁移到目标列
-    tx.execute(
-        "UPDATE tasks SET status = ?1 WHERE directory_id = ?2 AND status = ?3 AND parent_id IS NULL",
-        params![target_key, col.directory_id, col.status_key],
-    )
-    .map_err(|e| format!("迁移任务失败: {}", e))?;
+            // 将该列任务迁移到目标列
+            tx.execute(
+                "UPDATE tasks SET status = ?1 WHERE directory_id = ?2 AND status = ?3 AND parent_id IS NULL",
+                params![target_key, col.directory_id, col.status_key],
+            )
+            .map_err(|e| format!("迁移任务失败: {}", e))?;
 
-    // 删除列
-    tx.execute("DELETE FROM task_columns WHERE id = ?1", params![id])
-        .map_err(|e| format!("删除列失败: {}", e))?;
+            // 删除列
+            tx.execute("DELETE FROM task_columns WHERE id = ?1", params![id])
+                .map_err(|e| format!("删除列失败: {}", e))?;
 
-    // 提交事务
-    tx.commit().map_err(|e| format!("提交事务失败: {}", e))?;
+            // 提交事务
+            tx.commit().map_err(|e| format!("提交事务失败: {}", e))?;
 
-    Ok(())
+            Ok(())
+        })();
+        result
+    })
 }
 
 /// 为目录初始化默认列（当目录启用 task 模块时调用）
