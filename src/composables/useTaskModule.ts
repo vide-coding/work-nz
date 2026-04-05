@@ -155,7 +155,6 @@ export function useTaskModule(directory: Directory) {
       return null
     }
 
-    loading.value = true
     error.value = null
     try {
       const newTask = await taskApi.create(
@@ -165,15 +164,14 @@ export function useTaskModule(directory: Directory) {
         input.priority,
         input.assignee,
         input.dueDate,
-        input.status
+        input.status,
+        0
       )
       tasks.value = [...tasks.value, newTask]
       return newTask
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to create task'
       return null
-    } finally {
-      loading.value = false
     }
   }
 

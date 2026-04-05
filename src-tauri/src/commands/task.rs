@@ -52,20 +52,37 @@ pub fn task_create(
     assignee: Option<String>,
     due_date: Option<String>,
     status: Option<String>,
+    sort_order: Option<i32>,
 ) -> Result<Task, String> {
     let id = uuid::Uuid::new_v4().to_string();
     let now = chrono::Utc::now().to_rfc3339();
 
     with_db!(conn, {
-        let max_order: Option<i32> = conn
-            .query_row(
-                "SELECT MAX(sort_order) FROM tasks WHERE directory_id = ?1 AND parent_id IS NULL",
-                params![directory_id],
-                |row| row.get(0),
+        // 如果指定了 sort_order，则将 >= 该值的任务往后挪
+        if let Some(order) = sort_order {
+            conn.execute(
+                "UPDATE tasks SET sort_order = sort_order + 1
+                 WHERE directory_id = ?1 AND parent_id IS NULL AND sort_order >= ?2",
+                params![directory_id, order],
             )
-            .unwrap_or(None);
+            .map_err(|e| format!("更新排序失败: {}", e))?;
+        }
 
-        let sort_order = max_order.unwrap_or(-1) + 1;
+        // 计算最终的 sort_order
+        let final_sort_order = if let Some(order) = sort_order {
+            order
+        } else {
+            // 默认排在最后
+            let max_order: Option<i32> = conn
+                .query_row(
+                    "SELECT MAX(sort_order) FROM tasks WHERE directory_id = ?1 AND parent_id IS NULL",
+                    params![directory_id],
+                    |row| row.get(0),
+                )
+                .unwrap_or(None);
+            max_order.unwrap_or(-1) + 1
+        };
+
         let status = status.unwrap_or_else(|| "todo".to_string());
 
         conn.execute(
@@ -81,7 +98,7 @@ pub fn task_create(
                 priority.unwrap_or_else(|| "medium".to_string()),
                 assignee,
                 due_date,
-                sort_order,
+                final_sort_order,
                 now,
                 now
             ],

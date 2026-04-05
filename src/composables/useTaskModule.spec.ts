@@ -174,7 +174,8 @@ describe('useTaskModule', () => {
         undefined,
         undefined,
         undefined,
-        'todo'
+        'todo',
+        0
       )
       expect(result?.title).toBe('Task 1')
       expect(allTasks.value).toHaveLength(1)

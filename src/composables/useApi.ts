@@ -404,9 +404,10 @@ export const taskApi = {
     priority?: string,
     assignee?: string,
     dueDate?: string,
-    status?: string
+    status?: string,
+    sortOrder?: number
   ): Promise<Task> {
-    return invoke('task_create', { directoryId, title, description, priority, assignee, dueDate, status })
+    return invoke('task_create', { directoryId, title, description, priority, assignee, dueDate, status, sortOrder })
   },
 
   async update(id: string, patch: Partial<Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'assignee' | 'dueDate'>>): Promise<Task> {

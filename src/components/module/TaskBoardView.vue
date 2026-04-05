@@ -58,35 +58,13 @@ const boardColumns = computed(() =>
 const columnTasks = shallowRef<Record<string, Task[]>>({})
 
 function syncColumnTasks() {
-  // 原地修改数组，保持 columnTasks[destColumn] === TaskColumn.localTasks 引用
-  // 这样 onTaskMoved 中的 colTasks 和 columnTasks.value[destColumn] 始终是同一数组
-  const map = columnTasks.value
-  const existingKeys = Object.keys(map)
-  const newKeys = columns.value.map((c) => c.statusKey)
-
-  // 新增列：创建空数组
-  for (const key of newKeys) {
-    if (!map[key]) {
-      map[key] = []
-    }
-  }
-  // 删除列：从 map 中移除
-  for (const key of existingKeys) {
-    if (!newKeys.includes(key)) {
-      delete map[key]
-    }
-  }
-  // 重建所有列的任务（原地清空+填充，不替换数组引用）
+  const map: Record<string, Task[]> = {}
   for (const col of columns.value) {
-    map[col.statusKey].length = 0
-    for (const task of allTasks.value) {
-      if (task.status === col.statusKey) {
-        map[col.statusKey].push(task)
-      }
-    }
-    map[col.statusKey].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+    map[col.statusKey] = allTasks.value
+      .filter((t) => t.status === col.statusKey)
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
   }
-  triggerRef(columnTasks)
+  columnTasks.value = map
 }
 
 watch([allTasks, columns], syncColumnTasks, { immediate: true })
@@ -141,8 +119,12 @@ onBeforeUnmount(() => {
   stopSelectedTaskWatch()
 })
 
-async function onQuickAdd(title: string) {
-  await createTask({ title })
+async function onQuickAdd(title: string, onDone: () => void) {
+  try {
+    await createTask({ title })
+  } finally {
+    onDone()
+  }
 }
 
 async function onAddTask(statusKey: string, statusName: string) {
