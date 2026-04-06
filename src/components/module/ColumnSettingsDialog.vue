@@ -198,8 +198,8 @@ function cancelDelete() {
                     @click="emit('toggle-visibility', col.id)"
                     :title="col.isVisible ? $t('task.hideColumn') : $t('task.showColumn')"
                   >
-                    <Eye v-if="col.isVisible" :size="14" />
-                    <EyeOff v-else :size="14" />
+                    <Eye v-if="col.isVisible === true" :size="14" />
+                    <EyeOff v-if="col.isVisible !== true" :size="14" />
                   </button>
 
                   <button
