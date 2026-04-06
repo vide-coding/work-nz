@@ -182,14 +182,15 @@ function cancelDelete() {
                   <div v-else class="flex items-center gap-2 flex-1 min-w-0">
                     <span class="text-sm font-medium text-gray-700">{{ col.name }}</span>
                     <span class="text-[11px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded flex-shrink-0">{{ col.statusKey }}</span>
-                    <button
-                      class="opacity-0 group-hover:opacity-100 flex items-center justify-center w-5 h-5 text-gray-400 bg-transparent border-none rounded cursor-pointer hover:text-indigo-600 hover:bg-indigo-50 transition-all flex-shrink-0"
-                      @click="startEdit(col)"
-                      :title="$t('common.edit')"
-                    >
-                      <Pencil :size="13" />
-                    </button>
                   </div>
+
+                  <button
+                    class="flex-shrink-0 flex items-center justify-center w-5 h-5 text-gray-400 bg-transparent border-none rounded cursor-pointer hover:text-indigo-600 hover:bg-indigo-50 transition-all flex-shrink-0"
+                    @click="startEdit(col)"
+                    :title="$t('common.edit')"
+                  >
+                    <Pencil :size="13" />
+                  </button>
 
                   <button
                     class="flex-shrink-0 flex items-center justify-center w-6 h-6 text-gray-400 bg-transparent border-none rounded cursor-pointer transition-colors"
@@ -197,7 +198,8 @@ function cancelDelete() {
                     @click="emit('toggle-visibility', col.id)"
                     :title="col.isVisible ? $t('task.hideColumn') : $t('task.showColumn')"
                   >
-                    <component :is="col.isVisible ? Eye : EyeOff" :size="14" />
+                    <Eye v-if="col.isVisible" :size="14" />
+                    <EyeOff v-else :size="14" />
                   </button>
 
                   <button
