@@ -410,7 +410,7 @@ export const taskApi = {
     return invoke('task_create', { directoryId, title, description, priority, assignee, dueDate, status, sortOrder })
   },
 
-  async update(id: string, patch: Partial<Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'assignee' | 'dueDate'>>): Promise<Task> {
+  async update(id: string, patch: Partial<Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'assignee' | 'dueDate' | 'sortOrder'>>): Promise<Task> {
     return invoke('task_update', { id, patch })
   },
 
@@ -442,7 +442,7 @@ export const taskApi = {
     return invoke('task_column_create', { directoryId, statusKey, name, color })
   },
 
-  async updateColumn(id: string, patch: Partial<Pick<TaskColumn, 'name' | 'color' | 'sortOrder'>>): Promise<TaskColumn> {
+  async updateColumn(id: string, patch: Partial<Pick<TaskColumn, 'statusKey' | 'name' | 'color' | 'sortOrder'>>): Promise<TaskColumn> {
     return invoke('task_column_update', { id, patch })
   },
 

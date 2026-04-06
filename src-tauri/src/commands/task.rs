@@ -121,13 +121,14 @@ pub fn task_update(id: String, patch: serde_json::Value) -> Result<Task, String>
     let priority = patch.get("priority").and_then(|v| v.as_str()).map(String::from).unwrap_or(task.priority);
     let assignee = patch.get("assignee").and_then(|v| v.as_str()).map(String::from).or(task.assignee);
     let due_date = patch.get("dueDate").and_then(|v| v.as_str()).map(String::from).or(task.due_date);
+    let sort_order = patch.get("sortOrder").and_then(|v| v.as_i64()).map(|v| v as i32).unwrap_or(task.sort_order);
 
     with_db!(conn, {
         conn.execute(
             "UPDATE tasks SET title = ?1, description = ?2, status = ?3, priority = ?4,
-                             assignee = ?5, due_date = ?6, updated_at = ?7
-             WHERE id = ?8",
-            params![title, description, status, priority, assignee, due_date, now, id],
+                             assignee = ?5, due_date = ?6, sort_order = ?7, updated_at = ?8
+             WHERE id = ?9",
+            params![title, description, status, priority, assignee, due_date, sort_order, now, id],
         )
         .map_err(|e| format!("更新任务失败: {}", e))?;
     });
@@ -360,20 +361,21 @@ pub fn task_column_create(
     column_get(id)
 }
 
-/// 更新列（名称/颜色/排序）
+/// 更新列（状态标识/名称/颜色/排序）
 #[tauri::command]
 pub fn task_column_update(id: String, patch: serde_json::Value) -> Result<TaskColumn, String> {
     let col = column_get(id.clone())?;
     let now = chrono::Utc::now().to_rfc3339();
 
+    let status_key = patch.get("statusKey").and_then(|v| v.as_str()).map(String::from).unwrap_or(col.status_key.clone());
     let name = patch.get("name").and_then(|v| v.as_str()).map(String::from).unwrap_or(col.name);
     let color = patch.get("color").and_then(|v| v.as_str()).map(String::from).unwrap_or(col.color);
     let sort_order = patch.get("sortOrder").and_then(|v| v.as_i64()).map(|v| v as i32).unwrap_or(col.sort_order);
 
     with_db!(conn, {
         conn.execute(
-            "UPDATE task_columns SET name = ?1, color = ?2, sort_order = ?3, updated_at = ?4 WHERE id = ?5",
-            params![name, color, sort_order, now, id],
+            "UPDATE task_columns SET status_key = ?1, name = ?2, color = ?3, sort_order = ?4, updated_at = ?5 WHERE id = ?6",
+            params![status_key, name, color, sort_order, now, id],
         )
         .map_err(|e| format!("更新列失败: {}", e))?;
     });

@@ -17,7 +17,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   close: []
   create: [statusKey: string, name: string, color: string]
-  update: [id: string, patch: Partial<Pick<TaskColumn, 'name' | 'color' | 'sortOrder'>>]
+  update: [id: string, patch: Partial<Pick<TaskColumn, 'statusKey' | 'name' | 'color' | 'sortOrder'>>]
   'toggle-visibility': [id: string]
   delete: [id: string]
 }>()
@@ -37,6 +37,7 @@ const PRESET_COLORS = [
 ]
 
 const editingId = ref<string | null>(null)
+const editStatusKey = ref('')
 const editName = ref('')
 const editColor = ref('')
 const pendingDeleteId = ref<string | null>(null)
@@ -80,9 +81,8 @@ function cancelAdd() {
 
 function submitAdd() {
   const key = newStatusKey.value.trim()
-  const name = newName.value.trim()
-  if (!key || !name) return
-  emit('create', key, name, newColor.value)
+  if (!key) return
+  emit('create', key, newName.value.trim() || key, newColor.value)
   showAddForm.value = false
 }
 
@@ -94,6 +94,7 @@ function getColVisibility(colId: string): boolean {
 
 function startEdit(col: TaskColumn) {
   editingId.value = col.id
+  editStatusKey.value = col.statusKey
   editName.value = col.name
   editColor.value = col.color
 }
@@ -103,9 +104,9 @@ function cancelEdit() {
 }
 
 function submitEdit(id: string) {
-  const name = editName.value.trim()
-  if (!name) return
-  emit('update', id, { name, color: editColor.value })
+  const statusKey = editStatusKey.value.trim()
+  if (!statusKey) return
+  emit('update', id, { statusKey, name: editName.value.trim() || statusKey, color: editColor.value })
   editingId.value = null
 }
 
@@ -165,10 +166,17 @@ function cancelDelete() {
                     :style="{ backgroundColor: col.color }"
                   />
 
-                  <div v-if="editingId === col.id" class="flex-1 flex items-center gap-1.5">
+                  <div v-if="editingId === col.id" class="flex-1 flex items-center gap-1.5 flex-wrap">
+                    <input
+                      v-model="editStatusKey"
+                      class="px-2 py-1 text-[13px] border border-gray-300 rounded w-24"
+                      @keydown.enter="submitEdit(col.id)"
+                      @keydown.esc="cancelEdit"
+                    />
                     <input
                       v-model="editName"
-                      class="flex-1 px-2 py-1 text-[13px] border border-gray-300 rounded"
+                      class="px-2 py-1 text-[13px] border border-gray-300 rounded flex-1 min-w-[80px]"
+                      :placeholder="$t('task.columnName')"
                       @keydown.enter="submitEdit(col.id)"
                       @keydown.esc="cancelEdit"
                     />
@@ -186,12 +194,11 @@ function cancelDelete() {
                   </div>
 
                   <div v-else class="flex items-center gap-2 flex-1 min-w-0">
-                    <span class="text-sm font-medium text-gray-700">{{ col.name }}</span>
-                    <span class="text-[11px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded flex-shrink-0">{{ col.statusKey }}</span>
+                    <span class="text-[11px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded flex-shrink-0">{{ col.name || col.statusKey }}</span>
                   </div>
 
                   <button
-                    class="flex-shrink-0 flex items-center justify-center w-5 h-5 text-gray-400 bg-transparent border-none rounded cursor-pointer hover:text-indigo-600 hover:bg-indigo-50 transition-all flex-shrink-0"
+                    class="flex-shrink-0 flex items-center justify-center w-5 h-5 text-gray-400 bg-transparent border-none rounded cursor-pointer hover:text-indigo-600 hover:bg-indigo-50 transition-all"
                     @click="startEdit(col)"
                     :title="$t('common.edit')"
                   >
@@ -210,10 +217,11 @@ function cancelDelete() {
 
                   <button
                     v-if="pendingDeleteId === col.id"
-                    class="flex-shrink-0 px-1.5 py-0.5 text-[11px] text-white bg-red-500 border-none rounded cursor-pointer"
+                    class="flex-shrink-0 flex items-center gap-1 px-1.5 py-0.5 text-[11px] text-white bg-red-500 border-none rounded cursor-pointer"
                     @click="onDelete(col.id)"
                     :title="$t('common.confirm')"
                   >
+                    <Trash2 :size="11" />
                     {{ $t('common.confirm') }}
                   </button>
                   <button
@@ -246,6 +254,7 @@ function cancelDelete() {
                 v-model="newName"
                 class="px-2.5 py-1.5 text-[13px] border border-gray-200 rounded-md"
                 :placeholder="$t('task.columnName')"
+                @keydown.enter="submitAdd"
               />
               <div class="flex items-center gap-2">
                 <span class="text-[12px] text-gray-500 flex-shrink-0">{{ $t('task.color') }}</span>
@@ -287,14 +296,6 @@ function cancelDelete() {
 </template>
 
 <style scoped>
-.column-item__drag {
-  cursor: grab;
-}
-
-.column-item__drag:active {
-  cursor: grabbing;
-}
-
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.2s ease;
