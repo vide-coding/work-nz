@@ -86,6 +86,12 @@ function submitAdd() {
   showAddForm.value = false
 }
 
+// 从 props.columns 获取最新 isVisible 状态（确保响应式更新）
+function getColVisibility(colId: string): boolean {
+  const col = props.columns.find((c) => c.id === colId)
+  return col?.isVisible ?? true
+}
+
 function startEdit(col: TaskColumn) {
   editingId.value = col.id
   editName.value = col.name
@@ -194,12 +200,12 @@ function cancelDelete() {
 
                   <button
                     class="flex-shrink-0 flex items-center justify-center w-6 h-6 text-gray-400 bg-transparent border-none rounded cursor-pointer transition-colors"
-                    :class="col.isVisible ? 'hover:text-gray-600 hover:bg-gray-100' : 'text-amber-500 hover:text-amber-600 hover:bg-amber-50'"
+                    :class="getColVisibility(col.id) ? 'hover:text-gray-600 hover:bg-gray-100' : 'text-amber-500 hover:text-amber-600 hover:bg-amber-50'"
                     @click="emit('toggle-visibility', col.id)"
-                    :title="col.isVisible ? $t('task.hideColumn') : $t('task.showColumn')"
+                    :title="getColVisibility(col.id) ? $t('task.hideColumn') : $t('task.showColumn')"
                   >
-                    <Eye v-if="col.isVisible === true" :size="14" />
-                    <EyeOff v-if="col.isVisible !== true" :size="14" />
+                    <Eye v-if="getColVisibility(col.id)" :size="14" />
+                    <EyeOff v-else :size="14" />
                   </button>
 
                   <button
