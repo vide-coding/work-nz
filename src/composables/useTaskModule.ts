@@ -21,7 +21,7 @@ export interface TaskFilter {
  * Task sort options
  */
 export interface TaskSort {
-  field: 'priority' | 'dueDate' | 'createdAt' | 'status'
+  field: 'sortOrder' | 'priority' | 'dueDate' | 'createdAt' | 'status'
   direction: 'asc' | 'desc'
 }
 
@@ -179,7 +179,7 @@ export function useTaskModule(directory: Directory) {
   async function updateTask(
     taskId: string,
     patch: Partial<
-      Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'assignee' | 'dueDate'>
+      Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'assignee' | 'dueDate' | 'sortOrder'>
     >
   ): Promise<Task | null> {
     if (!hasTaskCapability.value) {
@@ -250,7 +250,8 @@ export function useTaskModule(directory: Directory) {
   async function loadChildTasks(parentId: string) {
     try {
       const children = await taskApi.listChildren(parentId)
-      childTasksMap.value[parentId] = children
+      // Replace the entire map to trigger Vue prop reactivity
+      childTasksMap.value = { ...childTasksMap.value, [parentId]: children }
     } catch (e) {
       console.error('Failed to load child tasks:', e)
     }
@@ -261,9 +262,9 @@ export function useTaskModule(directory: Directory) {
     try {
       const child = await taskApi.createChild(parentId, title)
       if (!childTasksMap.value[parentId]) {
-        childTasksMap.value[parentId] = []
+        childTasksMap.value = { ...childTasksMap.value, [parentId]: [] }
       }
-      childTasksMap.value[parentId].push(child)
+      childTasksMap.value = { ...childTasksMap.value, [parentId]: [...childTasksMap.value[parentId], child] }
       return child
     } catch (e) {
       console.error('Failed to create child task:', e)
@@ -280,8 +281,9 @@ export function useTaskModule(directory: Directory) {
         const children = childTasksMap.value[parentId]
         const idx = children.findIndex((c) => c.id === childId)
         if (idx !== -1) {
-          children[idx] = updated
-          childTasksMap.value[parentId] = [...children]
+          const updatedChildren = [...children]
+          updatedChildren[idx] = updated
+          childTasksMap.value = { ...childTasksMap.value, [parentId]: updatedChildren }
           break
         }
       }
@@ -301,14 +303,39 @@ export function useTaskModule(directory: Directory) {
         const children = childTasksMap.value[parentId]
         const idx = children.findIndex((c) => c.id === childId)
         if (idx !== -1) {
-          children.splice(idx, 1)
-          childTasksMap.value[parentId] = [...children]
+          const updatedChildren = children.filter((_, i) => i !== idx)
+          childTasksMap.value = { ...childTasksMap.value, [parentId]: updatedChildren }
           break
         }
       }
       return true
     } catch (e) {
       console.error('Failed to delete child task:', e)
+      return false
+    }
+  }
+
+  // Reorder child tasks
+  async function reorderChildren(parentId: string, orderedIds: string[]): Promise<boolean> {
+    try {
+      // Update sortOrder for each child based on new order
+      await Promise.all(
+        orderedIds.map((childId, index) =>
+          taskApi.update(childId, { sortOrder: index })
+        )
+      )
+      // Update local state to reflect new order
+      if (childTasksMap.value[parentId]) {
+        const children = childTasksMap.value[parentId]
+        const reordered = orderedIds
+          .map((id) => children.find((c) => c.id === id))
+          .filter((c): c is Task => c !== undefined)
+          .map((c, i) => ({ ...c, sortOrder: i }))
+        childTasksMap.value = { ...childTasksMap.value, [parentId]: reordered }
+      }
+      return true
+    } catch (e) {
+      console.error('Failed to reorder child tasks:', e)
       return false
     }
   }
@@ -325,6 +352,11 @@ export function useTaskModule(directory: Directory) {
       total: children.length,
       completed: children.filter((c) => c.isCompleted).length,
     }
+  }
+
+  // Batch load child tasks for multiple parent task IDs (used on initial load)
+  async function loadChildTasksForTasks(parentIds: string[]) {
+    await Promise.allSettled(parentIds.map((id) => loadChildTasks(id)))
   }
 
   // Column state
@@ -362,12 +394,16 @@ export function useTaskModule(directory: Directory) {
   }
 
   // Update a column
-  async function updateColumn(id: string, patch: Partial<Pick<TaskColumn, 'name' | 'color' | 'sortOrder'>>): Promise<TaskColumn | null> {
+  async function updateColumn(id: string, patch: Partial<Pick<TaskColumn, 'statusKey' | 'name' | 'color' | 'sortOrder'>>): Promise<TaskColumn | null> {
     try {
       const updated = await taskApi.updateColumn(id, patch)
       const idx = columns.value.findIndex((c) => c.id === id)
       if (idx !== -1) {
-        columns.value[idx] = updated
+        columns.value = [
+          ...columns.value.slice(0, idx),
+          updated,
+          ...columns.value.slice(idx + 1),
+        ]
       }
       return updated
     } catch (e) {
@@ -382,7 +418,11 @@ export function useTaskModule(directory: Directory) {
       const updated = await taskApi.toggleColumnVisibility(id)
       const idx = columns.value.findIndex((c) => c.id === id)
       if (idx !== -1) {
-        columns.value[idx] = updated
+        columns.value = [
+          ...columns.value.slice(0, idx),
+          updated,
+          ...columns.value.slice(idx + 1),
+        ]
       }
       return updated
     } catch (e) {
@@ -441,8 +481,10 @@ export function useTaskModule(directory: Directory) {
     createChildTask,
     toggleChildComplete,
     deleteChildTask,
+    reorderChildren,
     getChildTasks,
     getChildCounts,
+    loadChildTasksForTasks,
     setFilter,
     setSort,
     clearFilter,

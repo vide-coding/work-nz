@@ -315,6 +315,17 @@
     "titlePlaceholder": "任务标题",
     "collapse": "折叠",
     "expand": "展开",
-    "expandSubtasks": "展开子任务"
+    "expandSubtasks": "展开子任务",
+    "descriptionPlaceholder": "添加描述...",
+    "assigneePlaceholder": "未指派",
+    "saved": "已保存",
+    "noSubtasks": "暂无子任务",
+    "addSubtaskPlaceholder": "添加子任务...",
+    "sortSubtasks": "排序子任务",
+    "task": "任务",
+    "low": "低",
+    "medium": "中",
+    "high": "高",
+    "urgent": "紧急"
   }
 }

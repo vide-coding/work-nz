@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, shallowRef, triggerRef, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, shallowRef, triggerRef, computed, watch, onMounted, onBeforeUnmount, provide } from 'vue'
 import { Settings } from 'lucide-vue-next'
 import draggable from 'vuedraggable'
 import type { Directory, Task } from '@/types'
@@ -28,9 +28,11 @@ const {
   priorityValues,
   childTasksMap,
   loadChildTasks,
+  loadChildTasksForTasks,
   createChildTask,
   toggleChildComplete,
   deleteChildTask,
+  reorderChildren,
   getChildTasks,
   getChildCounts,
   columns,
@@ -42,6 +44,16 @@ const {
   deleteColumn,
 } = useTaskModule(props.directory)
 
+// Provide priority color map to child components (TaskCard, etc.)
+const priorityColorMap = computed(() => {
+  const map: Record<string, string> = {}
+  for (const pv of priorityValues.value) {
+    map[pv.id] = pv.color
+  }
+  return map
+})
+provide('priorityColorMap', priorityColorMap.value)
+
 // Build columns from visible columns (sorted, only visible)
 const boardColumns = computed(() =>
   columns.value
@@ -49,7 +61,6 @@ const boardColumns = computed(() =>
     .sort((a, b) => a.sortOrder - b.sortOrder)
     .map((c) => ({
       key: c.statusKey,
-      name: c.name,
       color: c.color,
     }))
 )
@@ -57,12 +68,23 @@ const boardColumns = computed(() =>
 // columnTasks: shallowRef，TaskColumn 的本地副本变化后 emit 过来
 const columnTasks = shallowRef<Record<string, Task[]>>({})
 
+// 拖拽期间的视觉顺序：覆盖 syncColumnTasks 中的 sortOrder 排序
+// 解决 watcher 在 sortOrder 更新到 API 之前触发的竞态问题
+const pendingColumnOrders = shallowRef<Record<string, string[]>>({})
+
 function syncColumnTasks() {
   const map: Record<string, Task[]> = {}
   for (const col of columns.value) {
-    map[col.statusKey] = allTasks.value
-      .filter((t) => t.status === col.statusKey)
-      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+    const colTasks = allTasks.value.filter((t) => t.status === col.statusKey)
+    const pending = pendingColumnOrders.value[col.statusKey]
+    if (pending) {
+      // 拖拽期间使用 vuedraggable 提供的视觉顺序
+      map[col.statusKey] = pending
+        .map((id) => colTasks.find((t) => t.id === id))
+        .filter((t): t is Task => t !== undefined)
+    } else {
+      map[col.statusKey] = colTasks.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+    }
   }
   columnTasks.value = map
 }
@@ -72,6 +94,8 @@ watch([allTasks, columns], syncColumnTasks, { immediate: true })
 // TaskColumn 本地副本变化后，通知 Vue 更新 shallowRef
 function onColumnUpdate(statusKey: string, newList: Task[]) {
   columnTasks.value[statusKey] = newList
+  // 同步视觉顺序到 pending，避免 watcher 触发时 sortOrder 尚未更新
+  pendingColumnOrders.value[statusKey] = newList.map((t) => t.id)
   triggerRef(columnTasks)
 }
 
@@ -83,16 +107,27 @@ async function onTaskMoved(payload: { task: Task; from: string; to: string; newI
   const { task, to, newIndex } = payload
   const destColumn = to !== '__removed__' ? to : task.status
 
-  // 更新 allTasks 中目标列所有任务的 sortOrder（匹配 columnTasks 视觉顺序）
-  const colTasks = columnTasks.value[destColumn] || []
-  await Promise.all(
-    colTasks.map((t, i) => updateTask(t.id, { sortOrder: i }))
-  )
+  // 使用 pendingColumnOrders（视觉顺序）而非 sortOrder，
+  // 解决 watcher 在 sortOrder 更新到 API 之前触发的竞态问题
+  const colTasks =
+    pendingColumnOrders.value[destColumn]
+      ?.map((id) => allTasks.value.find((t) => t.id === id))
+      .filter((t): t is Task => t !== undefined) ||
+    columnTasks.value[destColumn] ||
+    []
 
   // 跨列移动时，持久化状态变更
   if (task.status !== destColumn) {
     await updateTask(task.id, { status: destColumn })
   }
+
+  // 更新 allTasks 中目标列所有任务的 sortOrder（匹配 columnTasks 视觉顺序）
+  await Promise.all(
+    colTasks.map((t, i) => updateTask(t.id, { sortOrder: i }))
+  )
+
+  // API 调用完成后清除 pending，恢复 sortOrder 排序
+  pendingColumnOrders.value = { ...pendingColumnOrders.value, [destColumn]: undefined as unknown as string[] }
 }
 
 // Selected task for detail panel
@@ -101,7 +136,6 @@ const showDetailPanel = computed(() => selectedTask.value !== null)
 const showColumnSettings = ref(false)
 const showAddTaskDialog = ref(false)
 const addTaskStatusKey = ref('')
-const addTaskStatusName = ref('')
 
 // Watch selected task to load child tasks
 const stopSelectedTaskWatch = watch(selectedTask, async (task) => {
@@ -110,9 +144,17 @@ const stopSelectedTaskWatch = watch(selectedTask, async (task) => {
   }
 })
 
-onMounted(() => {
-  loadTasks()
-  loadColumns()
+// Track whether child tasks have been batch-loaded to avoid re-running
+let childTasksBatchLoaded = false
+
+onMounted(async () => {
+  await loadTasks()
+  await loadColumns()
+  // Batch load child tasks for all tasks on initial load
+  if (!childTasksBatchLoaded && allTasks.value.length > 0) {
+    childTasksBatchLoaded = true
+    loadChildTasksForTasks(allTasks.value.map((t) => t.id))
+  }
 })
 
 onBeforeUnmount(() => {
@@ -127,9 +169,8 @@ async function onQuickAdd(title: string, onDone: () => void) {
   }
 }
 
-async function onAddTask(statusKey: string, statusName: string) {
+async function onAddTask(statusKey: string) {
   addTaskStatusKey.value = statusKey
-  addTaskStatusName.value = statusName
   showAddTaskDialog.value = true
 }
 
@@ -157,9 +198,13 @@ async function onDetailDelete(id: string) {
   selectedTask.value = null
 }
 
-// Child task handlers
-async function onToggleChild(childId: string) {
+async function onToggleChild(payload: string | { childId: string; parentId: string }) {
+  const childId = typeof payload === 'string' ? payload : payload.childId
+  const parentId = typeof payload === 'string' ? undefined : payload.parentId
   await toggleChildComplete(childId)
+  if (parentId) {
+    await loadChildTasks(parentId)
+  }
   if (selectedTask.value) {
     await loadChildTasks(selectedTask.value.id)
   }
@@ -176,24 +221,31 @@ async function onAddChild(parentId: string, title: string) {
   await createChildTask(parentId, title)
 }
 
-async function onCardToggleChild(childId: string) {
-  await toggleChildComplete(childId)
+async function onUpdateChild(childId: string, title: string) {
+  const child = childTasksMap.value[selectedTask.value?.id || '']?.find(c => c.id === childId)
+  if (child) {
+    await updateTask(childId, { title })
+    if (selectedTask.value) {
+      await loadChildTasks(selectedTask.value.id)
+    }
+  }
 }
 
-async function onCardDeleteChild(childId: string) {
-  await deleteChildTask(childId)
-}
-
-async function onCardAddChild(parentId: string, title: string) {
-  await createChildTask(parentId, title)
+async function onReorderChildren(childIds: string[]) {
+  if (!selectedTask.value) return
+  await reorderChildren(selectedTask.value.id, childIds)
 }
 
 const statusOptions = computed(() =>
-  statusValues.value.map((sv) => ({ value: sv.id, label: sv.name }))
+  statusValues.value.map((sv) => ({
+    value: sv.id,
+    label: sv.name || sv.id,
+    color: sv.color,
+  }))
 )
 
 const priorityOptions = computed(() =>
-  priorityValues.value.map((pv) => ({ value: pv.id, label: pv.name }))
+  priorityValues.value.map((pv) => ({ value: pv.id, label: pv.name, color: pv.color }))
 )
 
 function getSelectedChildTasks(): Task[] {
@@ -208,15 +260,15 @@ function getSelectedChildTasks(): Task[] {
 
     <div class="flex items-center justify-end gap-2 px-4 pb-2">
       <span class="text-xs text-gray-400">
-        {{ boardColumns.length }} {{ $t('workspace.columns') || 'columns' }}
+        {{ boardColumns.length }} {{ $t('workspace.columns') }}
       </span>
-      <button class="flex items-center justify-center w-7 h-7 bg-transparent text-gray-400 border-none rounded-md cursor-pointer transition-colors hover:bg-gray-200 hover:text-gray-600" @click="showColumnSettings = true" :title="$t('settings.title')">
+      <button class="flex items-center justify-center w-7 h-7 bg-transparent text-gray-400 border-none rounded-md cursor-pointer transition-colors hover:bg-gray-200 hover:text-gray-600" @click="showColumnSettings = true" :title="$t('settings.title')" :aria-label="$t('settings.title')">
         <Settings :size="16" />
       </button>
     </div>
 
     <div v-if="loading" class="flex-1 flex items-center justify-center text-sm text-gray-500">
-      Loading...
+      {{ $t('common.loading') }}
     </div>
 
     <div v-else-if="error" class="flex-1 flex items-center justify-center text-sm text-red-500">
@@ -236,18 +288,15 @@ function getSelectedChildTasks(): Task[] {
           v-for="col in boardColumns"
           :key="col.key"
           :status-key="col.key"
-          :status-name="col.name"
           :status-color="col.color"
           :model-value="columnTasks[col.key] || []"
-          :child-tasks-map="childTasksMap"
           :get-child-counts="getChildCounts"
+          :child-tasks-map="childTasksMap"
           @update:model-value="(list) => onColumnUpdate(col.key, list)"
           @task-click="onTaskClick"
-          @add-task="(key) => onAddTask(key, col.name)"
+          @add-task="(key) => onAddTask(key)"
           @task-moved="onTaskMoved"
-          @toggle-child="onCardToggleChild"
-          @delete-child="onCardDeleteChild"
-          @add-child="onCardAddChild"
+          @toggle-child="onToggleChild"
         />
       </div>
 
@@ -264,6 +313,8 @@ function getSelectedChildTasks(): Task[] {
         @toggle-child="onToggleChild"
         @delete-child="onDeleteChild"
         @add-child="onAddChild"
+        @update-child="onUpdateChild"
+        @reorder-children="onReorderChildren"
       />
     </div>
 
@@ -280,7 +331,7 @@ function getSelectedChildTasks(): Task[] {
 
     <TaskAddDialog
       :visible="showAddTaskDialog"
-      :status-name="addTaskStatusName"
+      :status-key="addTaskStatusKey"
       @update:visible="showAddTaskDialog = $event"
       @confirm="onAddTaskConfirm"
     />

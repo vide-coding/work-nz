@@ -315,6 +315,17 @@
     "titlePlaceholder": "Task title",
     "collapse": "Collapse",
     "expand": "Expand",
-    "expandSubtasks": "Expand subtasks"
+    "expandSubtasks": "Expand subtasks",
+    "descriptionPlaceholder": "Add a description...",
+    "assigneePlaceholder": "Unassigned",
+    "saved": "Saved",
+    "noSubtasks": "No subtasks yet",
+    "addSubtaskPlaceholder": "Add subtask...",
+    "sortSubtasks": "Sort subtasks",
+    "task": "Task",
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High",
+    "urgent": "Urgent"
   }
 }

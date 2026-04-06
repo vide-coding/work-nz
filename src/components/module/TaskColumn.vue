@@ -7,16 +7,15 @@ import TaskCard from './TaskCard.vue'
 
 interface Props {
   statusKey: string
-  statusName: string
   statusColor: string
   modelValue: Task[]
-  childTasksMap?: Record<string, Task[]>
   getChildCounts?: (taskId: string) => { total: number; completed: number }
+  childTasksMap?: Record<string, Task[]>
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  childTasksMap: () => ({}),
   getChildCounts: () => ({ total: 0, completed: 0 }),
+  childTasksMap: () => ({}),
 })
 
 const emit = defineEmits<{
@@ -24,9 +23,7 @@ const emit = defineEmits<{
   'task-click': [task: Task]
   'add-task': [statusKey: string]
   'task-moved': [payload: { task: Task; from: string; to: string; newIndex: number }]
-  'toggle-child': [childId: string]
-  'delete-child': [childId: string]
-  'add-child': [parentId: string, title: string]
+  'toggle-child': [payload: { childId: string; parentId: string }]
 }>()
 
 // props.modelValue is readonly (Vue SFC). Give vuedraggable a writable local copy.
@@ -44,12 +41,12 @@ watch(
   }
 )
 
-function getChildren(taskId: string): Task[] {
-  return props.childTasksMap[taskId] || []
-}
-
 function onTaskClick(task: Task) {
   emit('task-click', task)
+}
+
+function onToggleChild(payload: { childId: string; parentId: string }) {
+  emit('toggle-child', payload)
 }
 
 function onAddClick() {
@@ -86,9 +83,9 @@ function onChange(evt: { added?: { element: Task; newIndex: number }; removed?: 
   <div class="flex flex-col min-w-[280px] max-w-[320px] flex-1 bg-gray-50 rounded-xl overflow-hidden" :data-column-key="statusKey">
     <div class="flex items-center gap-2 px-4 py-3 bg-white border-b border-gray-200">
       <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" :style="{ backgroundColor: statusColor }" />
-      <span class="text-sm font-semibold text-gray-700 flex-1">{{ statusName }}</span>
+      <span class="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full flex-shrink-0">{{ statusKey }}</span>
       <span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{{ localTasks.length }}</span>
-      <button class="flex items-center justify-center w-6 h-6 text-gray-400 bg-transparent rounded hover:bg-gray-100 hover:text-gray-700 transition-colors" @click="onAddClick" :title="$t('task.add')">
+      <button class="flex items-center justify-center w-6 h-6 text-gray-400 bg-transparent rounded hover:bg-gray-100 hover:text-gray-700 transition-colors" @click="onAddClick" :title="$t('task.add')" :aria-label="$t('task.add')">
         <Plus :size="14" />
       </button>
     </div>
@@ -99,7 +96,7 @@ function onChange(evt: { added?: { element: Task; newIndex: number }; removed?: 
         @change="onChange"
         :group="{ name: 'tasks' }"
         item-key="id"
-        class="flex flex-col gap-2 min-h-10"
+        class="flex flex-col gap-2 min-h-full"
         animation="200"
         force-fallback="true"
         ghost-class="opacity-50"
@@ -107,12 +104,10 @@ function onChange(evt: { added?: { element: Task; newIndex: number }; removed?: 
         <template #item="{ element }">
           <TaskCard
             :task="element"
-            :child-tasks="getChildren(element.id)"
             :child-count="getChildCounts(element.id)"
+            :child-tasks="childTasksMap[element.id] || []"
             @click="onTaskClick"
-            @toggle-child="emit('toggle-child', $event)"
-            @delete-child="emit('delete-child', $event)"
-            @add-child="(parentId, title) => emit('add-child', parentId, title)"
+            @toggle-child="onToggleChild"
           />
         </template>
       </draggable>
