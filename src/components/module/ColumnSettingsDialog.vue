@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { X, Plus, Trash2, GripVertical, Pencil } from 'lucide-vue-next'
+import { X, Plus, Trash2, GripVertical, Pencil, Eye, EyeOff } from 'lucide-vue-next'
 import draggable from 'vuedraggable'
 import type { TaskColumn } from '@/types'
 
@@ -181,6 +181,7 @@ function cancelDelete() {
 
                   <div v-else class="flex items-center gap-2 flex-1 min-w-0">
                     <span class="text-sm font-medium text-gray-700">{{ col.name }}</span>
+                    <span class="text-[11px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded flex-shrink-0">{{ col.statusKey }}</span>
                     <button
                       class="opacity-0 group-hover:opacity-100 flex items-center justify-center w-5 h-5 text-gray-400 bg-transparent border-none rounded cursor-pointer hover:text-indigo-600 hover:bg-indigo-50 transition-all flex-shrink-0"
                       @click="startEdit(col)"
@@ -188,16 +189,15 @@ function cancelDelete() {
                     >
                       <Pencil :size="13" />
                     </button>
-                    <span class="text-[11px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded flex-shrink-0">{{ col.statusKey }}</span>
                   </div>
 
                   <button
-                    class="flex-shrink-0 px-2 py-1 text-[11px] border border-gray-200 bg-white text-gray-700 rounded cursor-pointer"
-                    :class="{ 'bg-amber-50 border-amber-300 text-amber-800': !col.isVisible }"
+                    class="flex-shrink-0 flex items-center justify-center w-6 h-6 text-gray-400 bg-transparent border-none rounded cursor-pointer transition-colors"
+                    :class="col.isVisible ? 'hover:text-gray-600 hover:bg-gray-100' : 'text-amber-500 hover:text-amber-600 hover:bg-amber-50'"
                     @click="emit('toggle-visibility', col.id)"
                     :title="col.isVisible ? $t('task.hideColumn') : $t('task.showColumn')"
                   >
-                    {{ col.isVisible ? $t('task.visible') : $t('task.hidden') }}
+                    <component :is="col.isVisible ? Eye : EyeOff" :size="14" />
                   </button>
 
                   <button
